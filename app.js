@@ -34,6 +34,13 @@ const trip = {
     "現金・交通系IC",
     "お土産メモ",
   ],
+  notes: [
+    "Peachは関西空港第2ターミナル。関西空港駅から連絡バスに乗る時間も見ておく。",
+    "チェックインは出発30分前まで、保安検査は25分前まで、搭乗口は20分前までが目安。",
+    "ミニマム運賃だと、預け荷物や座席指定は追加料金になることがあります。",
+    "鹿児島空港に着いた後の移動と、待ち合わせ場所は事前に決めておくと楽。",
+    "ホテルは料金、禁煙・喫煙、チェックイン時間、キャンセル条件だけ最後に見ておく。",
+  ],
 };
 
 const yen = new Intl.NumberFormat("ja-JP", {
@@ -63,11 +70,15 @@ async function buildCombinedShareLink(output, status) {
     url.searchParams.set("checklist", encodeShareState(shareRegistry.checklist()));
   }
 
+  if (shareRegistry.notes) {
+    url.searchParams.set("notes", encodeShareState(shareRegistry.notes()));
+  }
+
   output.value = url.toString();
 
   try {
     await navigator.clipboard.writeText(output.value);
-    status.textContent = "ADJUSTと持ち物の共有リンクをコピーしました。";
+    status.textContent = "ADJUST・持ち物・共有メモのリンクをコピーしました。";
   } catch {
     status.textContent = "共有リンクを作りました。コピーして送ってください。";
     output.focus();
@@ -514,6 +525,123 @@ function initChecklist() {
   render();
 }
 
+function initSharedNotes() {
+  const storageKey = "miyakonojoTripSharedNotes";
+  const container = document.getElementById("sharedNotes");
+  const input = document.getElementById("newSharedNote");
+  const addButton = document.getElementById("addSharedNoteButton");
+
+  let state = loadNotesState();
+
+  function defaultState() {
+    return {
+      items: trip.notes.map((text) => ({
+        id: `default-${text}`,
+        text,
+      })),
+    };
+  }
+
+  function loadNotesState() {
+    const shared = readSharedNotesState();
+    if (shared) {
+      localStorage.setItem(storageKey, JSON.stringify(shared));
+      return shared;
+    }
+
+    try {
+      return normalizeNotesState(JSON.parse(localStorage.getItem(storageKey) || "null") || defaultState());
+    } catch {
+      return defaultState();
+    }
+  }
+
+  function readSharedNotesState() {
+    const params = new URLSearchParams(window.location.search);
+    const encoded = params.get("notes");
+    if (!encoded) return null;
+
+    try {
+      return normalizeNotesState(JSON.parse(decodeURIComponent(escape(atob(encoded)))));
+    } catch {
+      return null;
+    }
+  }
+
+  function normalizeNotesState(value) {
+    const next = value && Array.isArray(value.items) ? value : defaultState();
+    next.items = next.items
+      .filter((item) => item && String(item.text || "").trim())
+      .map((item, index) => ({
+        id: item.id || `note-${index}`,
+        text: String(item.text).trim(),
+      }));
+    return next;
+  }
+
+  function makeId() {
+    return `note-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  }
+
+  function save() {
+    localStorage.setItem(storageKey, JSON.stringify(state));
+  }
+
+  function escapeHtml(value) {
+    return String(value || "")
+      .replace(/&/g, "&amp;")
+      .replace(/"/g, "&quot;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+  }
+
+  function render() {
+    container.innerHTML = "";
+
+    if (!state.items.length) {
+      const empty = document.createElement("p");
+      empty.className = "empty-souvenir";
+      empty.textContent = "まだ共有メモはありません。";
+      container.appendChild(empty);
+      return;
+    }
+
+    state.items.forEach((entry) => {
+      const row = document.createElement("div");
+      row.className = "shared-note-item";
+      row.innerHTML = `
+        <p>${escapeHtml(entry.text)}</p>
+        <button class="delete-button" type="button" aria-label="共有メモを削除">削除</button>
+      `;
+
+      row.querySelector(".delete-button").addEventListener("click", () => {
+        state.items = state.items.filter((item) => item.id !== entry.id);
+        save();
+        render();
+      });
+      container.appendChild(row);
+    });
+  }
+
+  function addNote() {
+    const text = input.value.trim();
+    if (!text) return;
+
+    state.items.push({ id: makeId(), text });
+    input.value = "";
+    save();
+    render();
+  }
+
+  addButton.addEventListener("click", addNote);
+  input.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") addNote();
+  });
+
+  shareRegistry.notes = () => state;
+  render();
+}
+
 function initPrint() {
   document.getElementById("printButton").addEventListener("click", () => {
     window.print();
@@ -526,7 +654,7 @@ function initRevealAnimations() {
   const targets = [
     ...document.querySelectorAll(".hero-illustration, .hero-card, .summary-strip > div, .section-heading"),
     ...document.querySelectorAll(".cost-table, .calculator, .notes-section"),
-    ...document.querySelectorAll(".timeline li, .check-item"),
+    ...document.querySelectorAll(".timeline li, .check-item, .shared-note-item"),
   ];
 
   targets.forEach((el, index) => {
@@ -550,7 +678,7 @@ function initRevealAnimations() {
       el.classList.add("note-left");
     }
 
-    if (el.matches(".map-shell, .info-panel, .check-item")) {
+    if (el.matches(".map-shell, .info-panel, .check-item, .shared-note-item")) {
       el.classList.add("bookmark-slide");
     }
   });
@@ -594,6 +722,7 @@ document.addEventListener("DOMContentLoaded", () => {
   initMap();
   initCostCalculator();
   initChecklist();
+  initSharedNotes();
   initRevealAnimations();
   initPrint();
 });

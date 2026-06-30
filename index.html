@@ -297,9 +297,9 @@
           </div>
 
           <div class="share-panel">
-            <button class="button secondary full" type="button" id="shareAdjustButton">ADJUST・持ち物を共有</button>
+            <button class="button secondary full" type="button" id="shareAdjustButton">ADJUST・持ち物・メモを共有</button>
             <input id="shareUrl" class="share-url" type="text" readonly aria-label="共有リンク" />
-            <p class="muted" id="shareStatus">ADJUSTと持ち物をまとめてリンク共有できます。</p>
+            <p class="muted" id="shareStatus">ADJUST、持ち物、共有メモをまとめてリンク共有できます。</p>
           </div>
         </aside>
       </section>
@@ -323,15 +323,17 @@
       <section class="section notes-section">
         <div class="section-heading compact">
           <p class="eyebrow">Notes</p>
-          <h2>気をつけたいこと</h2>
+          <h2>2人の共有メモ</h2>
+          <p>気をつけたいこと、待ち合わせ、あとで確認することをメモできます。共有はADJUST欄のボタンからまとめてできます。</p>
         </div>
-        <ul class="note-list">
-          <li>Peachは関西空港第2ターミナル。関西空港駅から連絡バスに乗る時間も見ておく。</li>
-          <li>チェックインは出発30分前まで、保安検査は25分前まで、搭乗口は20分前までが目安。</li>
-          <li>ミニマム運賃だと、預け荷物や座席指定は追加料金になることがあります。</li>
-          <li>鹿児島空港に着いた後の移動と、待ち合わせ場所は事前に決めておくと楽。</li>
-          <li>ホテルは料金、禁煙・喫煙、チェックイン時間、キャンセル条件だけ最後に見ておく。</li>
-        </ul>
+        <div class="shared-note-tools">
+          <label class="shared-note-field">
+            <span>メモを追加</span>
+            <input id="newSharedNote" type="text" placeholder="例: 鹿児島空港で合流場所を決める" />
+          </label>
+          <button class="mini-button" type="button" id="addSharedNoteButton">追加</button>
+        </div>
+        <div class="shared-note-list" id="sharedNotes"></div>
       </section>
     </main>
 
@@ -339,6 +341,6 @@
       <p>旅のしおり Web版 / GitHub Pages対応</p>
     </footer>
 
-    <script src="./app.js?v=20260630-googlemap1"></script>
+    <script src="./app.js?v=20260630-sharednotes1"></script>
   </body>
 </html>
