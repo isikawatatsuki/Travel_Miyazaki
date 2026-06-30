@@ -89,84 +89,10 @@ function initCountdown() {
   el.textContent = `あと${days}日`;
 }
 
-function makeMarkerIcon(color) {
-  return L.divIcon({
-    className: "custom-marker",
-    html: `<span style="--marker:${color}"></span>`,
-    iconSize: [34, 42],
-    iconAnchor: [17, 38],
-    popupAnchor: [0, -38],
-  });
-}
-
 function initMap() {
-  const { airport, hotel } = trip.points;
-  const map = L.map("map", {
-    scrollWheelZoom: false,
-    zoomControl: true,
-  });
-
-  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-    maxZoom: 19,
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-  }).addTo(map);
-
-  const airportLatLng = [airport.lat, airport.lng];
-  const hotelLatLng = [hotel.lat, hotel.lng];
-  const routeBounds = L.latLngBounds([airportLatLng, hotelLatLng]).pad(0.35);
-
-  L.marker(airportLatLng, { icon: makeMarkerIcon("#83c5d9") })
-    .addTo(map)
-    .bindPopup(`<strong>${airport.name}</strong><br>${airport.note}`);
-
-  L.marker(hotelLatLng, { icon: makeMarkerIcon("#1f7a5c") })
-    .addTo(map)
-    .bindPopup(`<strong>${hotel.name}</strong><br>${hotel.note}`);
-
-  L.polyline([airportLatLng, [31.765, 130.905], hotelLatLng], {
-    color: "#d84b73",
-    weight: 5,
-    opacity: 0.88,
-    dashArray: "9 8",
-  }).addTo(map);
-
-  function refreshMap() {
-    map.invalidateSize({ pan: false });
-    map.fitBounds(routeBounds, { animate: false });
-  }
-
-  function scheduleMapRefresh() {
-    requestAnimationFrame(() => {
-      refreshMap();
-      window.setTimeout(refreshMap, 140);
-      window.setTimeout(refreshMap, 520);
-    });
-  }
-
-  refreshMap();
-  scheduleMapRefresh();
-  window.addEventListener("load", scheduleMapRefresh, { once: true });
-  window.addEventListener("resize", scheduleMapRefresh);
-
-  if (document.fonts?.ready) {
-    document.fonts.ready.then(scheduleMapRefresh).catch(() => {});
-  }
-
-  if ("IntersectionObserver" in window) {
-    const mapObserver = new IntersectionObserver(
-      (entries) => {
-        if (entries.some((entry) => entry.isIntersecting)) {
-          scheduleMapRefresh();
-        }
-      },
-      { threshold: 0.15 },
-    );
-    mapObserver.observe(document.getElementById("route"));
-  }
-
+  const { hotel } = trip.points;
   const status = document.getElementById("locationStatus");
   const locateButton = document.getElementById("locateButton");
-  let userMarker = null;
 
   locateButton.addEventListener("click", () => {
     if (!navigator.geolocation) {
@@ -178,19 +104,8 @@ function initMap() {
     navigator.geolocation.getCurrentPosition(
       (position) => {
         const { latitude, longitude } = position.coords;
-        const latLng = [latitude, longitude];
-
-        if (userMarker) {
-          userMarker.setLatLng(latLng);
-        } else {
-          userMarker = L.marker(latLng, { icon: makeMarkerIcon("#f2b84b") })
-            .addTo(map)
-            .bindPopup("<strong>現在地</strong>");
-        }
-
         const distance = haversine(latitude, longitude, hotel.lat, hotel.lng);
-        status.textContent = `今いる場所を表示しました。ホテルまでは直線で約${distance.toFixed(1)}kmです。`;
-        map.fitBounds(L.latLngBounds([latLng, hotelLatLng]).pad(0.25));
+        status.textContent = `現在地を確認しました。ホテルまでは直線で約${distance.toFixed(1)}kmです。`;
       },
       () => {
         status.textContent = "現在地の許可が出ていないみたいです。必要な時にもう一度押してみてください。";
@@ -674,33 +589,7 @@ function initRevealAnimations() {
   }
 }
 
-function addMarkerStyle() {
-  const style = document.createElement("style");
-  style.textContent = `
-    .custom-marker span {
-      position: relative;
-      display: block;
-      width: 34px;
-      height: 34px;
-      background: var(--marker);
-      border: 4px solid #fff;
-      border-radius: 50% 50% 50% 0;
-      box-shadow: 0 8px 18px rgba(29, 49, 56, 0.2);
-      transform: rotate(-45deg);
-    }
-    .custom-marker span::after {
-      content: "";
-      position: absolute;
-      inset: 8px;
-      background: #fff;
-      border-radius: 50%;
-    }
-  `;
-  document.head.appendChild(style);
-}
-
 document.addEventListener("DOMContentLoaded", () => {
-  addMarkerStyle();
   initCountdown();
   initMap();
   initCostCalculator();
