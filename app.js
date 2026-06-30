@@ -130,6 +130,7 @@ function initMap() {
   }).addTo(map);
 
   map.fitBounds(L.latLngBounds([airportLatLng, hotelLatLng]).pad(0.35));
+  requestAnimationFrame(() => map.invalidateSize());
 
   const status = document.getElementById("locationStatus");
   const locateButton = document.getElementById("locateButton");
@@ -577,7 +578,7 @@ function initRevealAnimations() {
   const tripNote = document.querySelector(".hero-card");
   const targets = [
     ...document.querySelectorAll(".hero-illustration, .hero-card, .summary-strip > div, .section-heading"),
-    ...document.querySelectorAll(".map-shell, .info-panel, .cost-table, .calculator, .notes-section"),
+    ...document.querySelectorAll(".cost-table, .calculator, .notes-section"),
     ...document.querySelectorAll(".timeline li, .check-item"),
   ];
 
