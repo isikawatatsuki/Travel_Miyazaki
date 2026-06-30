@@ -717,12 +717,24 @@ function initRevealAnimations() {
   }
 }
 
+function cleanUrlStateParams() {
+  const params = new URLSearchParams(window.location.search);
+  if (params.has("adjust") || params.has("checklist") || params.has("notes")) {
+    const url = new URL(window.location.href);
+    url.searchParams.delete("adjust");
+    url.searchParams.delete("checklist");
+    url.searchParams.delete("notes");
+    window.history.replaceState({}, "", url.pathname + url.hash);
+  }
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   initCountdown();
   initMap();
   initCostCalculator();
   initChecklist();
   initSharedNotes();
+  cleanUrlStateParams();
   initRevealAnimations();
   initPrint();
 });
