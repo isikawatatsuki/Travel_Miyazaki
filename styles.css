@@ -569,122 +569,16 @@ svg {
   border-radius: 25px;
 }
 
-.route-map {
-  display: grid;
+.google-map-frame {
   overflow: hidden;
-  place-items: stretch;
-  background: #eefaff;
+  background: #e9eef1;
 }
 
-.route-map svg {
+.google-map-frame iframe {
   display: block;
   width: 100%;
   height: 100%;
-  fill: none;
-  stroke: none;
-}
-
-.route-map-bg {
-  fill: url(#mapSky);
-}
-
-.route-map-grid {
-  fill: url(#mapGrid);
-}
-
-.route-map-hill {
-  stroke: rgba(31, 122, 92, 0.25);
-  stroke-width: 3;
-}
-
-.hill-one {
-  fill: #dcefe5;
-}
-
-.hill-two {
-  fill: #cfe8d7;
-}
-
-.route-map-water {
-  fill: none;
-  stroke: #83c5d9;
-  stroke-linecap: round;
-  stroke-width: 22;
-  opacity: 0.34;
-}
-
-.route-map-road {
-  fill: none;
-  stroke: #ffffff;
-  stroke-linecap: round;
-  stroke-width: 12;
-  opacity: 0.78;
-}
-
-.route-line-shadow,
-.route-line {
-  fill: none;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
-.route-line-shadow {
-  stroke: rgba(34, 54, 63, 0.16);
-  stroke-width: 22;
-}
-
-.route-line {
-  stroke: url(#mapRoute);
-  stroke-dasharray: 14 13;
-  stroke-width: 12;
-}
-
-.route-pin circle {
-  fill: #fff;
-  stroke: currentColor;
-  stroke-width: 5;
-  filter: drop-shadow(0 8px 14px rgba(34, 54, 63, 0.18));
-}
-
-.route-pin path {
-  fill: none;
-  stroke: currentColor;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 5;
-}
-
-.airport-pin {
-  color: #2586a0;
-}
-
-.stop-pin {
-  color: #b88310;
-}
-
-.hotel-pin {
-  color: #d84b73;
-}
-
-.route-label rect,
-.route-note rect {
-  fill: rgba(255, 255, 255, 0.92);
-  stroke: var(--line);
-  stroke-width: 2;
-}
-
-.route-label text,
-.route-note text {
-  fill: var(--ink);
-  font-family: var(--font-ui);
-  font-size: 22px;
-  font-weight: 500;
-  letter-spacing: 0;
-}
-
-.route-note text {
-  fill: var(--muted);
-  font-size: 18px;
+  border: 0;
 }
 
 .info-panel,

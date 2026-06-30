@@ -126,70 +126,20 @@
           <p class="eyebrow">Map</p>
           <h2>空港からホテルまで</h2>
           <p>
-            鹿児島空港から都城グリーンホテルまでの流れを、軽いしおり風マップで確認。
+            鹿児島空港から都城グリーンホテルまでの位置感を、Google Mapsで確認。
             現在地ボタンを押すと、ホテルまでの直線距離も見られます。
           </p>
         </div>
 
         <div class="map-layout">
           <div class="map-shell">
-            <div id="map" class="route-map" aria-label="鹿児島空港から都城グリーンホテルまでのルートイメージ">
-              <svg viewBox="0 0 760 520" role="img" aria-labelledby="routeMapTitle routeMapDesc">
-                <title id="routeMapTitle">鹿児島空港から都城グリーンホテルまで</title>
-                <desc id="routeMapDesc">鹿児島空港を出て、霧島方面を通り、都城グリーンホテルへ向かうルートを簡略化したしおり風の地図です。</desc>
-                <defs>
-                  <linearGradient id="mapSky" x1="0" x2="1" y1="0" y2="1">
-                    <stop offset="0%" stop-color="#eefaff" />
-                    <stop offset="100%" stop-color="#fff8df" />
-                  </linearGradient>
-                  <linearGradient id="mapRoute" x1="0" x2="1">
-                    <stop offset="0%" stop-color="#83c5d9" />
-                    <stop offset="56%" stop-color="#f2b84b" />
-                    <stop offset="100%" stop-color="#d84b73" />
-                  </linearGradient>
-                  <pattern id="mapGrid" width="36" height="36" patternUnits="userSpaceOnUse">
-                    <path d="M36 0H0V36" fill="none" stroke="#d8e4dc" stroke-width="1" opacity="0.55" />
-                  </pattern>
-                </defs>
-                <rect class="route-map-bg" x="0" y="0" width="760" height="520" rx="30" />
-                <rect class="route-map-grid" x="0" y="0" width="760" height="520" rx="30" />
-                <path class="route-map-hill hill-one" d="M-20 384C78 294 170 326 245 260c86-76 154-86 246-20 75 54 146 53 289-12v312H-20Z" />
-                <path class="route-map-hill hill-two" d="M-26 430c92-66 182-50 273-96 116-59 210-38 306 26 68 45 133 42 232-8v188H-26Z" />
-                <path class="route-map-water" d="M-10 156c118 40 200 14 286 44 90 32 144 94 257 78 94-13 145-67 247-41" />
-                <path class="route-map-road secondary" d="M92 420c76-54 160-83 248-72 91 11 151 66 244 40 48-13 85-45 127-88" />
-                <path class="route-map-road secondary" d="M116 112c86 56 158 75 238 52 92-27 156-17 232 40" />
-                <path class="route-line-shadow" d="M114 118C194 92 238 130 286 178c48 48 83 74 142 76 72 3 118 16 154 60 36 44 72 70 112 83" />
-                <path class="route-line" d="M114 118C194 92 238 130 286 178c48 48 83 74 142 76 72 3 118 16 154 60 36 44 72 70 112 83" />
-                <g class="route-pin airport-pin" transform="translate(114 118)">
-                  <circle r="32" />
-                  <path d="M-15 2 16-9 4 7l20 5-8 7-23-4-12 12-5-3 7-16-13-6Z" />
-                </g>
-                <g class="route-pin stop-pin" transform="translate(428 254)">
-                  <circle r="24" />
-                  <path d="M-9 4h18M-6-3h12M-3-10h6" />
-                </g>
-                <g class="route-pin hotel-pin" transform="translate(694 397)">
-                  <circle r="34" />
-                  <path d="M-14 15V-6l14-11 14 11v21M-5 15V3h10v12M-20 15h40" />
-                </g>
-                <g class="route-label airport-label">
-                  <rect x="62" y="52" width="154" height="52" rx="18" />
-                  <text x="139" y="84" text-anchor="middle">鹿児島空港</text>
-                </g>
-                <g class="route-label stop-label">
-                  <rect x="360" y="188" width="136" height="50" rx="18" />
-                  <text x="428" y="219" text-anchor="middle">霧島方面</text>
-                </g>
-                <g class="route-label hotel-label">
-                  <rect x="535" y="415" width="188" height="54" rx="18" />
-                  <text x="629" y="448" text-anchor="middle">都城グリーンホテル</text>
-                </g>
-                <g class="route-note">
-                  <rect x="44" y="428" width="245" height="58" rx="20" />
-                  <text x="166" y="454" text-anchor="middle">空港から都城方面へ移動</text>
-                  <text x="166" y="476" text-anchor="middle">ホテルを拠点にする</text>
-                </g>
-              </svg>
+            <div id="map" class="google-map-frame" aria-label="鹿児島空港から都城グリーンホテルまでのGoogle Maps">
+              <iframe
+                title="鹿児島空港から都城グリーンホテルまでのGoogle Maps"
+                src="https://maps.google.com/maps?saddr=%E9%B9%BF%E5%85%90%E5%B3%B6%E7%A9%BA%E6%B8%AF&daddr=%E9%83%BD%E5%9F%8E%E3%82%B0%E3%83%AA%E3%83%BC%E3%83%B3%E3%83%9B%E3%83%86%E3%83%AB&hl=ja&z=10&output=embed"
+                loading="lazy"
+                referrerpolicy="no-referrer-when-downgrade"
+              ></iframe>
             </div>
           </div>
           <aside class="info-panel">
@@ -208,14 +158,14 @@
               </button>
               <a
                 class="button secondary full"
-                href="https://www.google.com/maps/search/?api=1&query=%E9%83%BD%E5%9F%8E%E3%82%B0%E3%83%AA%E3%83%BC%E3%83%B3%E3%83%9B%E3%83%86%E3%83%AB"
+                href="https://www.google.com/maps/dir/?api=1&origin=%E9%B9%BF%E5%85%90%E5%B3%B6%E7%A9%BA%E6%B8%AF&destination=%E9%83%BD%E5%9F%8E%E3%82%B0%E3%83%AA%E3%83%BC%E3%83%B3%E3%83%9B%E3%83%86%E3%83%AB&travelmode=driving"
                 target="_blank"
                 rel="noreferrer"
               >
                 <span class="button-icon" aria-hidden="true">
                   <svg viewBox="0 0 24 24"><path d="M7 17 17 7M9 7h8v8" /></svg>
                 </span>
-                Google Mapsで見る
+                Google Mapsで開く
               </a>
             </div>
             <p class="status" id="locationStatus" aria-live="polite">
@@ -389,6 +339,6 @@
       <p>旅のしおり Web版 / GitHub Pages対応</p>
     </footer>
 
-    <script src="./app.js?v=20260630-staticmap1"></script>
+    <script src="./app.js?v=20260630-googlemap1"></script>
   </body>
 </html>
