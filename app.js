@@ -113,6 +113,7 @@ function initMap() {
 
   const airportLatLng = [airport.lat, airport.lng];
   const hotelLatLng = [hotel.lat, hotel.lng];
+  const routeBounds = L.latLngBounds([airportLatLng, hotelLatLng]).pad(0.35);
 
   L.marker(airportLatLng, { icon: makeMarkerIcon("#83c5d9") })
     .addTo(map)
@@ -129,8 +130,39 @@ function initMap() {
     dashArray: "9 8",
   }).addTo(map);
 
-  map.fitBounds(L.latLngBounds([airportLatLng, hotelLatLng]).pad(0.35));
-  requestAnimationFrame(() => map.invalidateSize());
+  function refreshMap() {
+    map.invalidateSize({ pan: false });
+    map.fitBounds(routeBounds, { animate: false });
+  }
+
+  function scheduleMapRefresh() {
+    requestAnimationFrame(() => {
+      refreshMap();
+      window.setTimeout(refreshMap, 140);
+      window.setTimeout(refreshMap, 520);
+    });
+  }
+
+  refreshMap();
+  scheduleMapRefresh();
+  window.addEventListener("load", scheduleMapRefresh, { once: true });
+  window.addEventListener("resize", scheduleMapRefresh);
+
+  if (document.fonts?.ready) {
+    document.fonts.ready.then(scheduleMapRefresh).catch(() => {});
+  }
+
+  if ("IntersectionObserver" in window) {
+    const mapObserver = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          scheduleMapRefresh();
+        }
+      },
+      { threshold: 0.15 },
+    );
+    mapObserver.observe(document.getElementById("route"));
+  }
 
   const status = document.getElementById("locationStatus");
   const locateButton = document.getElementById("locateButton");
