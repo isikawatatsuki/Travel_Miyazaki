@@ -1,0 +1,348 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>旅のしおり Web版</title>
+    <meta
+      name="description"
+      content="2026年9月21日から9月23日の旅のしおり。フライト、ホテル、地図、費用、持ち物をスマホでさくっと見られます。"
+    />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIINfQhpcqvYD4K9DkD0wDUqYn4b7J7M0l8="
+      crossorigin=""
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Kiwi+Maru:wght@400;500&family=Noto+Sans+JP:wght@400;500;700;900&family=Zen+Old+Mincho:wght@700;900&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#main">本文へ移動</a>
+
+    <header class="site-header">
+      <nav class="topbar" aria-label="主要ナビゲーション">
+        <a href="#overview">概要</a>
+        <a href="#route">地図</a>
+        <a href="#schedule">予定</a>
+        <a href="#cost">費用</a>
+        <a href="#checklist">持ち物</a>
+      </nav>
+
+      <section class="hero" id="overview">
+        <div class="hero-copy">
+          <p class="eyebrow">2026.09.21 - 09.23 / Osaka to Miyakonojo</p>
+          <h1>旅のしおり</h1>
+          <p class="lead">9/21 - 9/23 / 大阪から都城へ</p>
+          <div class="hero-actions">
+            <a class="button primary" href="#schedule">
+              <span class="button-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
+              </span>
+              予定を見る
+            </a>
+            <button class="button secondary" type="button" id="printButton">
+              <span class="button-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M6 9V3h12v6M6 17H4a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-2M6 14h12v7H6z" /></svg>
+              </span>
+              印刷する
+            </button>
+          </div>
+        </div>
+
+        <div class="hero-illustration" aria-hidden="true">
+          <svg viewBox="0 0 420 300" role="img">
+            <defs>
+              <linearGradient id="illust-sky" x1="0" x2="1" y1="0" y2="1">
+                <stop offset="0%" stop-color="#c7ebf1" />
+                <stop offset="100%" stop-color="#fff3cc" />
+              </linearGradient>
+              <linearGradient id="illust-road" x1="0" x2="1">
+                <stop offset="0%" stop-color="#dcefe5" />
+                <stop offset="100%" stop-color="#f5a6b8" />
+              </linearGradient>
+            </defs>
+            <path class="illust-bg" d="M76 48c49-35 148-32 210-7 70 29 98 92 73 143-27 55-103 78-181 73-76-4-142-37-157-89C8 122 33 79 76 48Z" />
+            <circle class="illust-sun" cx="305" cy="75" r="34" />
+            <path class="illust-mountain" d="M64 205 151 96l48 67 38-42 107 84Z" />
+            <path class="illust-road" d="M67 232c65-38 167-39 286-8" />
+            <path class="illust-plane" d="M100 84 222 48l-45 54 78 21-23 20-88-8-42 38-17-10 25-45-44-18Z" />
+            <g class="illust-palm">
+              <path d="M318 128c-12 30-19 65-21 104" />
+              <path d="M316 130c-25-15-45-14-66 3 26 2 45 1 66-3Z" />
+              <path d="M319 126c-8-28-24-45-50-55 11 24 25 39 50 55Z" />
+              <path d="M321 126c16-25 36-35 66-33-18 19-37 29-66 33Z" />
+              <path d="M321 129c27 0 46 10 61 34-25-6-43-16-61-34Z" />
+            </g>
+            <g class="illust-bag">
+              <rect x="124" y="176" width="62" height="58" rx="15" />
+              <path d="M141 177v-10c0-10 8-18 18-18s18 8 18 18v10" />
+              <path d="M143 205h26" />
+            </g>
+          </svg>
+        </div>
+
+        <aside class="hero-card trip-note-slide" aria-label="旅の基本情報">
+          <p class="card-kicker">TRIP NOTE</p>
+          <dl class="quick-facts">
+            <div>
+              <dt>往路</dt>
+              <dd>MM193 08:30 関西発</dd>
+            </div>
+            <div>
+              <dt>復路</dt>
+              <dd>MM198 16:30 鹿児島発</dd>
+            </div>
+            <div>
+              <dt>ホテル</dt>
+              <dd>都城グリーンホテル</dd>
+            </div>
+            <div>
+              <dt>1人あたり</dt>
+              <dd id="tripNoteTotalCost">45,060円</dd>
+            </div>
+          </dl>
+        </aside>
+      </section>
+    </header>
+
+    <main id="main">
+      <section class="summary-strip" aria-label="当日の重要情報">
+        <div>
+          <span>出発まで</span>
+          <strong id="daysUntil">計算中</strong>
+        </div>
+        <div>
+          <span>市岡元町を出る時間</span>
+          <strong>05:40</strong>
+        </div>
+        <div>
+          <span>関空T2に着きたい時間</span>
+          <strong>07:15</strong>
+        </div>
+      </section>
+
+      <section class="section route-section" id="route">
+        <div class="section-heading">
+          <p class="eyebrow">Map</p>
+          <h2>空港からホテルまで</h2>
+          <p>
+            鹿児島空港と都城グリーンホテルの場所をざっくり確認。
+            現在地ボタンを押すと、ホテルまでの直線距離も見られます。
+          </p>
+        </div>
+
+        <div class="map-layout">
+          <div class="map-shell">
+            <div id="map" aria-label="鹿児島空港と都城グリーンホテルの地図"></div>
+          </div>
+          <aside class="info-panel">
+            <p class="panel-label">Stay</p>
+            <h3>都城グリーンホテル</h3>
+            <p class="muted">宮崎県都城市栄町27-2-1</p>
+            <p>
+              鹿児島空港についたら都城方面へ移動。
+            </p>
+            <div class="button-stack">
+              <button class="button primary full" type="button" id="locateButton">
+                <span class="button-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24"><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1" /><circle cx="12" cy="12" r="4" /></svg>
+                </span>
+                今いる場所を見る
+              </button>
+              <a
+                class="button secondary full"
+                href="https://www.google.com/maps/search/?api=1&query=%E9%83%BD%E5%9F%8E%E3%82%B0%E3%83%AA%E3%83%BC%E3%83%B3%E3%83%9B%E3%83%86%E3%83%AB"
+                target="_blank"
+                rel="noreferrer"
+              >
+                <span class="button-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24"><path d="M7 17 17 7M9 7h8v8" /></svg>
+                </span>
+                Google Mapsで見る
+              </a>
+            </div>
+            <p class="status" id="locationStatus" aria-live="polite">
+              まだ現在地は見ていません。
+            </p>
+          </aside>
+        </div>
+      </section>
+
+      <section class="section" id="schedule">
+        <div class="section-heading">
+          <p class="eyebrow">Timeline</p>
+          <h2>出発日の予定</h2>
+        </div>
+
+        <ol class="timeline">
+          <li>
+            <time>05:40</time>
+            <div>
+              <h3>市岡元町を出る</h3>
+              <p>弁天町駅まで徒歩10分。朝早いので、荷物と天気を見つつちょい余裕を持つ。</p>
+            </div>
+          </li>
+          <li>
+            <time>05:50</time>
+            <div>
+              <h3>弁天町駅</h3>
+              <p>弁天町から関空まで、1人片道1,180円で見ています。</p>
+            </div>
+          </li>
+          <li>
+            <time>07:00</time>
+            <div>
+              <h3>関西空港駅</h3>
+              <p>エアロプラザ1階から、第2ターミナル行きの無料連絡バスへ。</p>
+            </div>
+          </li>
+          <li>
+            <time>07:15</time>
+            <div>
+              <h3>関空第2ターミナル</h3>
+              <p>Peachのチェックイン、手荷物、保安検査へ。混むかもなので、ここは早めに動く。</p>
+            </div>
+          </li>
+          <li>
+            <time>08:30</time>
+            <div>
+              <h3>MM193 出発</h3>
+              <p>関西空港から鹿児島空港へ。09:45到着予定。</p>
+            </div>
+          </li>
+          <li>
+            <time>9/23 16:30</time>
+            <div>
+              <h3>MM198 復路出発</h3>
+              <p>鹿児島空港から関西空港へ。17:50到着予定。</p>
+            </div>
+          </li>
+        </ol>
+      </section>
+
+      <section class="section grid-two" id="cost">
+        <div>
+          <div class="section-heading compact">
+            <p class="eyebrow">Cost</p>
+            <h2>1人あたりのお金</h2>
+          </div>
+          <div class="cost-table" role="table" aria-label="1人あたりのお金の表">
+            <div role="row" class="head">
+              <span role="columnheader">なにに使うか</span>
+              <span role="columnheader">1人あたり</span>
+            </div>
+            <div role="row">
+              <span role="cell">航空券</span>
+              <strong role="cell">36,200円</strong>
+            </div>
+            <div role="row">
+              <span role="cell">関空アクセス往復</span>
+              <strong role="cell">2,360円</strong>
+            </div>
+            <div role="row">
+              <span role="cell">ホテル代</span>
+              <strong role="cell" id="hotelCost">6,500円</strong>
+            </div>
+            <div role="row">
+              <span role="cell">お土産</span>
+              <strong role="cell" id="souvenirCost">0円</strong>
+            </div>
+            <div id="customCostRows"></div>
+            <div role="row" class="total">
+              <span role="cell">合計</span>
+              <strong role="cell" id="totalCost">45,060円</strong>
+            </div>
+          </div>
+        </div>
+
+        <aside class="calculator">
+          <p class="panel-label">Adjust</p>
+          <h3>お金のざっくり調整</h3>
+          <label class="switch-row">
+            <span>朝食ありで見る</span>
+            <input type="checkbox" id="breakfastToggle" />
+          </label>
+          <div class="adjust-grid">
+            <label class="input-row">
+              <span>ホテル代 朝食なし</span>
+              <input id="hotelNoBreakfastCost" type="number" inputmode="numeric" min="0" step="100" value="6500" />
+            </label>
+            <label class="input-row">
+              <span>ホテル代 朝食あり</span>
+              <input id="hotelBreakfastCostInput" type="number" inputmode="numeric" min="0" step="100" value="9100" />
+            </label>
+          </div>
+
+          <div class="custom-cost-panel">
+            <div class="mini-heading">
+              <span>追加項目</span>
+              <button class="mini-button" type="button" id="addCustomCostButton">追加</button>
+            </div>
+            <div class="custom-cost-list" id="customCostList"></div>
+          </div>
+
+          <div class="souvenir-panel">
+            <div class="mini-heading">
+              <span>お土産</span>
+              <button class="mini-button" type="button" id="addSouvenirButton">追加</button>
+            </div>
+            <div class="souvenir-list" id="souvenirList"></div>
+          </div>
+
+          <div class="share-panel">
+            <button class="button secondary full" type="button" id="shareAdjustButton">ADJUST・持ち物を共有</button>
+            <input id="shareUrl" class="share-url" type="text" readonly aria-label="共有リンク" />
+            <p class="muted" id="shareStatus">ADJUSTと持ち物をまとめてリンク共有できます。</p>
+          </div>
+        </aside>
+      </section>
+
+      <section class="section" id="checklist">
+        <div class="section-heading">
+          <p class="eyebrow">Checklist</p>
+          <h2>持ち物チェック</h2>
+          <p>追加・削除・チェック状態は、このスマホ・PCに残ります。共有はADJUST欄のボタンからまとめてできます。</p>
+        </div>
+        <div class="checklist-tools">
+          <label class="checklist-add-field">
+            <span>持っていくものを追加</span>
+            <input id="newChecklistItem" type="text" placeholder="例: コンタクト" />
+          </label>
+          <button class="mini-button" type="button" id="addChecklistItemButton">追加</button>
+        </div>
+        <div class="checklist" id="checklistItems"></div>
+      </section>
+
+      <section class="section notes-section">
+        <div class="section-heading compact">
+          <p class="eyebrow">Notes</p>
+          <h2>気をつけたいこと</h2>
+        </div>
+        <ul class="note-list">
+          <li>Peachは関西空港第2ターミナル。関西空港駅から連絡バスに乗る時間も見ておく。</li>
+          <li>チェックインは出発30分前まで、保安検査は25分前まで、搭乗口は20分前までが目安。</li>
+          <li>ミニマム運賃だと、預け荷物や座席指定は追加料金になることがあります。</li>
+          <li>鹿児島空港に着いた後の移動と、待ち合わせ場所は事前に決めておくと楽。</li>
+          <li>ホテルは料金、禁煙・喫煙、チェックイン時間、キャンセル条件だけ最後に見ておく。</li>
+        </ul>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <p>旅のしおり Web版 / GitHub Pages対応</p>
+    </footer>
+
+    <script
+      src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+      integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+      crossorigin=""
+    ></script>
+    <script src="./app.js"></script>
+  </body>
+</html>
