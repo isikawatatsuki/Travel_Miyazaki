@@ -1,5 +1,21 @@
 const trip = {
   departure: new Date("2026-09-21T05:40:00+09:00"),
+  defaults: {
+    dateLabel: "2026.09.21 - 09.23",
+    routeLabel: "大阪から都城へ",
+    heroRouteLabel: "Osaka to Miyakonojo",
+    outboundLabel: "MM193 08:30 関西発",
+    returnLabel: "MM198 16:30 鹿児島発",
+    hotelName: "都城グリーンホテル",
+    hotelAddress: "宮崎県都城市栄町27-2-1",
+    departureSummaryLabel: "出発地を出る時間",
+    departureTime: "05:40",
+    arrivalSummaryLabel: "到着しておきたい時間",
+    arrivalTargetTime: "07:15",
+    mapOrigin: "鹿児島空港",
+    mapDestination: "都城グリーンホテル",
+    mapNote: "鹿児島空港についたら都城方面へ移動。",
+  },
   points: {
     airport: {
       name: "鹿児島空港",
@@ -21,8 +37,8 @@ const trip = {
     hotelBreakfast: 9100,
   },
   checklist: [
-    "Peachの予約",
-    "ホテルの予約",
+    "交通手段の予約",
+    "宿の予約",
     "身分証",
     "スマホ",
     "充電器",
@@ -35,11 +51,11 @@ const trip = {
     "お土産メモ",
   ],
   notes: [
-    "Peachは関西空港第2ターミナル。関西空港駅から連絡バスに乗る時間も見ておく。",
-    "チェックインは出発30分前まで、保安検査は25分前まで、搭乗口は20分前までが目安。",
-    "ミニマム運賃だと、預け荷物や座席指定は追加料金になることがあります。",
-    "鹿児島空港に着いた後の移動と、待ち合わせ場所は事前に決めておくと楽。",
-    "ホテルは料金、禁煙・喫煙、チェックイン時間、キャンセル条件だけ最後に見ておく。",
+    "出発時間と集合場所は前日までに決めておく。",
+    "交通機関のチェックイン時間、乗り場、荷物ルールを確認しておく。",
+    "宿は料金、禁煙・喫煙、チェックイン時間、キャンセル条件だけ最後に見ておく。",
+    "到着後の移動手段と、迷った時の待ち合わせ場所を決めておく。",
+    "充電、天気、現金・交通系ICは出発前に軽く確認する。",
   ],
 };
 
@@ -62,8 +78,10 @@ function escapeHtml(value) {
 }
 
 const groupSync = {
-  storageKey: "miyakonojoTripGroup",
-  groupsKey: "miyakonojoTripGroups",
+  storageKey: "tripShioriGroup",
+  legacyStorageKey: "miyakonojoTripGroup",
+  groupsKey: "tripShioriGroups",
+  legacyGroupsKey: "miyakonojoTripGroups",
   controllers: {},
   active: null,
   savedGroups: [],
@@ -96,7 +114,8 @@ const groupSync = {
 
   loadActiveGroup() {
     try {
-      return this.normalizeGroup(JSON.parse(localStorage.getItem(this.storageKey) || "null"));
+      const saved = localStorage.getItem(this.storageKey) || localStorage.getItem(this.legacyStorageKey);
+      return this.normalizeGroup(JSON.parse(saved || "null"));
     } catch {
       return null;
     }
@@ -104,7 +123,8 @@ const groupSync = {
 
   loadSavedGroups() {
     try {
-      return JSON.parse(localStorage.getItem(this.groupsKey) || "[]").map((group) => this.normalizeGroup(group)).filter(Boolean);
+      const saved = localStorage.getItem(this.groupsKey) || localStorage.getItem(this.legacyGroupsKey);
+      return JSON.parse(saved || "[]").map((group) => this.normalizeGroup(group)).filter(Boolean);
     } catch {
       return [];
     }
@@ -152,7 +172,7 @@ const groupSync = {
     this.nameEl.textContent = this.active?.name || "未参加";
     this.codeEl.textContent = this.active?.joinCode || "------";
     this.statusEl.textContent =
-      message || (this.active ? "この端末はグループ共有に接続しています。" : "Cloudflare Pagesにデプロイするとグループ共有が使えます。");
+      message || (this.active ? "この端末はグループ共有に接続しています。" : "グループ未参加です。作成または参加すると同期できます。");
     this.renderGroupList();
     this.updateToggleLabel();
   },
@@ -234,11 +254,11 @@ const groupSync = {
         ...options,
       });
     } catch {
-      throw new Error("Cloudflare Pagesにデプロイするとグループ共有が使えます。");
+      throw new Error("グループ共有に接続できませんでした。");
     }
     const data = await response.json().catch(() => ({}));
     if (!response.ok) {
-      throw new Error(data.error || "Cloudflare APIに接続できませんでした。");
+      throw new Error(data.error || "グループ共有に接続できませんでした。");
     }
     return data;
   },
@@ -300,6 +320,174 @@ const groupSync = {
   },
 };
 
+const tripSettingsStorageKey = "tripShioriSettings";
+
+function normalizeTripSettings(value = {}) {
+  return { ...trip.defaults, ...value };
+}
+
+function getTripSettings() {
+  try {
+    return normalizeTripSettings(JSON.parse(localStorage.getItem(tripSettingsStorageKey) || "{}"));
+  } catch {
+    return normalizeTripSettings();
+  }
+}
+
+function saveTripSettings(settings) {
+  localStorage.setItem(tripSettingsStorageKey, JSON.stringify(normalizeTripSettings(settings)));
+}
+
+function buildMapEmbedUrl(origin, destination) {
+  const params = new URLSearchParams({
+    saddr: origin,
+    daddr: destination,
+    hl: "ja",
+    z: "10",
+    output: "embed",
+  });
+  return `https://maps.google.com/maps?${params.toString()}`;
+}
+
+function buildGoogleMapsUrl(origin, destination) {
+  const params = new URLSearchParams({
+    api: "1",
+    origin,
+    destination,
+    travelmode: "driving",
+  });
+  return `https://www.google.com/maps/dir/?${params.toString()}`;
+}
+
+function renderTripSettings(settings = getTripSettings()) {
+  const next = normalizeTripSettings(settings);
+  const heroEyebrow = `${next.dateLabel} / ${next.heroRouteLabel || next.routeLabel}`;
+  const heroLead = `${next.dateLabel} / ${next.routeLabel}`;
+  const mapLead = `${next.mapOrigin}から${next.mapDestination}までの位置感を、Google Mapsで確認。`;
+  const outboundTimelineTitle = `${next.outboundLabel} 出発`;
+  const outboundTimelineBody = `${next.mapOrigin}から${next.mapDestination}方面へ移動。`;
+  const returnTimelineTitle = `${next.returnLabel} 復路`;
+  const returnTimelineBody = `${next.mapDestination}方面から帰りの移動へ。`;
+
+  document.querySelectorAll('[data-trip-text="heroEyebrow"]').forEach((el) => {
+    el.textContent = heroEyebrow;
+  });
+  document.querySelectorAll('[data-trip-text="heroLead"]').forEach((el) => {
+    el.textContent = heroLead;
+  });
+  document.querySelectorAll('[data-trip-text="mapLead"]').forEach((el) => {
+    el.textContent = mapLead;
+  });
+  document.querySelectorAll('[data-trip-text="outboundTimelineTitle"]').forEach((el) => {
+    el.textContent = outboundTimelineTitle;
+  });
+  document.querySelectorAll('[data-trip-text="outboundTimelineBody"]').forEach((el) => {
+    el.textContent = outboundTimelineBody;
+  });
+  document.querySelectorAll('[data-trip-text="returnTimelineTitle"]').forEach((el) => {
+    el.textContent = returnTimelineTitle;
+  });
+  document.querySelectorAll('[data-trip-text="returnTimelineBody"]').forEach((el) => {
+    el.textContent = returnTimelineBody;
+  });
+
+  [
+    "outboundLabel",
+    "returnLabel",
+    "hotelName",
+    "hotelAddress",
+    "departureSummaryLabel",
+    "departureTime",
+    "arrivalSummaryLabel",
+    "arrivalTargetTime",
+    "mapNote",
+  ].forEach((key) => {
+    document.querySelectorAll(`[data-trip-text="${key}"]`).forEach((el) => {
+      el.textContent = next[key];
+    });
+  });
+
+  const mapFrame = document.getElementById("mapFrame");
+  if (mapFrame) {
+    mapFrame.src = buildMapEmbedUrl(next.mapOrigin, next.mapDestination);
+    mapFrame.title = `${next.mapOrigin}から${next.mapDestination}までのGoogle Maps`;
+  }
+
+  const googleMapsLink = document.getElementById("googleMapsLink");
+  if (googleMapsLink) {
+    googleMapsLink.href = buildGoogleMapsUrl(next.mapOrigin, next.mapDestination);
+  }
+
+  const groupNameInput = document.getElementById("groupNameInput");
+  if (groupNameInput && ["旅行グループ", trip.defaults.routeLabel].includes(groupNameInput.value)) {
+    groupNameInput.value = next.routeLabel || "旅行グループ";
+  }
+}
+
+function initTripSettings() {
+  const fields = {
+    dateLabel: document.getElementById("settingDateLabel"),
+    routeLabel: document.getElementById("settingRouteLabel"),
+    outboundLabel: document.getElementById("settingOutboundLabel"),
+    returnLabel: document.getElementById("settingReturnLabel"),
+    hotelName: document.getElementById("settingHotelName"),
+    hotelAddress: document.getElementById("settingHotelAddress"),
+    departureTime: document.getElementById("settingDepartureTime"),
+    arrivalTargetTime: document.getElementById("settingArrivalTargetTime"),
+    mapOrigin: document.getElementById("settingMapOrigin"),
+    mapDestination: document.getElementById("settingMapDestination"),
+  };
+  const saveButton = document.getElementById("saveTripSettingsButton");
+  const resetButton = document.getElementById("resetTripSettingsButton");
+
+  function fillInputs(settings) {
+    Object.entries(fields).forEach(([key, input]) => {
+      if (input) input.value = settings[key] || "";
+    });
+  }
+
+  function collectInputs() {
+    const current = getTripSettings();
+    Object.entries(fields).forEach(([key, input]) => {
+      if (input) current[key] = input.value.trim() || trip.defaults[key] || "";
+    });
+    current.heroRouteLabel = current.routeLabel;
+    current.departureSummaryLabel = "出発地を出る時間";
+    current.arrivalSummaryLabel = "到着しておきたい時間";
+    current.mapNote = `${current.mapOrigin}についたら${current.mapDestination}方面へ移動。`;
+    return normalizeTripSettings(current);
+  }
+
+  let state = getTripSettings();
+  fillInputs(state);
+  renderTripSettings(state);
+
+  saveButton.addEventListener("click", () => {
+    state = collectInputs();
+    saveTripSettings(state);
+    renderTripSettings(state);
+    groupSync.scheduleSave();
+  });
+
+  resetButton.addEventListener("click", () => {
+    state = normalizeTripSettings();
+    saveTripSettings(state);
+    fillInputs(state);
+    renderTripSettings(state);
+    groupSync.scheduleSave();
+  });
+
+  groupSync.register("tripSettings", {
+    get: () => state,
+    set: (nextState) => {
+      state = normalizeTripSettings(nextState);
+      saveTripSettings(state);
+      fillInputs(state);
+      renderTripSettings(state);
+    },
+  });
+}
+
 function initCountdown() {
   const el = document.getElementById("daysUntil");
   const now = new Date();
@@ -329,6 +517,11 @@ function initMap() {
     navigator.geolocation.getCurrentPosition(
       (position) => {
         const { latitude, longitude } = position.coords;
+        const settings = getTripSettings();
+        if (settings.mapDestination !== trip.defaults.mapDestination) {
+          status.textContent = "現在地を確認しました。目的地までの詳しい経路はGoogle Mapsで見てください。";
+          return;
+        }
         const distance = haversine(latitude, longitude, hotel.lat, hotel.lng);
         status.textContent = `現在地を確認しました。ホテルまでは直線で約${distance.toFixed(1)}kmです。`;
       },
@@ -358,7 +551,7 @@ function initGroupControls() {
   createButton.addEventListener("click", async () => {
     groupSync.render("グループを作成中...");
     try {
-      await groupSync.create(nameInput.value.trim() || "宮崎旅行");
+      await groupSync.create(nameInput.value.trim() || getTripSettings().routeLabel || "旅行グループ");
     } catch (error) {
       groupSync.render(error.message);
     }
@@ -413,7 +606,8 @@ function haversine(lat1, lon1, lat2, lon2) {
 }
 
 function initCostCalculator() {
-  const storageKey = "miyakonojoTripAdjust";
+  const storageKey = "tripShioriAdjust";
+  const legacyStorageKey = "miyakonojoTripAdjust";
   const breakfast = document.getElementById("breakfastToggle");
   const hotelNoBreakfastInput = document.getElementById("hotelNoBreakfastCost");
   const hotelBreakfastInput = document.getElementById("hotelBreakfastCostInput");
@@ -439,7 +633,8 @@ function initCostCalculator() {
 
   function loadAdjustState() {
     try {
-      return normalizeState({ ...defaults, ...JSON.parse(localStorage.getItem(storageKey) || "{}") });
+      const saved = localStorage.getItem(storageKey) || localStorage.getItem(legacyStorageKey) || "{}";
+      return normalizeState({ ...defaults, ...JSON.parse(saved) });
     } catch {
       return { ...defaults };
     }
@@ -646,7 +841,8 @@ function initCostCalculator() {
 }
 
 function initChecklist() {
-  const storageKey = "miyakonojoTripChecklist";
+  const storageKey = "tripShioriChecklist";
+  const legacyStorageKey = "miyakonojoTripChecklist";
   const container = document.getElementById("checklistItems");
   const input = document.getElementById("newChecklistItem");
   const addButton = document.getElementById("addChecklistItemButton");
@@ -665,7 +861,7 @@ function initChecklist() {
   }
 
   function loadChecklistState() {
-    const legacy = JSON.parse(localStorage.getItem(storageKey) || "null");
+    const legacy = JSON.parse(localStorage.getItem(storageKey) || localStorage.getItem(legacyStorageKey) || "null");
     if (legacy && !Array.isArray(legacy.items)) {
       const migrated = defaultState();
       migrated.items.forEach((item) => {
@@ -761,7 +957,8 @@ function initChecklist() {
 }
 
 function initSharedNotes() {
-  const storageKey = "miyakonojoTripSharedNotes";
+  const storageKey = "tripShioriSharedNotes";
+  const legacyStorageKey = "miyakonojoTripSharedNotes";
   const container = document.getElementById("sharedNotes");
   const input = document.getElementById("newSharedNote");
   const addButton = document.getElementById("addSharedNoteButton");
@@ -779,7 +976,8 @@ function initSharedNotes() {
 
   function loadNotesState() {
     try {
-      return normalizeNotesState(JSON.parse(localStorage.getItem(storageKey) || "null") || defaultState());
+      const saved = localStorage.getItem(storageKey) || localStorage.getItem(legacyStorageKey);
+      return normalizeNotesState(JSON.parse(saved || "null") || defaultState());
     } catch {
       return defaultState();
     }
@@ -936,6 +1134,7 @@ function initRevealAnimations() {
 
 document.addEventListener("DOMContentLoaded", () => {
   initCountdown();
+  initTripSettings();
   initMap();
   initCostCalculator();
   initChecklist();

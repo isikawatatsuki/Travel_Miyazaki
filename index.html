@@ -6,7 +6,7 @@
     <title>旅のしおり Web版</title>
     <meta
       name="description"
-      content="2026年9月21日から9月23日の旅のしおり。フライト、ホテル、地図、費用、持ち物をスマホでさくっと見られます。"
+      content="旅行の日程、地図、費用、持ち物、共有メモをスマホでさくっと見られる旅のしおりです。"
     />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -22,6 +22,7 @@
     <header class="site-header">
       <nav class="topbar" aria-label="主要ナビゲーション">
         <a href="#overview">概要</a>
+        <a href="#trip-settings">旅設定</a>
         <a href="#group">共有</a>
         <a href="#route">地図</a>
         <a href="#schedule">予定</a>
@@ -31,9 +32,9 @@
 
       <section class="hero" id="overview">
         <div class="hero-copy">
-          <p class="eyebrow">2026.09.21 - 09.23 / Osaka to Miyakonojo</p>
+          <p class="eyebrow" data-trip-text="heroEyebrow">2026.09.21 - 09.23 / Osaka to Miyakonojo</p>
           <h1>旅のしおり</h1>
-          <p class="lead">9/21 - 9/23 / 大阪から都城へ</p>
+          <p class="lead" data-trip-text="heroLead">9/21 - 9/23 / 大阪から都城へ</p>
           <div class="hero-actions">
             <a class="button primary" href="#schedule">
               <span class="button-icon" aria-hidden="true">
@@ -87,15 +88,15 @@
           <dl class="quick-facts">
             <div>
               <dt>往路</dt>
-              <dd>MM193 08:30 関西発</dd>
+              <dd data-trip-text="outboundLabel">MM193 08:30 関西発</dd>
             </div>
             <div>
               <dt>復路</dt>
-              <dd>MM198 16:30 鹿児島発</dd>
+              <dd data-trip-text="returnLabel">MM198 16:30 鹿児島発</dd>
             </div>
             <div>
               <dt>ホテル</dt>
-              <dd>都城グリーンホテル</dd>
+              <dd data-trip-text="hotelName">都城グリーンホテル</dd>
             </div>
             <div>
               <dt>1人あたり</dt>
@@ -113,12 +114,66 @@
           <strong id="daysUntil">計算中</strong>
         </div>
         <div>
-          <span>市岡元町を出る時間</span>
-          <strong>05:40</strong>
+          <span data-trip-text="departureSummaryLabel">出発地を出る時間</span>
+          <strong data-trip-text="departureTime">05:40</strong>
         </div>
         <div>
-          <span>関空T2に着きたい時間</span>
-          <strong>07:15</strong>
+          <span data-trip-text="arrivalSummaryLabel">到着しておきたい時間</span>
+          <strong data-trip-text="arrivalTargetTime">07:15</strong>
+        </div>
+      </section>
+
+      <section class="section trip-settings-section" id="trip-settings">
+        <div class="section-heading compact">
+          <p class="eyebrow">Trip Settings</p>
+          <h2>旅の内容を変える</h2>
+          <p>別の旅行でも使えるように、日程・行き先・ホテル・地図をここで差し替えられます。</p>
+        </div>
+        <div class="settings-grid">
+          <label class="group-field">
+            <span>日程ラベル</span>
+            <input id="settingDateLabel" type="text" />
+          </label>
+          <label class="group-field">
+            <span>ルート</span>
+            <input id="settingRouteLabel" type="text" />
+          </label>
+          <label class="group-field">
+            <span>往路</span>
+            <input id="settingOutboundLabel" type="text" />
+          </label>
+          <label class="group-field">
+            <span>復路</span>
+            <input id="settingReturnLabel" type="text" />
+          </label>
+          <label class="group-field">
+            <span>ホテル・宿</span>
+            <input id="settingHotelName" type="text" />
+          </label>
+          <label class="group-field">
+            <span>住所・メモ</span>
+            <input id="settingHotelAddress" type="text" />
+          </label>
+          <label class="group-field">
+            <span>出発時間</span>
+            <input id="settingDepartureTime" type="text" />
+          </label>
+          <label class="group-field">
+            <span>到着しておきたい時間</span>
+            <input id="settingArrivalTargetTime" type="text" />
+          </label>
+          <label class="group-field">
+            <span>地図の出発地</span>
+            <input id="settingMapOrigin" type="text" />
+          </label>
+          <label class="group-field">
+            <span>地図の目的地</span>
+            <input id="settingMapDestination" type="text" />
+          </label>
+        </div>
+        <div class="settings-actions">
+          <button class="button primary" type="button" id="saveTripSettingsButton">反映する</button>
+          <button class="button secondary" type="button" id="resetTripSettingsButton">初期値に戻す</button>
         </div>
       </section>
 
@@ -132,7 +187,7 @@
           <div class="group-status-card">
             <span>現在のグループ</span>
             <strong id="groupName">未参加</strong>
-            <p id="groupStatus">Cloudflare Pagesにデプロイするとグループ共有が使えます。</p>
+            <p id="groupStatus">グループ未参加です。作成または参加すると同期できます。</p>
           </div>
           <div class="group-list-card">
             <span>参加中のグループ</span>
@@ -149,7 +204,7 @@
           <div class="group-actions" id="groupFormPanel">
             <label class="group-field">
               <span>グループ名</span>
-              <input id="groupNameInput" type="text" value="宮崎旅行" />
+              <input id="groupNameInput" type="text" value="旅行グループ" />
             </label>
             <button class="button primary full" type="button" id="createGroupButton">グループを作る</button>
             <label class="group-field">
@@ -166,7 +221,7 @@
         <div class="section-heading">
           <p class="eyebrow">Map</p>
           <h2>空港からホテルまで</h2>
-          <p>
+          <p data-trip-text="mapLead">
             鹿児島空港から都城グリーンホテルまでの位置感を、Google Mapsで確認。
             現在地ボタンを押すと、ホテルまでの直線距離も見られます。
           </p>
@@ -174,9 +229,10 @@
 
         <div class="map-layout">
           <div class="map-shell">
-            <div id="map" class="google-map-frame" aria-label="鹿児島空港から都城グリーンホテルまでのGoogle Maps">
+            <div id="map" class="google-map-frame" aria-label="Google Maps">
               <iframe
-                title="鹿児島空港から都城グリーンホテルまでのGoogle Maps"
+                id="mapFrame"
+                title="Google Maps"
                 src="https://maps.google.com/maps?saddr=%E9%B9%BF%E5%85%90%E5%B3%B6%E7%A9%BA%E6%B8%AF&daddr=%E9%83%BD%E5%9F%8E%E3%82%B0%E3%83%AA%E3%83%BC%E3%83%B3%E3%83%9B%E3%83%86%E3%83%AB&hl=ja&z=10&output=embed"
                 loading="lazy"
                 referrerpolicy="no-referrer-when-downgrade"
@@ -185,9 +241,9 @@
           </div>
           <aside class="info-panel">
             <p class="panel-label">Stay</p>
-            <h3>都城グリーンホテル</h3>
-            <p class="muted">宮崎県都城市栄町27-2-1</p>
-            <p>
+            <h3 data-trip-text="hotelName">都城グリーンホテル</h3>
+            <p class="muted" data-trip-text="hotelAddress">宮崎県都城市栄町27-2-1</p>
+            <p data-trip-text="mapNote">
               鹿児島空港についたら都城方面へ移動。
             </p>
             <div class="button-stack">
@@ -199,6 +255,7 @@
               </button>
               <a
                 class="button secondary full"
+                id="googleMapsLink"
                 href="https://www.google.com/maps/dir/?api=1&origin=%E9%B9%BF%E5%85%90%E5%B3%B6%E7%A9%BA%E6%B8%AF&destination=%E9%83%BD%E5%9F%8E%E3%82%B0%E3%83%AA%E3%83%BC%E3%83%B3%E3%83%9B%E3%83%86%E3%83%AB&travelmode=driving"
                 target="_blank"
                 rel="noreferrer"
@@ -254,15 +311,15 @@
           <li>
             <time>08:30</time>
             <div>
-              <h3>MM193 出発</h3>
-              <p>関西空港から鹿児島空港へ。09:45到着予定。</p>
+              <h3 data-trip-text="outboundTimelineTitle">MM193 出発</h3>
+              <p data-trip-text="outboundTimelineBody">関西空港から鹿児島空港へ。09:45到着予定。</p>
             </div>
           </li>
           <li>
             <time>9/23 16:30</time>
             <div>
-              <h3>MM198 復路出発</h3>
-              <p>鹿児島空港から関西空港へ。17:50到着予定。</p>
+              <h3 data-trip-text="returnTimelineTitle">MM198 復路出発</h3>
+              <p data-trip-text="returnTimelineBody">鹿児島空港から関西空港へ。17:50到着予定。</p>
             </div>
           </li>
         </ol>
@@ -365,7 +422,7 @@
         <div class="shared-note-tools">
           <label class="shared-note-field">
             <span>メモを追加</span>
-            <input id="newSharedNote" type="text" placeholder="例: 鹿児島空港で合流場所を決める" />
+            <input id="newSharedNote" type="text" placeholder="例: 到着後の合流場所を決める" />
           </label>
           <button class="mini-button" type="button" id="addSharedNoteButton">追加</button>
         </div>
@@ -374,9 +431,9 @@
     </main>
 
     <footer class="site-footer">
-      <p>旅のしおり Web版 / GitHub Pages対応</p>
+      <p>旅のしおり Web版</p>
     </footer>
 
-    <script src="./app.js?v=20260703-groups2"></script>
+    <script src="./app.js?v=20260703-triptemplate1"></script>
   </body>
 </html>
