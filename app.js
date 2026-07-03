@@ -59,6 +59,137 @@ function encodeShareState(value) {
   return btoa(unescape(encodeURIComponent(JSON.stringify(value))));
 }
 
+const groupSync = {
+  storageKey: "miyakonojoTripGroup",
+  controllers: {},
+  active: null,
+  saveTimer: null,
+  isApplying: false,
+  statusEl: null,
+  nameEl: null,
+  codeEl: null,
+
+  initElements() {
+    this.statusEl = document.getElementById("groupStatus");
+    this.nameEl = document.getElementById("groupName");
+    this.codeEl = document.getElementById("joinCodeValue");
+    this.active = this.loadActiveGroup();
+    this.render();
+  },
+
+  register(name, controller) {
+    this.controllers[name] = controller;
+  },
+
+  loadActiveGroup() {
+    try {
+      return JSON.parse(localStorage.getItem(this.storageKey) || "null");
+    } catch {
+      return null;
+    }
+  },
+
+  saveActiveGroup(value) {
+    this.active = value;
+    localStorage.setItem(this.storageKey, JSON.stringify(value));
+    this.render();
+  },
+
+  render(message) {
+    if (!this.nameEl || !this.codeEl || !this.statusEl) return;
+    this.nameEl.textContent = this.active?.name || "未参加";
+    this.codeEl.textContent = this.active?.joinCode || "------";
+    this.statusEl.textContent =
+      message || (this.active ? "この端末はグループ共有に接続しています。" : "Cloudflare Pagesにデプロイするとグループ共有が使えます。");
+  },
+
+  collectState() {
+    return Object.fromEntries(
+      Object.entries(this.controllers).map(([name, controller]) => [name, controller.get()]),
+    );
+  },
+
+  applyState(state) {
+    this.isApplying = true;
+    Object.entries(this.controllers).forEach(([name, controller]) => {
+      if (state?.[name]) controller.set(state[name]);
+    });
+    this.isApplying = false;
+  },
+
+  scheduleSave() {
+    if (!this.active || this.isApplying) return;
+    window.clearTimeout(this.saveTimer);
+    this.saveTimer = window.setTimeout(() => this.saveRemote(), 650);
+  },
+
+  async request(path, options = {}) {
+    let response;
+    try {
+      response = await fetch(path, {
+        headers: {
+          "content-type": "application/json",
+          ...(options.headers || {}),
+        },
+        ...options,
+      });
+    } catch {
+      throw new Error("Cloudflare Pagesにデプロイするとグループ共有が使えます。");
+    }
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(data.error || "Cloudflare APIに接続できませんでした。");
+    }
+    return data;
+  },
+
+  async create(name) {
+    const data = await this.request("/api/groups", {
+      method: "POST",
+      body: JSON.stringify({ name, state: this.collectState() }),
+    });
+    this.saveActiveGroup(data.group);
+    this.render("グループを作成しました。参加コードを相手に共有してください。");
+  },
+
+  async join(joinCode) {
+    const data = await this.request("/api/groups/join", {
+      method: "POST",
+      body: JSON.stringify({ joinCode }),
+    });
+    this.saveActiveGroup(data.group);
+    this.applyState(data.group.state);
+    this.render("グループに参加しました。共有データを読み込みました。");
+  },
+
+  async refresh() {
+    if (!this.active) {
+      this.render("先にグループを作るか、参加コードで参加してください。");
+      return;
+    }
+    const data = await this.request(`/api/groups/${this.active.id}?token=${encodeURIComponent(this.active.editToken)}`);
+    this.saveActiveGroup(data.group);
+    this.applyState(data.group.state);
+    this.render("最新の共有データを読み込みました。");
+  },
+
+  async saveRemote() {
+    if (!this.active) return;
+    try {
+      await this.request(`/api/groups/${this.active.id}`, {
+        method: "PUT",
+        headers: {
+          authorization: `Bearer ${this.active.editToken}`,
+        },
+        body: JSON.stringify({ state: this.collectState() }),
+      });
+      this.render("変更をグループに保存しました。");
+    } catch (error) {
+      this.render(error.message);
+    }
+  },
+};
+
 async function buildCombinedShareLink(output, status) {
   const url = new URL(window.location.href);
 
@@ -124,6 +255,62 @@ function initMap() {
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 },
     );
   });
+}
+
+function initGroupControls() {
+  const createButton = document.getElementById("createGroupButton");
+  const joinButton = document.getElementById("joinGroupButton");
+  const refreshButton = document.getElementById("refreshGroupButton");
+  const copyButton = document.getElementById("copyJoinCodeButton");
+  const nameInput = document.getElementById("groupNameInput");
+  const joinCodeInput = document.getElementById("joinCodeInput");
+
+  groupSync.initElements();
+
+  createButton.addEventListener("click", async () => {
+    groupSync.render("グループを作成中...");
+    try {
+      await groupSync.create(nameInput.value.trim() || "宮崎旅行");
+    } catch (error) {
+      groupSync.render(error.message);
+    }
+  });
+
+  joinButton.addEventListener("click", async () => {
+    groupSync.render("グループに参加中...");
+    try {
+      await groupSync.join(joinCodeInput.value);
+    } catch (error) {
+      groupSync.render(error.message);
+    }
+  });
+
+  refreshButton.addEventListener("click", async () => {
+    groupSync.render("共有データを読み込み中...");
+    try {
+      await groupSync.refresh();
+    } catch (error) {
+      groupSync.render(error.message);
+    }
+  });
+
+  copyButton.addEventListener("click", async () => {
+    if (!groupSync.active?.joinCode) {
+      groupSync.render("まだ参加コードがありません。");
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(groupSync.active.joinCode);
+      groupSync.render("参加コードをコピーしました。");
+    } catch {
+      groupSync.render(`参加コードは ${groupSync.active.joinCode} です。`);
+    }
+  });
+
+  if (groupSync.active) {
+    groupSync.refresh().catch((error) => groupSync.render(error.message));
+  }
 }
 
 function haversine(lat1, lon1, lat2, lon2) {
@@ -210,6 +397,7 @@ function initCostCalculator() {
 
   function save() {
     localStorage.setItem(storageKey, JSON.stringify(state));
+    groupSync.scheduleSave();
   }
 
   function makeId() {
@@ -364,6 +552,12 @@ function initCostCalculator() {
     update();
   }
 
+  function setState(nextState) {
+    state = normalizeState({ ...defaults, ...nextState });
+    save();
+    applyStateToInputs();
+  }
+
   breakfast.addEventListener("change", () => {
     state.breakfast = breakfast.checked;
     persistAndUpdate();
@@ -389,6 +583,10 @@ function initCostCalculator() {
   });
 
   shareRegistry.adjust = () => state;
+  groupSync.register("adjust", {
+    get: () => state,
+    set: setState,
+  });
   applyStateToInputs();
 }
 
@@ -462,6 +660,7 @@ function initChecklist() {
 
   function save() {
     localStorage.setItem(storageKey, JSON.stringify(state));
+    groupSync.scheduleSave();
   }
 
   function render() {
@@ -522,6 +721,14 @@ function initChecklist() {
   });
 
   shareRegistry.checklist = () => state;
+  groupSync.register("checklist", {
+    get: () => state,
+    set: (nextState) => {
+      state = normalizeChecklistState(nextState);
+      save();
+      render();
+    },
+  });
   render();
 }
 
@@ -585,6 +792,7 @@ function initSharedNotes() {
 
   function save() {
     localStorage.setItem(storageKey, JSON.stringify(state));
+    groupSync.scheduleSave();
   }
 
   function escapeHtml(value) {
@@ -639,6 +847,14 @@ function initSharedNotes() {
   });
 
   shareRegistry.notes = () => state;
+  groupSync.register("notes", {
+    get: () => state,
+    set: (nextState) => {
+      state = normalizeNotesState(nextState);
+      save();
+      render();
+    },
+  });
   render();
 }
 
@@ -735,6 +951,7 @@ document.addEventListener("DOMContentLoaded", () => {
   initChecklist();
   initSharedNotes();
   cleanUrlStateParams();
+  initGroupControls();
   initRevealAnimations();
   initPrint();
 });
