@@ -519,12 +519,14 @@ svg {
 
 .group-panel {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(300px, 0.8fr) minmax(210px, 0.46fr);
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 0.9fr) minmax(210px, 0.5fr);
   gap: 16px;
   align-items: stretch;
 }
 
 .group-status-card,
+.group-list-card,
+.group-manage-card,
 .group-actions,
 .join-code-card {
   padding: 20px;
@@ -535,6 +537,7 @@ svg {
 }
 
 .group-status-card span,
+.group-list-card > span,
 .join-code-card span,
 .group-field span {
   display: block;
@@ -562,6 +565,60 @@ svg {
 .group-actions {
   display: grid;
   gap: 10px;
+  grid-column: 1 / -1;
+}
+
+.group-actions[hidden] {
+  display: none;
+}
+
+.group-list-card,
+.group-manage-card {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+}
+
+.group-list {
+  display: grid;
+  gap: 8px;
+}
+
+.group-list-item {
+  display: grid;
+  gap: 2px;
+  width: 100%;
+  min-height: 54px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: #fffdf8;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.group-list-item span {
+  font-weight: 600;
+}
+
+.group-list-item small {
+  color: var(--muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.08em;
+}
+
+.group-list-item.is-active {
+  border-color: rgba(216, 75, 115, 0.42);
+  background: #fff6f8;
+}
+
+.empty-group {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.6;
 }
 
 .group-field {
@@ -817,8 +874,7 @@ svg {
 }
 
 .custom-cost-panel,
-.souvenir-panel,
-.share-panel {
+.souvenir-panel {
   margin-top: 18px;
   padding-top: 18px;
   border-top: 1px solid var(--line);
@@ -902,8 +958,7 @@ svg {
 }
 
 .field-chip input,
-.souvenir-row input,
-.share-url {
+.souvenir-row input {
   width: 100%;
   min-height: 42px;
   padding: 8px 10px;
@@ -928,16 +983,6 @@ svg {
   border-radius: var(--radius-sm);
   color: var(--muted);
   font-size: 14px;
-}
-
-.share-panel {
-  display: grid;
-  gap: 10px;
-}
-
-.share-url:placeholder-shown,
-.share-url:read-only {
-  color: var(--muted);
 }
 
 .input-row input:focus-visible {
