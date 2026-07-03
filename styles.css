@@ -101,6 +101,7 @@ svg {
 }
 
 #overview,
+#group,
 #route,
 #schedule,
 #cost,
@@ -514,6 +515,82 @@ svg {
   margin-top: 10px;
   font-size: clamp(23px, 3vw, 31px);
   font-variant-numeric: tabular-nums;
+}
+
+.group-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 0.8fr) minmax(210px, 0.46fr);
+  gap: 16px;
+  align-items: stretch;
+}
+
+.group-status-card,
+.group-actions,
+.join-code-card {
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+}
+
+.group-status-card span,
+.join-code-card span,
+.group-field span {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.group-status-card strong,
+.join-code-card strong {
+  display: block;
+  margin-top: 8px;
+  font-size: clamp(24px, 4vw, 34px);
+  font-weight: 500;
+  line-height: 1.15;
+}
+
+.group-status-card p {
+  min-height: 54px;
+  margin: 14px 0 0;
+  color: var(--muted);
+  line-height: 1.65;
+}
+
+.group-actions {
+  display: grid;
+  gap: 10px;
+}
+
+.group-field {
+  display: grid;
+  gap: 6px;
+}
+
+.group-field input {
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: #fff;
+  color: var(--ink);
+  font: inherit;
+}
+
+.join-code-card {
+  display: grid;
+  align-content: center;
+  gap: 12px;
+  text-align: center;
+}
+
+.join-code-card strong {
+  color: var(--rose-strong);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.08em;
 }
 
 .section {
@@ -1048,6 +1125,7 @@ svg {
 
   .hero,
   .map-layout,
+  .group-panel,
   .grid-two {
     grid-template-columns: 1fr;
   }

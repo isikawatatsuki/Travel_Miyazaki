@@ -22,6 +22,7 @@
     <header class="site-header">
       <nav class="topbar" aria-label="主要ナビゲーション">
         <a href="#overview">概要</a>
+        <a href="#group">共有</a>
         <a href="#route">地図</a>
         <a href="#schedule">予定</a>
         <a href="#cost">費用</a>
@@ -118,6 +119,39 @@
         <div>
           <span>関空T2に着きたい時間</span>
           <strong>07:15</strong>
+        </div>
+      </section>
+
+      <section class="section group-section" id="group">
+        <div class="section-heading compact">
+          <p class="eyebrow">Group</p>
+          <h2>旅グループ</h2>
+          <p>参加コードで2人のしおりを同期できます。Cloudflareに接続すると、同じグループのADJUST・持ち物・共有メモが動的に共有されます。</p>
+        </div>
+        <div class="group-panel">
+          <div class="group-status-card">
+            <span>現在のグループ</span>
+            <strong id="groupName">未参加</strong>
+            <p id="groupStatus">Cloudflare Pagesにデプロイするとグループ共有が使えます。</p>
+          </div>
+          <div class="group-actions">
+            <label class="group-field">
+              <span>グループ名</span>
+              <input id="groupNameInput" type="text" value="宮崎旅行" />
+            </label>
+            <button class="button primary full" type="button" id="createGroupButton">グループを作る</button>
+            <label class="group-field">
+              <span>参加コード</span>
+              <input id="joinCodeInput" type="text" inputmode="numeric" maxlength="6" placeholder="例: 839274" />
+            </label>
+            <button class="button secondary full" type="button" id="joinGroupButton">グループに参加</button>
+            <button class="button secondary full" type="button" id="refreshGroupButton">最新にする</button>
+          </div>
+          <div class="join-code-card">
+            <span>参加コード</span>
+            <strong id="joinCodeValue">------</strong>
+            <button class="mini-button" type="button" id="copyJoinCodeButton">コピー</button>
+          </div>
         </div>
       </section>
 
@@ -341,6 +375,6 @@
       <p>旅のしおり Web版 / GitHub Pages対応</p>
     </footer>
 
-    <script src="./app.js?v=20260630-sharednotes1"></script>
+    <script src="./app.js?v=20260703-groups1"></script>
   </body>
 </html>
