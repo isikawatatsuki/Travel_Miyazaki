@@ -425,6 +425,10 @@ function renderTripSettings(settings = getTripSettings()) {
 }
 
 function initTripSettings() {
+  const openButton = document.getElementById("openTripSettingsButton");
+  const closeButton = document.getElementById("closeTripSettingsButton");
+  const drawer = document.getElementById("tripSettingsDrawer");
+  const overlay = document.getElementById("tripSettingsOverlay");
   const fields = {
     dateLabel: document.getElementById("settingDateLabel"),
     routeLabel: document.getElementById("settingRouteLabel"),
@@ -439,6 +443,32 @@ function initTripSettings() {
   };
   const saveButton = document.getElementById("saveTripSettingsButton");
   const resetButton = document.getElementById("resetTripSettingsButton");
+  let lastFocusedElement = null;
+
+  function openDrawer() {
+    lastFocusedElement = document.activeElement;
+    overlay.hidden = false;
+    requestAnimationFrame(() => {
+      overlay.classList.add("is-visible");
+      drawer.classList.add("is-visible");
+      drawer.setAttribute("aria-hidden", "false");
+      openButton.setAttribute("aria-expanded", "true");
+      document.body.classList.add("settings-open");
+      closeButton.focus();
+    });
+  }
+
+  function closeDrawer() {
+    overlay.classList.remove("is-visible");
+    drawer.classList.remove("is-visible");
+    drawer.setAttribute("aria-hidden", "true");
+    openButton.setAttribute("aria-expanded", "false");
+    document.body.classList.remove("settings-open");
+    window.setTimeout(() => {
+      overlay.hidden = true;
+    }, 220);
+    if (lastFocusedElement?.focus) lastFocusedElement.focus();
+  }
 
   function fillInputs(settings) {
     Object.entries(fields).forEach(([key, input]) => {
@@ -461,6 +491,15 @@ function initTripSettings() {
   let state = getTripSettings();
   fillInputs(state);
   renderTripSettings(state);
+
+  openButton.addEventListener("click", openDrawer);
+  closeButton.addEventListener("click", closeDrawer);
+  overlay.addEventListener("click", closeDrawer);
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && drawer.classList.contains("is-visible")) {
+      closeDrawer();
+    }
+  });
 
   saveButton.addEventListener("click", () => {
     state = collectInputs();

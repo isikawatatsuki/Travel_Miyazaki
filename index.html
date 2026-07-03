@@ -22,12 +22,17 @@
     <header class="site-header">
       <nav class="topbar" aria-label="主要ナビゲーション">
         <a href="#overview">概要</a>
-        <a href="#trip-settings">旅設定</a>
         <a href="#group">共有</a>
         <a href="#route">地図</a>
         <a href="#schedule">予定</a>
         <a href="#cost">費用</a>
         <a href="#checklist">持ち物</a>
+        <button class="settings-toggle" type="button" id="openTripSettingsButton" aria-label="旅の設定を開く" aria-controls="tripSettingsDrawer" aria-expanded="false">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z" />
+            <path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .92l-.04.1a2 2 0 0 1-3.82 0l-.04-.1a1.7 1.7 0 0 0-1-.92 1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-.92-1l-.1-.04a2 2 0 0 1 0-3.82l.1-.04a1.7 1.7 0 0 0 .92-1 1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-.92l.04-.1a2 2 0 0 1 3.82 0l.04.1a1.7 1.7 0 0 0 1 .92 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.7 1.7 0 0 0 19.4 9c.4.2.72.53.92 1l.1.04a2 2 0 0 1 0 3.82l-.1.04a1.7 1.7 0 0 0-.92 1Z" />
+          </svg>
+        </button>
       </nav>
 
       <section class="hero" id="overview">
@@ -107,6 +112,66 @@
       </section>
     </header>
 
+    <div class="settings-overlay" id="tripSettingsOverlay" hidden></div>
+    <aside class="settings-drawer" id="tripSettingsDrawer" aria-label="旅の設定" aria-hidden="true">
+      <div class="settings-drawer-header">
+        <div>
+          <p class="eyebrow">Trip Settings</p>
+          <h2>旅の内容を変える</h2>
+        </div>
+        <button class="settings-close" type="button" id="closeTripSettingsButton" aria-label="旅の設定を閉じる">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
+        </button>
+      </div>
+      <p class="settings-intro">別の旅行でも使えるように、日程・行き先・ホテル・地図をここで差し替えられます。</p>
+      <div class="settings-grid">
+        <label class="group-field">
+          <span>日程ラベル</span>
+          <input id="settingDateLabel" type="text" />
+        </label>
+        <label class="group-field">
+          <span>ルート</span>
+          <input id="settingRouteLabel" type="text" />
+        </label>
+        <label class="group-field">
+          <span>往路</span>
+          <input id="settingOutboundLabel" type="text" />
+        </label>
+        <label class="group-field">
+          <span>復路</span>
+          <input id="settingReturnLabel" type="text" />
+        </label>
+        <label class="group-field">
+          <span>ホテル・宿</span>
+          <input id="settingHotelName" type="text" />
+        </label>
+        <label class="group-field">
+          <span>住所・メモ</span>
+          <input id="settingHotelAddress" type="text" />
+        </label>
+        <label class="group-field">
+          <span>出発時間</span>
+          <input id="settingDepartureTime" type="text" />
+        </label>
+        <label class="group-field">
+          <span>到着しておきたい時間</span>
+          <input id="settingArrivalTargetTime" type="text" />
+        </label>
+        <label class="group-field">
+          <span>地図の出発地</span>
+          <input id="settingMapOrigin" type="text" />
+        </label>
+        <label class="group-field">
+          <span>地図の目的地</span>
+          <input id="settingMapDestination" type="text" />
+        </label>
+      </div>
+      <div class="settings-actions">
+        <button class="button primary" type="button" id="saveTripSettingsButton">反映する</button>
+        <button class="button secondary" type="button" id="resetTripSettingsButton">初期値に戻す</button>
+      </div>
+    </aside>
+
     <main id="main">
       <section class="summary-strip" aria-label="当日の重要情報">
         <div>
@@ -120,60 +185,6 @@
         <div>
           <span data-trip-text="arrivalSummaryLabel">到着しておきたい時間</span>
           <strong data-trip-text="arrivalTargetTime">07:15</strong>
-        </div>
-      </section>
-
-      <section class="section trip-settings-section" id="trip-settings">
-        <div class="section-heading compact">
-          <p class="eyebrow">Trip Settings</p>
-          <h2>旅の内容を変える</h2>
-          <p>別の旅行でも使えるように、日程・行き先・ホテル・地図をここで差し替えられます。</p>
-        </div>
-        <div class="settings-grid">
-          <label class="group-field">
-            <span>日程ラベル</span>
-            <input id="settingDateLabel" type="text" />
-          </label>
-          <label class="group-field">
-            <span>ルート</span>
-            <input id="settingRouteLabel" type="text" />
-          </label>
-          <label class="group-field">
-            <span>往路</span>
-            <input id="settingOutboundLabel" type="text" />
-          </label>
-          <label class="group-field">
-            <span>復路</span>
-            <input id="settingReturnLabel" type="text" />
-          </label>
-          <label class="group-field">
-            <span>ホテル・宿</span>
-            <input id="settingHotelName" type="text" />
-          </label>
-          <label class="group-field">
-            <span>住所・メモ</span>
-            <input id="settingHotelAddress" type="text" />
-          </label>
-          <label class="group-field">
-            <span>出発時間</span>
-            <input id="settingDepartureTime" type="text" />
-          </label>
-          <label class="group-field">
-            <span>到着しておきたい時間</span>
-            <input id="settingArrivalTargetTime" type="text" />
-          </label>
-          <label class="group-field">
-            <span>地図の出発地</span>
-            <input id="settingMapOrigin" type="text" />
-          </label>
-          <label class="group-field">
-            <span>地図の目的地</span>
-            <input id="settingMapDestination" type="text" />
-          </label>
-        </div>
-        <div class="settings-actions">
-          <button class="button primary" type="button" id="saveTripSettingsButton">反映する</button>
-          <button class="button secondary" type="button" id="resetTripSettingsButton">初期値に戻す</button>
         </div>
       </section>
 
@@ -434,6 +445,6 @@
       <p>旅のしおり Web版</p>
     </footer>
 
-    <script src="./app.js?v=20260703-triptemplate1"></script>
+    <script src="./app.js?v=20260703-settingsdrawer1"></script>
   </body>
 </html>
