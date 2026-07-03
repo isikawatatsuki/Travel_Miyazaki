@@ -53,27 +53,40 @@ function formatYen(value) {
   return yen.format(value).replace("￥", "") + "円";
 }
 
-const shareRegistry = {};
-
-function encodeShareState(value) {
-  return btoa(unescape(encodeURIComponent(JSON.stringify(value))));
+function escapeHtml(value) {
+  return String(value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
 }
 
 const groupSync = {
   storageKey: "miyakonojoTripGroup",
+  groupsKey: "miyakonojoTripGroups",
   controllers: {},
   active: null,
+  savedGroups: [],
   saveTimer: null,
   isApplying: false,
   statusEl: null,
   nameEl: null,
   codeEl: null,
+  listEl: null,
+  formPanel: null,
+  toggleButton: null,
 
   initElements() {
     this.statusEl = document.getElementById("groupStatus");
     this.nameEl = document.getElementById("groupName");
     this.codeEl = document.getElementById("joinCodeValue");
+    this.listEl = document.getElementById("groupList");
+    this.formPanel = document.getElementById("groupFormPanel");
+    this.toggleButton = document.getElementById("toggleGroupFormButton");
+    this.savedGroups = this.loadSavedGroups();
     this.active = this.loadActiveGroup();
+    if (this.active) this.rememberGroup(this.active, false);
+    this.setFormVisible(!this.active);
     this.render();
   },
 
@@ -83,15 +96,54 @@ const groupSync = {
 
   loadActiveGroup() {
     try {
-      return JSON.parse(localStorage.getItem(this.storageKey) || "null");
+      return this.normalizeGroup(JSON.parse(localStorage.getItem(this.storageKey) || "null"));
     } catch {
       return null;
     }
   },
 
+  loadSavedGroups() {
+    try {
+      return JSON.parse(localStorage.getItem(this.groupsKey) || "[]").map((group) => this.normalizeGroup(group)).filter(Boolean);
+    } catch {
+      return [];
+    }
+  },
+
+  normalizeGroup(group) {
+    if (!group?.id || !group?.editToken) return null;
+    return {
+      id: group.id,
+      name: group.name || "旅グループ",
+      joinCode: group.joinCode || "",
+      editToken: group.editToken,
+      state: group.state || {},
+    };
+  },
+
+  persistSavedGroups() {
+    localStorage.setItem(this.groupsKey, JSON.stringify(this.savedGroups));
+  },
+
+  rememberGroup(group, shouldRender = true) {
+    const normalized = this.normalizeGroup(group);
+    if (!normalized) return;
+    this.savedGroups = [
+      normalized,
+      ...this.savedGroups.filter((saved) => saved.id !== normalized.id),
+    ];
+    this.persistSavedGroups();
+    if (shouldRender) this.render();
+  },
+
   saveActiveGroup(value) {
-    this.active = value;
-    localStorage.setItem(this.storageKey, JSON.stringify(value));
+    this.active = this.normalizeGroup(value);
+    if (this.active) {
+      localStorage.setItem(this.storageKey, JSON.stringify(this.active));
+      this.rememberGroup(this.active, false);
+    } else {
+      localStorage.removeItem(this.storageKey);
+    }
     this.render();
   },
 
@@ -101,6 +153,54 @@ const groupSync = {
     this.codeEl.textContent = this.active?.joinCode || "------";
     this.statusEl.textContent =
       message || (this.active ? "この端末はグループ共有に接続しています。" : "Cloudflare Pagesにデプロイするとグループ共有が使えます。");
+    this.renderGroupList();
+    this.updateToggleLabel();
+  },
+
+  renderGroupList() {
+    if (!this.listEl) return;
+    this.listEl.innerHTML = "";
+
+    if (!this.savedGroups.length) {
+      const empty = document.createElement("p");
+      empty.className = "empty-group";
+      empty.textContent = "まだ参加中のグループはありません。";
+      this.listEl.appendChild(empty);
+      return;
+    }
+
+    this.savedGroups.forEach((group) => {
+      const button = document.createElement("button");
+      button.className = `group-list-item${this.active?.id === group.id ? " is-active" : ""}`;
+      button.type = "button";
+      button.innerHTML = `
+        <span>${escapeHtml(group.name)}</span>
+        <small>${escapeHtml(group.joinCode || "------")}</small>
+      `;
+      button.addEventListener("click", () => {
+        if (this.active?.id === group.id) {
+          this.render("このグループを表示中です。");
+          return;
+        }
+        this.selectSavedGroup(group.id);
+      });
+      this.listEl.appendChild(button);
+    });
+  },
+
+  setFormVisible(visible) {
+    if (!this.formPanel) return;
+    this.formPanel.hidden = !visible;
+    this.updateToggleLabel();
+  },
+
+  updateToggleLabel() {
+    if (!this.toggleButton || !this.formPanel) return;
+    this.toggleButton.textContent = this.formPanel.hidden ? "グループ作成・参加を表示" : "グループ作成・参加を閉じる";
+  },
+
+  toggleForm() {
+    this.setFormVisible(this.formPanel?.hidden);
   },
 
   collectState() {
@@ -149,6 +249,7 @@ const groupSync = {
       body: JSON.stringify({ name, state: this.collectState() }),
     });
     this.saveActiveGroup(data.group);
+    this.setFormVisible(false);
     this.render("グループを作成しました。参加コードを相手に共有してください。");
   },
 
@@ -158,8 +259,17 @@ const groupSync = {
       body: JSON.stringify({ joinCode }),
     });
     this.saveActiveGroup(data.group);
+    this.setFormVisible(false);
     this.applyState(data.group.state);
     this.render("グループに参加しました。共有データを読み込みました。");
+  },
+
+  async selectSavedGroup(groupId) {
+    const group = this.savedGroups.find((saved) => saved.id === groupId);
+    if (!group) return;
+    this.saveActiveGroup(group);
+    this.render("グループを切り替え中...");
+    await this.refresh();
   },
 
   async refresh() {
@@ -189,33 +299,6 @@ const groupSync = {
     }
   },
 };
-
-async function buildCombinedShareLink(output, status) {
-  const url = new URL(window.location.href);
-
-  if (shareRegistry.adjust) {
-    url.searchParams.set("adjust", encodeShareState(shareRegistry.adjust()));
-  }
-
-  if (shareRegistry.checklist) {
-    url.searchParams.set("checklist", encodeShareState(shareRegistry.checklist()));
-  }
-
-  if (shareRegistry.notes) {
-    url.searchParams.set("notes", encodeShareState(shareRegistry.notes()));
-  }
-
-  output.value = url.toString();
-
-  try {
-    await navigator.clipboard.writeText(output.value);
-    status.textContent = "ADJUST・持ち物・共有メモのリンクをコピーしました。";
-  } catch {
-    status.textContent = "共有リンクを作りました。コピーして送ってください。";
-    output.focus();
-    output.select();
-  }
-}
 
 function initCountdown() {
   const el = document.getElementById("daysUntil");
@@ -262,10 +345,15 @@ function initGroupControls() {
   const joinButton = document.getElementById("joinGroupButton");
   const refreshButton = document.getElementById("refreshGroupButton");
   const copyButton = document.getElementById("copyJoinCodeButton");
+  const toggleButton = document.getElementById("toggleGroupFormButton");
   const nameInput = document.getElementById("groupNameInput");
   const joinCodeInput = document.getElementById("joinCodeInput");
 
   groupSync.initElements();
+
+  toggleButton.addEventListener("click", () => {
+    groupSync.toggleForm();
+  });
 
   createButton.addEventListener("click", async () => {
     groupSync.render("グループを作成中...");
@@ -338,9 +426,6 @@ function initCostCalculator() {
   const addCustomCostButton = document.getElementById("addCustomCostButton");
   const souvenirList = document.getElementById("souvenirList");
   const addSouvenirButton = document.getElementById("addSouvenirButton");
-  const shareAdjustButton = document.getElementById("shareAdjustButton");
-  const shareUrl = document.getElementById("shareUrl");
-  const shareStatus = document.getElementById("shareStatus");
 
   const defaults = {
     breakfast: false,
@@ -353,28 +438,10 @@ function initCostCalculator() {
   let state = loadAdjustState();
 
   function loadAdjustState() {
-    const shared = readSharedAdjustState();
-    if (shared) {
-      localStorage.setItem(storageKey, JSON.stringify(shared));
-      return shared;
-    }
-
     try {
       return normalizeState({ ...defaults, ...JSON.parse(localStorage.getItem(storageKey) || "{}") });
     } catch {
       return { ...defaults };
-    }
-  }
-
-  function readSharedAdjustState() {
-    const params = new URLSearchParams(window.location.search);
-    const encoded = params.get("adjust");
-    if (!encoded) return null;
-
-    try {
-      return normalizeState({ ...defaults, ...JSON.parse(decodeURIComponent(escape(atob(encoded)))) });
-    } catch {
-      return null;
     }
   }
 
@@ -511,14 +578,6 @@ function initCostCalculator() {
     });
   }
 
-  function escapeHtml(value) {
-    return String(value || "")
-      .replace(/&/g, "&amp;")
-      .replace(/"/g, "&quot;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;");
-  }
-
   function update() {
     const hotel = state.breakfast ? state.hotelBreakfast : state.hotelNoBreakfast;
     const souvenirTotal = state.souvenirs.reduce(
@@ -578,11 +637,7 @@ function initCostCalculator() {
     state.souvenirs.push({ name: "", qty: 1, price: 0 });
     persistAndUpdate(true);
   });
-  shareAdjustButton.addEventListener("click", async () => {
-    await buildCombinedShareLink(shareUrl, shareStatus);
-  });
 
-  shareRegistry.adjust = () => state;
   groupSync.register("adjust", {
     get: () => state,
     set: setState,
@@ -610,12 +665,6 @@ function initChecklist() {
   }
 
   function loadChecklistState() {
-    const shared = readSharedChecklistState();
-    if (shared) {
-      localStorage.setItem(storageKey, JSON.stringify(shared));
-      return shared;
-    }
-
     const legacy = JSON.parse(localStorage.getItem(storageKey) || "null");
     if (legacy && !Array.isArray(legacy.items)) {
       const migrated = defaultState();
@@ -627,18 +676,6 @@ function initChecklist() {
     }
 
     return normalizeChecklistState(legacy || defaultState());
-  }
-
-  function readSharedChecklistState() {
-    const params = new URLSearchParams(window.location.search);
-    const encoded = params.get("checklist");
-    if (!encoded) return null;
-
-    try {
-      return normalizeChecklistState(JSON.parse(decodeURIComponent(escape(atob(encoded)))));
-    } catch {
-      return null;
-    }
   }
 
   function normalizeChecklistState(value) {
@@ -692,14 +729,6 @@ function initChecklist() {
     });
   }
 
-  function escapeHtml(value) {
-    return String(value || "")
-      .replace(/&/g, "&amp;")
-      .replace(/"/g, "&quot;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;");
-  }
-
   function addItem() {
     const label = input.value.trim();
     if (!label) return;
@@ -720,7 +749,6 @@ function initChecklist() {
     if (event.key === "Enter") addItem();
   });
 
-  shareRegistry.checklist = () => state;
   groupSync.register("checklist", {
     get: () => state,
     set: (nextState) => {
@@ -750,28 +778,10 @@ function initSharedNotes() {
   }
 
   function loadNotesState() {
-    const shared = readSharedNotesState();
-    if (shared) {
-      localStorage.setItem(storageKey, JSON.stringify(shared));
-      return shared;
-    }
-
     try {
       return normalizeNotesState(JSON.parse(localStorage.getItem(storageKey) || "null") || defaultState());
     } catch {
       return defaultState();
-    }
-  }
-
-  function readSharedNotesState() {
-    const params = new URLSearchParams(window.location.search);
-    const encoded = params.get("notes");
-    if (!encoded) return null;
-
-    try {
-      return normalizeNotesState(JSON.parse(decodeURIComponent(escape(atob(encoded)))));
-    } catch {
-      return null;
     }
   }
 
@@ -793,14 +803,6 @@ function initSharedNotes() {
   function save() {
     localStorage.setItem(storageKey, JSON.stringify(state));
     groupSync.scheduleSave();
-  }
-
-  function escapeHtml(value) {
-    return String(value || "")
-      .replace(/&/g, "&amp;")
-      .replace(/"/g, "&quot;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;");
   }
 
   function render() {
@@ -846,7 +848,6 @@ function initSharedNotes() {
     if (event.key === "Enter") addNote();
   });
 
-  shareRegistry.notes = () => state;
   groupSync.register("notes", {
     get: () => state,
     set: (nextState) => {
@@ -933,24 +934,12 @@ function initRevealAnimations() {
   }
 }
 
-function cleanUrlStateParams() {
-  const params = new URLSearchParams(window.location.search);
-  if (params.has("adjust") || params.has("checklist") || params.has("notes")) {
-    const url = new URL(window.location.href);
-    url.searchParams.delete("adjust");
-    url.searchParams.delete("checklist");
-    url.searchParams.delete("notes");
-    window.history.replaceState({}, "", url.pathname + url.hash);
-  }
-}
-
 document.addEventListener("DOMContentLoaded", () => {
   initCountdown();
   initMap();
   initCostCalculator();
   initChecklist();
   initSharedNotes();
-  cleanUrlStateParams();
   initGroupControls();
   initRevealAnimations();
   initPrint();

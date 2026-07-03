@@ -126,7 +126,7 @@
         <div class="section-heading compact">
           <p class="eyebrow">Group</p>
           <h2>旅グループ</h2>
-          <p>参加コードで2人のしおりを同期できます。Cloudflareに接続すると、同じグループのADJUST・持ち物・共有メモが動的に共有されます。</p>
+          <p>参加コードで2人のしおりを同期できます。参加済みグループはリストから切り替えられます。</p>
         </div>
         <div class="group-panel">
           <div class="group-status-card">
@@ -134,7 +134,19 @@
             <strong id="groupName">未参加</strong>
             <p id="groupStatus">Cloudflare Pagesにデプロイするとグループ共有が使えます。</p>
           </div>
-          <div class="group-actions">
+          <div class="group-list-card">
+            <span>参加中のグループ</span>
+            <div class="group-list" id="groupList"></div>
+          </div>
+          <div class="join-code-card">
+            <span>参加コード</span>
+            <strong id="joinCodeValue">------</strong>
+            <button class="mini-button" type="button" id="copyJoinCodeButton">コピー</button>
+          </div>
+          <div class="group-manage-card">
+            <button class="button secondary full" type="button" id="toggleGroupFormButton">グループ作成・参加を表示</button>
+          </div>
+          <div class="group-actions" id="groupFormPanel">
             <label class="group-field">
               <span>グループ名</span>
               <input id="groupNameInput" type="text" value="宮崎旅行" />
@@ -146,11 +158,6 @@
             </label>
             <button class="button secondary full" type="button" id="joinGroupButton">グループに参加</button>
             <button class="button secondary full" type="button" id="refreshGroupButton">最新にする</button>
-          </div>
-          <div class="join-code-card">
-            <span>参加コード</span>
-            <strong id="joinCodeValue">------</strong>
-            <button class="mini-button" type="button" id="copyJoinCodeButton">コピー</button>
           </div>
         </div>
       </section>
@@ -330,11 +337,6 @@
             <div class="souvenir-list" id="souvenirList"></div>
           </div>
 
-          <div class="share-panel">
-            <button class="button secondary full" type="button" id="shareAdjustButton">ADJUST・持ち物・メモを共有</button>
-            <input id="shareUrl" class="share-url" type="text" readonly aria-label="共有リンク" />
-            <p class="muted" id="shareStatus">ADJUST、持ち物、共有メモをまとめてリンク共有できます。</p>
-          </div>
         </aside>
       </section>
 
@@ -342,7 +344,7 @@
         <div class="section-heading">
           <p class="eyebrow">Checklist</p>
           <h2>持ち物チェック</h2>
-          <p>追加・削除・チェック状態は、このスマホ・PCに残ります。共有はADJUST欄のボタンからまとめてできます。</p>
+          <p>追加・削除・チェック状態は、このスマホ・PCに残ります。旅グループ参加中は相手にも同期されます。</p>
         </div>
         <div class="checklist-tools">
           <label class="checklist-add-field">
@@ -358,7 +360,7 @@
         <div class="section-heading compact">
           <p class="eyebrow">Notes</p>
           <h2>2人の共有メモ</h2>
-          <p>気をつけたいこと、待ち合わせ、あとで確認することをメモできます。共有はADJUST欄のボタンからまとめてできます。</p>
+          <p>気をつけたいこと、待ち合わせ、あとで確認することをメモできます。旅グループ参加中は相手にも同期されます。</p>
         </div>
         <div class="shared-note-tools">
           <label class="shared-note-field">
@@ -375,6 +377,6 @@
       <p>旅のしおり Web版 / GitHub Pages対応</p>
     </footer>
 
-    <script src="./app.js?v=20260703-groups1"></script>
+    <script src="./app.js?v=20260703-groups2"></script>
   </body>
 </html>
