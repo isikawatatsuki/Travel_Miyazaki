@@ -43,7 +43,7 @@ async function createGroup(env, request) {
   const body = await readBody(request);
   const id = makeId("grp");
   const editToken = makeId("tok");
-  const name = String(body.name || "宮崎旅行").trim().slice(0, 40) || "宮崎旅行";
+  const name = String(body.name || "旅行グループ").trim().slice(0, 40) || "旅行グループ";
   const stateJson = sanitizeState(body.state);
 
   let joinCode = makeJoinCode();
@@ -143,7 +143,7 @@ async function updateGroup(env, request, id) {
 
 export async function onRequest({ request, env, params }) {
   if (!env.DB) {
-    return json({ error: "D1 binding DB is not configured." }, 500);
+    return json({ error: "グループ共有の保存先が未設定です。" }, 500);
   }
 
   const method = request.method.toUpperCase();
