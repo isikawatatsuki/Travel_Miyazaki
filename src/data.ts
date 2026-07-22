@@ -15,6 +15,10 @@ export const defaultTripSettings: TripSettings = {
   arrivalTargetTime: "07:15",
   mapOrigin: "鹿児島空港",
   mapDestination: "都城グリーンホテル",
+  mapOriginLat: 31.803333,
+  mapOriginLng: 130.719444,
+  mapDestinationLat: 31.7362,
+  mapDestinationLng: 131.0743,
   mapNote: "鹿児島空港についたら都城方面へ移動。",
 };
 

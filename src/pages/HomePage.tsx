@@ -4,6 +4,7 @@ import { getScheduleDays } from "../data";
 import { getBudgetSummary } from "../derived";
 import { mapsSearch, yen } from "../lib";
 import { PageLink, Panel, SectionHeading } from "../components/ui";
+import { HeroRouteMap } from "../components/HeroRouteMap";
 
 export function HomePage() {
   const { tripSettings, schedule, checklist, notes, settlement, adjust } = useTrip();
@@ -25,6 +26,7 @@ export function HomePage() {
   return (
     <div className="page home-page">
       <section className="hero-section" aria-labelledby="hero-title">
+        <HeroRouteMap settings={tripSettings} />
         <div className="hero-route" aria-hidden="true">
           <span>OSA</span><i /><Plane size={26} /><i /><span>MIY</span>
         </div>

@@ -13,6 +13,10 @@ export type TripSettings = {
   arrivalTargetTime: string;
   mapOrigin: string;
   mapDestination: string;
+  mapOriginLat: number;
+  mapOriginLng: number;
+  mapDestinationLat: number;
+  mapDestinationLng: number;
   mapNote: string;
 };
 
