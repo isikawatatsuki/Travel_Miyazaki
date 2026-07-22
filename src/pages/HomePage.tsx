@@ -1,11 +1,13 @@
-import { BedDouble, CalendarDays, CheckCircle2, Clock3, MapPin, Plane, StickyNote } from "lucide-react";
+import { BedDouble, CalendarDays, CheckCircle2, CircleDollarSign, Clock3, MapPin, Plane, StickyNote, UsersRound } from "lucide-react";
 import { useTrip } from "../TripContext";
 import { getScheduleDays } from "../data";
-import { mapsSearch } from "../lib";
+import { getBudgetSummary } from "../derived";
+import { mapsSearch, yen } from "../lib";
 import { PageLink, Panel, SectionHeading } from "../components/ui";
 
 export function HomePage() {
-  const { tripSettings, schedule, checklist, notes, settlement } = useTrip();
+  const { tripSettings, schedule, checklist, notes, settlement, adjust } = useTrip();
+  const budget = getBudgetSummary(adjust, settlement.people.length);
   const days = getScheduleDays(tripSettings);
   const firstDay = days[0]?.id;
   const firstDayItems = schedule.items
@@ -43,6 +45,12 @@ export function HomePage() {
         <Panel className="quick-card accent-pink">
           <BedDouble size={22} aria-hidden="true" /><span>泊まるところ</span><strong>{tripSettings.hotelName}</strong>
         </Panel>
+      </section>
+
+      <section className="home-overview" aria-label="旅の全体サマリー">
+        <a href="#share"><UsersRound size={20} aria-hidden="true" /><span>参加メンバー</span><strong>{budget.peopleCount}人</strong></a>
+        <a href="#money"><CircleDollarSign size={20} aria-hidden="true" /><span>1人あたりの目安</span><strong>{yen.format(budget.perPerson)}</strong></a>
+        <a href="#plan"><CalendarDays size={20} aria-hidden="true" /><span>登録した予定</span><strong>{schedule.items.length}件</strong></a>
       </section>
 
       <section className="section-block">
