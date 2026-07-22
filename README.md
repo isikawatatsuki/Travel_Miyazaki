@@ -1,28 +1,35 @@
-# 旅のしおり
+# 旅のしおり Web版
 
-React + TypeScriptで作った、グループ旅行向けのPWAです。予定、地図、予算、立替精算、持ち物、共有メモを一つにまとめます。
+旅行の予定を、スマホでさくっと見られるWebしおりにしたものです。
 
-## ローカル起動
+## 入っているもの
 
-```bash
-npm install
-npm run dev
-```
+- `index.html` - ページ本体
+- `styles.css` - デザイン
+- `app.js` - 旅設定、地図、現在地、費用計算、持ち物チェック、グループ同期
+- `manifest.webmanifest` - PWA設定
+- `sw.js` - オフライン表示用のService Worker
+- `icons/` - ホーム画面用アイコン
 
-本番ビルドは `npm run build`、出力先は `dist` です。
+## 公開する流れ
 
-## Cloudflare Pages
+1. GitHubでリポジトリを作る
+2. このフォルダの3ファイルをリポジトリ直下に置く
+3. GitHubの `Settings` -> `Pages` を開く
+4. `Deploy from a branch` を選ぶ
+5. `main` ブランチ / `/root` を選んで保存する
 
-- フレームワーク プリセット: `Vite`
-- ビルド コマンド: `npm run build`
-- ビルド出力ディレクトリ: `dist`
-- ルートディレクトリ: `/`
+少し待つと `https://ユーザー名.github.io/リポジトリ名/` で見られます。
 
-グループ共有にはPagesプロジェクトのD1バインディング `DB` が必要です。初回だけ `schema.sql` をD1へ実行してください。APIは `functions/api/groups/[[path]].ts` です。
+## iPhoneでアプリっぽく使う
 
-## 主な構成
+1. Safariで公開URLを開く
+2. 共有ボタンを押す
+3. `ホーム画面に追加` を選ぶ
+4. ホーム画面の `旅しおり` アイコンから開く
 
-- `src/` - React画面、状態管理、型定義
-- `functions/` - Cloudflare Pages Functions
-- `public/` - PWAマニフェスト、Service Worker、アイコン
-- `docs/product-roadmap.md` - 機能棚卸しと次の開発候補
+## メモ
+
+- 現在地表示はブラウザの許可が必要です。
+- 地図はGoogle Mapsの埋め込みを使っています。
+- 一度開いたページ本体は、通信が不安定な時でも表示しやすいようにキャッシュします。
