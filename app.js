@@ -77,6 +77,50 @@ function escapeHtml(value) {
     .replace(/>/g, "&gt;");
 }
 
+function readParticipantCount() {
+  try {
+    const saved = JSON.parse(localStorage.getItem("tripShioriSettlement") || "{}");
+    return Array.isArray(saved.people) && saved.people.length ? saved.people.length : 2;
+  } catch {
+    return 2;
+  }
+}
+
+function applyParticipantLabels(count = readParticipantCount()) {
+  const label = String(Math.max(1, Number(count || 2)));
+  document.querySelectorAll("[data-participant-template]").forEach((el) => {
+    el.textContent = el.dataset.participantTemplate.replaceAll("{count}", label);
+  });
+}
+
+function runWithReloadMotion(button, action, messageEl, messages = {}) {
+  if (!button) return action();
+  const defaultText = button.dataset.defaultText || button.textContent.trim();
+  button.dataset.defaultText = defaultText;
+  button.classList.add("is-loading");
+  button.disabled = true;
+  button.setAttribute("aria-busy", "true");
+  button.textContent = messages.loading || "更新中...";
+  if (messageEl) messageEl.textContent = messages.loadingDetail || "内容を反映しています。";
+
+  const minMotion = new Promise((resolve) => window.setTimeout(resolve, 650));
+  return Promise.all([Promise.resolve().then(action), minMotion])
+    .then(([result]) => {
+      if (messageEl) messageEl.textContent = messages.done || "更新しました。";
+      return result;
+    })
+    .catch((error) => {
+      if (messageEl) messageEl.textContent = error.message || messages.error || "更新できませんでした。";
+      throw error;
+    })
+    .finally(() => {
+      button.classList.remove("is-loading");
+      button.disabled = false;
+      button.removeAttribute("aria-busy");
+      button.textContent = defaultText;
+    });
+}
+
 const groupSync = {
   storageKey: "tripShioriGroup",
   legacyStorageKey: "miyakonojoTripGroup",
@@ -359,6 +403,14 @@ function buildGoogleMapsUrl(origin, destination) {
   return `https://www.google.com/maps/dir/?${params.toString()}`;
 }
 
+function buildGoogleMapsSearchUrl(query) {
+  const params = new URLSearchParams({
+    api: "1",
+    query,
+  });
+  return `https://www.google.com/maps/search/?${params.toString()}`;
+}
+
 function renderTripSettings(settings = getTripSettings()) {
   const next = normalizeTripSettings(settings);
   const heroEyebrow = `${next.dateLabel} / ${next.heroRouteLabel || next.routeLabel}`;
@@ -418,6 +470,11 @@ function renderTripSettings(settings = getTripSettings()) {
     googleMapsLink.href = buildGoogleMapsUrl(next.mapOrigin, next.mapDestination);
   }
 
+  const hotelAddressSearchLink = document.getElementById("hotelAddressSearchLink");
+  if (hotelAddressSearchLink) {
+    hotelAddressSearchLink.href = buildGoogleMapsSearchUrl(`${next.hotelName} ${next.hotelAddress}`);
+  }
+
   const groupNameInput = document.getElementById("groupNameInput");
   if (groupNameInput && ["旅行グループ", trip.defaults.routeLabel].includes(groupNameInput.value)) {
     groupNameInput.value = next.routeLabel || "旅行グループ";
@@ -443,6 +500,7 @@ function initTripSettings() {
   };
   const saveButton = document.getElementById("saveTripSettingsButton");
   const resetButton = document.getElementById("resetTripSettingsButton");
+  const saveStatus = document.getElementById("tripSettingsSaveStatus");
   let lastFocusedElement = null;
 
   function openDrawer() {
@@ -502,18 +560,30 @@ function initTripSettings() {
   });
 
   saveButton.addEventListener("click", () => {
-    state = collectInputs();
-    saveTripSettings(state);
-    renderTripSettings(state);
-    groupSync.scheduleSave();
+    runWithReloadMotion(saveButton, () => {
+      state = collectInputs();
+      saveTripSettings(state);
+      renderTripSettings(state);
+      groupSync.scheduleSave();
+    }, saveStatus, {
+      loading: "反映中...",
+      loadingDetail: "しおりの内容を更新しています。",
+      done: "設定を反映しました。",
+    }).catch(() => {});
   });
 
   resetButton.addEventListener("click", () => {
-    state = normalizeTripSettings();
-    saveTripSettings(state);
-    fillInputs(state);
-    renderTripSettings(state);
-    groupSync.scheduleSave();
+    runWithReloadMotion(resetButton, () => {
+      state = normalizeTripSettings();
+      saveTripSettings(state);
+      fillInputs(state);
+      renderTripSettings(state);
+      groupSync.scheduleSave();
+    }, saveStatus, {
+      loading: "戻し中...",
+      loadingDetail: "初期値に戻しています。",
+      done: "初期値に戻しました。",
+    }).catch(() => {});
   });
 
   groupSync.register("tripSettings", {
@@ -680,6 +750,7 @@ function initScheduleEditor() {
 
   function save() {
     localStorage.setItem(storageKey, JSON.stringify(state));
+    applyParticipantLabels(state.people.length);
     groupSync.scheduleSave();
   }
 
@@ -882,6 +953,7 @@ function initGroupControls() {
   const createButton = document.getElementById("createGroupButton");
   const joinButton = document.getElementById("joinGroupButton");
   const refreshButton = document.getElementById("refreshGroupButton");
+  const refreshQuickButton = document.getElementById("refreshGroupQuickButton");
   const copyButton = document.getElementById("copyJoinCodeButton");
   const toggleButton = document.getElementById("toggleGroupFormButton");
   const nameInput = document.getElementById("groupNameInput");
@@ -911,13 +983,28 @@ function initGroupControls() {
     }
   });
 
-  refreshButton.addEventListener("click", async () => {
+  function refreshWithMotion(button) {
     groupSync.render("共有データを読み込み中...");
-    try {
-      await groupSync.refresh();
-    } catch (error) {
+    runWithReloadMotion(button, () => {
+      if (!groupSync.active) {
+        throw new Error("先にグループを作るか、参加コードで参加してください。");
+      }
+      return groupSync.refresh();
+    }, groupSync.statusEl, {
+      loading: "更新中...",
+      loadingDetail: "共有データを読み込み中...",
+      done: "最新の共有データを読み込みました。",
+    }).catch((error) => {
       groupSync.render(error.message);
-    }
+    });
+  }
+
+  refreshButton.addEventListener("click", async () => {
+    refreshWithMotion(refreshButton);
+  });
+
+  refreshQuickButton.addEventListener("click", async () => {
+    refreshWithMotion(refreshQuickButton);
   });
 
   copyButton.addEventListener("click", async () => {
@@ -1355,6 +1442,7 @@ function initSettlement() {
 
   function renderResult() {
     const peopleCount = Math.max(1, state.people.length);
+    applyParticipantLabels(peopleCount);
     const total = state.payments.reduce((sum, payment) => sum + numberValue(payment.amount), 0);
     const baseShare = Math.floor(total / peopleCount);
     const remainder = total % peopleCount;
@@ -1836,6 +1924,7 @@ function initPwa() {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
+  applyParticipantLabels();
   initCountdown();
   initTripSettings();
   initMap();

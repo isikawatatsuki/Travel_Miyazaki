@@ -362,6 +362,35 @@ svg {
   transition: transform 180ms ease, box-shadow 180ms ease, background 180ms ease;
 }
 
+.button:disabled,
+.mini-button:disabled,
+.delete-button:disabled {
+  cursor: wait;
+  opacity: 0.74;
+}
+
+.button.is-loading,
+.mini-button.is-loading {
+  position: relative;
+}
+
+.button.is-loading::before,
+.mini-button.is-loading::before {
+  content: "";
+  width: 16px;
+  height: 16px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 999px;
+  animation: spin 680ms linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .button:hover {
   transform: translateY(-2px);
 }
@@ -795,6 +824,13 @@ svg {
   grid-template-columns: 1fr 1fr;
   gap: 10px;
   margin-top: 14px;
+}
+
+.settings-save-status {
+  min-height: 24px;
+  margin: 12px 0 0;
+  color: var(--muted);
+  font-size: 14px;
 }
 
 .section-heading.compact {

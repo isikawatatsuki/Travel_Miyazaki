@@ -1,9 +1,9 @@
-const CACHE_NAME = "trip-shiori-v20260722-schedule-page1";
+const CACHE_NAME = "trip-shiori-v20260722-participants3";
 const STATIC_ASSETS = [
   "./",
   "./index.html",
-  "./styles.css?v=20260722-schedule-page1",
-  "./app.js?v=20260722-schedule-page1",
+  "./styles.css?v=20260722-participants3",
+  "./app.js?v=20260722-participants3",
   "./manifest.webmanifest",
   "./icons/apple-touch-icon.png",
   "./icons/icon-192.png",

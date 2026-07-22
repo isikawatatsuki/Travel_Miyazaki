@@ -21,7 +21,7 @@
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="icon" href="./icons/favicon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
-    <link rel="stylesheet" href="./styles.css?v=20260722-schedule-page1" />
+    <link rel="stylesheet" href="./styles.css?v=20260722-participants3" />
   </head>
   <body>
     <a class="skip-link" href="#main">本文へ移動</a>
@@ -185,6 +185,7 @@
         <button class="button primary" type="button" id="saveTripSettingsButton">反映する</button>
         <button class="button secondary" type="button" id="resetTripSettingsButton">初期値に戻す</button>
       </div>
+      <p class="settings-save-status" id="tripSettingsSaveStatus" aria-live="polite"></p>
     </aside>
 
     <main id="main" class="page-view">
@@ -207,7 +208,7 @@
         <div class="section-heading compact">
           <p class="eyebrow">Group</p>
           <h2>旅グループ</h2>
-          <p>参加コードで2人のしおりを同期できます。参加済みグループはリストから切り替えられます。</p>
+          <p data-participant-template="参加コードで{count}人のしおりを同期できます。参加済みグループはリストから切り替えられます。">参加コードで2人のしおりを同期できます。参加済みグループはリストから切り替えられます。</p>
         </div>
         <div class="group-panel">
           <div class="group-status-card">
@@ -225,6 +226,7 @@
             <button class="mini-button" type="button" id="copyJoinCodeButton">コピー</button>
           </div>
           <div class="group-manage-card">
+            <button class="button primary full" type="button" id="refreshGroupQuickButton">共有データを更新</button>
             <button class="button secondary full" type="button" id="toggleGroupFormButton">グループ作成・参加を表示</button>
           </div>
           <div class="group-actions" id="groupFormPanel">
@@ -290,6 +292,18 @@
                   <svg viewBox="0 0 24 24"><path d="M7 17 17 7M9 7h8v8" /></svg>
                 </span>
                 Google Mapsで開く
+              </a>
+              <a
+                class="button secondary full"
+                id="hotelAddressSearchLink"
+                href="https://www.google.com/maps/search/?api=1&query=%E5%AE%AE%E5%B4%8E%E7%9C%8C%E9%83%BD%E5%9F%8E%E5%B8%82%E6%A0%84%E7%94%BA27-2-1"
+                target="_blank"
+                rel="noreferrer"
+              >
+                <span class="button-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24"><path d="M12 21s7-5.2 7-11a7 7 0 0 0-14 0c0 5.8 7 11 7 11Z" /><circle cx="12" cy="10" r="2.5" /></svg>
+                </span>
+                住所で地図検索
               </a>
             </div>
             <p class="status" id="locationStatus" aria-live="polite">
@@ -391,7 +405,7 @@
         <div class="section-heading compact">
           <p class="eyebrow">Recopei</p>
           <h2>立替・割り勘メモ</h2>
-          <p>誰がいくら払ったかを入れると、2人でどう精算するかを自動で出します。旅グループ参加中は相手にも同期されます。</p>
+          <p data-participant-template="誰がいくら払ったかを入れると、{count}人でどう精算するかを自動で出します。旅グループ参加中は相手にも同期されます。">誰がいくら払ったかを入れると、2人でどう精算するかを自動で出します。旅グループ参加中は相手にも同期されます。</p>
         </div>
 
         <div class="settlement-layout">
@@ -447,7 +461,7 @@
       <section class="section notes-section">
         <div class="section-heading compact">
           <p class="eyebrow">Notes</p>
-          <h2>2人の共有メモ</h2>
+          <h2 data-participant-template="{count}人の共有メモ">2人の共有メモ</h2>
           <p>気をつけたいこと、待ち合わせ、あとで確認することをメモできます。旅グループ参加中は相手にも同期されます。</p>
         </div>
         <div class="shared-note-tools">
@@ -484,6 +498,6 @@
       <p>旅のしおり Web版</p>
     </footer>
 
-    <script src="./app.js?v=20260722-schedule-page1"></script>
+    <script src="./app.js?v=20260722-participants3"></script>
   </body>
 </html>
