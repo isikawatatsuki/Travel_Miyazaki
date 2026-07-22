@@ -1,4 +1,4 @@
-import { Download, RotateCcw, Save, X } from "lucide-react";
+import { Download, HardDrive, RotateCcw, Save, Share2, WifiOff, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTrip } from "../TripContext";
 import { defaultTripSettings } from "../data";
@@ -81,6 +81,18 @@ export function SettingsDrawer({ open, onClose }: { open: boolean; onClose: () =
             <button className="button button-secondary" type="button" onClick={install}><Download size={18} />ホーム画面に追加</button>
             <button className="button button-secondary" type="button" onClick={() => window.print()}>印刷する</button>
           </div>
+          <section className="storage-guide" aria-labelledby="storage-guide-title">
+            <div className="storage-guide-heading">
+              <HardDrive size={19} aria-hidden="true" />
+              <h3 id="storage-guide-title">保存について</h3>
+            </div>
+            <div className="storage-guide-list">
+              <div><HardDrive size={17} aria-hidden="true" /><p><strong>端末保存</strong><span>オンラインで共有グループに参加していない状態。変更内容は、このブラウザに自動保存されます。</span></p></div>
+              <div><Share2 size={17} aria-hidden="true" /><p><strong>共有中</strong><span>オンラインでグループに参加している状態。変更内容はグループへ共有されます。</span></p></div>
+              <div><WifiOff size={17} aria-hidden="true" /><p><strong>オフライン</strong><span>インターネットに接続していない状態。端末に保存済みの内容は引き続き確認できます。</span></p></div>
+            </div>
+            <p className="storage-guide-note">ヘッダーの表示は現在の保存方法を示すもので、保存完了を毎回確認する表示ではありません。ブラウザのサイトデータを削除すると、端末保存の内容も消去されます。</p>
+          </section>
           <p className="drawer-status" aria-live="polite">{status}</p>
         </div>
         <div className="drawer-footer">

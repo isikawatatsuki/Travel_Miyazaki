@@ -272,6 +272,15 @@ input:disabled { color: #8b9792; background: #eef0ed; }
 .coordinate-settings .field-grid + .field-grid { margin-top: 10px; }
 .app-actions { display: grid; gap: 8px; }
 .drawer-status { min-height: 44px; margin: 10px 0 0; color: var(--muted); font-size: 13px; line-height: 1.6; }
+.storage-guide { margin-top: 20px; padding: 16px; border: 1px solid #c9d9d1; border-radius: 8px; background: rgba(220, 236, 228, 0.46); }
+.storage-guide-heading { display: flex; align-items: center; gap: 8px; color: var(--green-dark); }
+.storage-guide-heading h3 { margin: 0; font-size: 15px; }
+.storage-guide-list { display: grid; gap: 12px; margin-top: 14px; }
+.storage-guide-list > div { display: grid; grid-template-columns: 20px 1fr; gap: 8px; align-items: start; color: var(--green-dark); }
+.storage-guide-list p { display: grid; gap: 3px; margin: 0; }
+.storage-guide-list strong { font-size: 13px; }
+.storage-guide-list span, .storage-guide-note { color: var(--muted); font-size: 12px; line-height: 1.65; }
+.storage-guide-note { margin: 14px 0 0; padding-top: 12px; border-top: 1px dashed #b9cec3; }
 
 @media (min-width: 700px) {
   .main-content { padding-inline: 28px; }
