@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { CalendarDays, CircleDollarSign, Home, Settings, Share2, Suitcase } from "lucide-react";
+import { CalendarDays, CircleDollarSign, Home, Luggage, Settings, Share2 } from "lucide-react";
 import { TripProvider, useTrip } from "./TripContext";
 import { useOnlineStatus } from "./lib";
 import type { PageKey } from "./types";
@@ -14,7 +14,7 @@ const pages: Array<{ id: PageKey; label: string; icon: typeof Home }> = [
   { id: "home", label: "ホーム", icon: Home },
   { id: "plan", label: "予定", icon: CalendarDays },
   { id: "money", label: "お金", icon: CircleDollarSign },
-  { id: "packing", label: "持ち物", icon: Suitcase },
+  { id: "packing", label: "持ち物", icon: Luggage },
   { id: "share", label: "共有", icon: Share2 },
 ];
 
