@@ -18,6 +18,9 @@ export function HomePage() {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const daysLeft = Math.ceil((start.getTime() - today.getTime()) / 86400000);
+  const tripStatusLabel = daysLeft > 0 ? "COUNTDOWN" : daysLeft === 0 ? "TODAY" : "TRIP LOG";
+  const tripStatusTitle = daysLeft > 0 ? `あと ${daysLeft} 日` : daysLeft === 0 ? "今日から！" : "旅の記録";
+  const tripPeopleLabel = daysLeft >= 0 ? `${settlement.people.length}人で行く旅` : `${settlement.people.length}人の旅の記録`;
 
   return (
     <div className="page home-page">
@@ -29,9 +32,9 @@ export function HomePage() {
         <h1 id="hero-title">{tripSettings.tripName}</h1>
         <p className="hero-destination">{tripSettings.routeLabel}</p>
         <div className="trip-note-ticket">
-          <span>Trip Note</span>
-          <strong>{daysLeft > 0 ? `あと ${daysLeft} 日` : daysLeft === 0 ? "今日から！" : "思い出の旅"}</strong>
-          <small>{settlement.people.length}人で行く旅</small>
+          <span>{tripStatusLabel}</span>
+          <strong>{tripStatusTitle}</strong>
+          <small>{tripPeopleLabel}</small>
         </div>
       </section>
 
