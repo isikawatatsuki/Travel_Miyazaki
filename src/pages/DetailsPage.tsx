@@ -24,13 +24,13 @@ async function compressPhoto(file: File) {
     image.onerror = () => reject(new Error("写真を読み込めませんでした。"));
     image.src = source;
   });
-  const max = 1280;
+  const max = 960;
   const scale = Math.min(1, max / Math.max(image.width, image.height));
   const canvas = document.createElement("canvas");
   canvas.width = Math.max(1, Math.round(image.width * scale));
   canvas.height = Math.max(1, Math.round(image.height * scale));
   canvas.getContext("2d")?.drawImage(image, 0, 0, canvas.width, canvas.height);
-  return canvas.toDataURL("image/jpeg", 0.72);
+  return canvas.toDataURL("image/jpeg", 0.6);
 }
 
 const typeLabels: Record<ReservationType, string> = { transport: "移動", stay: "宿泊", activity: "遊び・食事", other: "その他" };
@@ -52,7 +52,7 @@ export function DetailsPage() {
   const attachReservation = async (id: string, event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
-    if (file.size > 500_000) { setMessage("添付ファイルは500KB以下にしてください。"); event.target.value = ""; return; }
+    if (file.size > 250_000) { setMessage("添付ファイルは250KB以下にしてください。"); event.target.value = ""; return; }
     updateReservation(id, { attachmentName: file.name, attachmentData: await readFile(file) });
     setMessage("予約資料を保存しました。");
   };
@@ -88,7 +88,7 @@ export function DetailsPage() {
         <div className="field-grid two"><label><span>日付</span><input type="date" value={item.date} onChange={(event) => updateReservation(item.id, { date: event.target.value })} /></label><label><span>時間</span><input type="time" value={item.time} onChange={(event) => updateReservation(item.id, { time: event.target.value })} /></label></div>
         <div className="field-grid two"><label><span>予約番号</span><input type="password" value={item.reference} placeholder="入力内容は伏せ字で表示" onChange={(event) => updateReservation(item.id, { reference: event.target.value })} /></label><label><span>キャンセル期限</span><input type="date" value={item.deadline} onChange={(event) => updateReservation(item.id, { deadline: event.target.value })} /></label></div>
         <label><span>メモ</span><textarea rows={2} value={item.memo} onChange={(event) => updateReservation(item.id, { memo: event.target.value })} /></label>
-        <label className="file-button"><Paperclip size={17} /><span>{item.attachmentName || "予約画面・PDFを添付（500KBまで）"}</span><input type="file" accept="image/*,.pdf" onChange={(event) => attachReservation(item.id, event)} /></label>
+        <label className="file-button"><Paperclip size={17} /><span>{item.attachmentName || "予約画面・PDFを添付（250KBまで）"}</span><input type="file" accept="image/*,.pdf" onChange={(event) => attachReservation(item.id, event)} /></label>
         {item.attachmentData && <a className="inline-map-link" href={item.attachmentData} target="_blank" rel="noreferrer"><FileText size={17} />添付資料を開く</a>}
       </Panel>) : <EmptyState>予約情報はまだありません。</EmptyState>}</div>
     </section>}

@@ -1,4 +1,3 @@
-import { baseCost } from "./data";
 import type { AdjustState, Person, SettlementState } from "./types";
 
 const amount = (value: unknown) => Math.max(0, Number(value || 0));
@@ -17,7 +16,7 @@ export function getBudgetSummary(adjust: AdjustState, peopleCount: number): Budg
   const hotel = adjust.breakfast ? amount(adjust.hotelBreakfast) : amount(adjust.hotelNoBreakfast);
   const souvenirs = adjust.souvenirs.reduce((sum, item) => sum + amount(item.qty) * amount(item.price), 0);
   const custom = adjust.customItems.reduce((sum, item) => sum + amount(item.amount), 0);
-  const perPerson = baseCost.flight + baseCost.access + hotel + souvenirs + custom;
+  const perPerson = amount(adjust.transportCost) + amount(adjust.accessCost) + hotel + souvenirs + custom;
 
   return { hotel, souvenirs, custom, perPerson, tripTotal: perPerson * count, peopleCount: count };
 }

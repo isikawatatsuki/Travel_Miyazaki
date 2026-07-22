@@ -35,6 +35,8 @@ export type ScheduleState = { activeDay: string; items: ScheduleItem[] };
 export type CostItem = { id: string; name: string; amount: number };
 export type SouvenirItem = { id?: string; name: string; qty: number; price: number };
 export type AdjustState = {
+  transportCost: number;
+  accessCost: number;
   breakfast: boolean;
   hotelNoBreakfast: number;
   hotelBreakfast: number;

@@ -57,6 +57,8 @@ export const defaultSchedule: ScheduleState = {
 };
 
 export const defaultAdjust: AdjustState = {
+  transportCost: 36200,
+  accessCost: 2360,
   breakfast: false,
   hotelNoBreakfast: 6500,
   hotelBreakfast: 9100,
