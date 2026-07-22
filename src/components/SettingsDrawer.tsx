@@ -65,6 +65,12 @@ export function SettingsDrawer({ open, onClose }: { open: boolean; onClose: () =
             <label><span>帰りの便・交通</span><input value={draft.returnLabel} onChange={(event) => field("returnLabel", event.target.value)} /></label>
             <div className="field-grid two"><label><span>家を出る時間</span><input type="time" value={draft.departureTime} onChange={(event) => field("departureTime", event.target.value)} /></label><label><span>到着目標</span><input type="time" value={draft.arrivalTargetTime} onChange={(event) => field("arrivalTargetTime", event.target.value)} /></label></div>
             <div className="field-grid two"><label><span>地図の出発地</span><input value={draft.mapOrigin} onChange={(event) => field("mapOrigin", event.target.value)} /></label><label><span>地図の目的地</span><input value={draft.mapDestination} onChange={(event) => field("mapDestination", event.target.value)} /></label></div>
+            <details className="coordinate-settings">
+              <summary>背景ルートの位置を調整</summary>
+              <p>地図の位置がずれるときだけ、緯度・経度を調整します。</p>
+              <div className="field-grid two"><label><span>出発地の緯度</span><input type="number" step="0.000001" value={draft.mapOriginLat} onChange={(event) => field("mapOriginLat", Number(event.target.value))} /></label><label><span>出発地の経度</span><input type="number" step="0.000001" value={draft.mapOriginLng} onChange={(event) => field("mapOriginLng", Number(event.target.value))} /></label></div>
+              <div className="field-grid two"><label><span>目的地の緯度</span><input type="number" step="0.000001" value={draft.mapDestinationLat} onChange={(event) => field("mapDestinationLat", Number(event.target.value))} /></label><label><span>目的地の経度</span><input type="number" step="0.000001" value={draft.mapDestinationLng} onChange={(event) => field("mapDestinationLng", Number(event.target.value))} /></label></div>
+            </details>
             <label><span>移動メモ</span><textarea rows={2} value={draft.mapNote} onChange={(event) => field("mapNote", event.target.value)} /></label>
           </fieldset>
           <fieldset><legend>泊まるところ</legend>
