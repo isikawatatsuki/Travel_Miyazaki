@@ -118,6 +118,7 @@ svg {
 #route,
 #schedule,
 #schedule-settings,
+#members,
 #cost,
 #checklist {
   scroll-margin-top: calc(var(--topbar-height) + 18px);
@@ -1290,13 +1291,23 @@ svg {
   outline-offset: 2px;
 }
 
+.members-section,
 .settlement-section {
   padding-top: 20px;
 }
 
+.members-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.member-card {
+  max-width: 980px;
+}
+
 .settlement-layout {
   display: grid;
-  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr) minmax(280px, 0.7fr);
+  grid-template-columns: minmax(0, 1.25fr) minmax(280px, 0.75fr);
   gap: 16px;
   align-items: start;
 }
