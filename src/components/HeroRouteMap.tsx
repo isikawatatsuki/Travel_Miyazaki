@@ -112,8 +112,19 @@ export function HeroRouteMap({ settings }: { settings: TripSettings }) {
 
   return (
     <>
+      <svg className="hero-map-fallback" viewBox="0 0 1000 460" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+        <path className="fallback-road fallback-road-wide" d="M-40 132 C150 110 240 192 410 160 S720 72 1040 106" />
+        <path className="fallback-road" d="M42 438 C178 328 314 372 432 256 S682 146 972 212" />
+        <path className="fallback-road" d="M138 -20 C184 124 250 214 338 470" />
+        <path className="fallback-road" d="M684 -16 C654 118 710 266 842 480" />
+        <path className="fallback-road fallback-road-minor" d="M-20 298 C210 226 372 314 552 354 S840 340 1020 278" />
+        <path className="fallback-route-shadow" d="M108 366 C252 294 354 354 486 244 S704 232 878 102" />
+        <path className="fallback-route" d="M108 366 C252 294 354 354 486 244 S704 232 878 102" />
+        <circle className="fallback-point fallback-point-start" cx="108" cy="366" r="10" />
+        <circle className="fallback-point fallback-point-end" cx="878" cy="102" r="10" />
+      </svg>
       <div className={`hero-map ${loaded ? "is-loaded" : ""}`} ref={containerRef} aria-hidden="true" />
-      <a className="hero-map-attribution" href="https://openfreemap.org/" target="_blank" rel="noreferrer">© OpenFreeMap © OpenStreetMap</a>
+      {loaded && <a className="hero-map-attribution" href="https://openfreemap.org/" target="_blank" rel="noreferrer">© OpenFreeMap © OpenStreetMap</a>}
     </>
   );
 }

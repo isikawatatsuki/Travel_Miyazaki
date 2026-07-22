@@ -58,8 +58,17 @@ svg { flex: 0 0 auto; }
 .eyebrow { margin: 0 0 6px; color: var(--green); font-size: 12px; font-weight: 900; text-transform: uppercase; }
 
 .hero-section { position: relative; margin: 0 -16px 28px; padding: 52px 24px 88px; overflow: hidden; text-align: center; background: #dcece4; border-bottom: 1px solid #bcd0c5; }
-.hero-section > :not(.hero-map):not(.hero-map-attribution) { position: relative; z-index: 2; }
-.hero-map { position: absolute; z-index: 0; inset: 0; overflow: hidden; pointer-events: none; opacity: 0; transition: opacity 420ms ease; }
+.hero-section > :not(.hero-map):not(.hero-map-fallback):not(.hero-map-attribution) { position: relative; z-index: 3; }
+.hero-map-fallback { position: absolute; z-index: 0; inset: 0; width: 100%; height: 100%; background-color: #dcece4; background-image: linear-gradient(rgba(255, 254, 249, 0.2) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 254, 249, 0.2) 1px, transparent 1px); background-size: 22px 22px; opacity: 0.78; }
+.fallback-road { fill: none; stroke: rgba(97, 139, 124, 0.28); stroke-width: 2; }
+.fallback-road-wide { stroke: rgba(255, 254, 249, 0.7); stroke-width: 7; }
+.fallback-road-minor { stroke-dasharray: 5 9; }
+.fallback-route-shadow { fill: none; stroke: rgba(255, 254, 249, 0.88); stroke-linecap: round; stroke-width: 10; }
+.fallback-route { fill: none; stroke: #14523f; stroke-linecap: round; stroke-width: 5; }
+.fallback-point { stroke: #fffef9; stroke-width: 4; }
+.fallback-point-start { fill: #23745b; }
+.fallback-point-end { fill: #d97687; }
+.hero-map { position: absolute; z-index: 1; inset: 0; overflow: hidden; pointer-events: none; opacity: 0; transition: opacity 420ms ease; }
 .hero-map.is-loaded { opacity: 1; }
 .hero-map::after { content: ""; position: absolute; z-index: 1; inset: 0; pointer-events: none; background-color: rgba(220, 236, 228, 0.36); background-image: linear-gradient(rgba(255, 254, 249, 0.13) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 254, 249, 0.13) 1px, transparent 1px); background-size: 18px 18px; }
 .hero-map .maplibregl-canvas { filter: saturate(0.48) contrast(0.78) brightness(1.08); }
