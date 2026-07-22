@@ -1281,13 +1281,14 @@ function initSettlement() {
   const paymentTotal = document.getElementById("paymentTotal");
   const paymentPerPerson = document.getElementById("paymentPerPerson");
   const settlementResult = document.getElementById("settlementResult");
+  const memberSummary = document.getElementById("memberSummary");
 
   if (!personList || !paymentList) return;
 
   const defaults = {
     people: [
-      { id: "person-1", name: "自分" },
-      { id: "person-2", name: "相手" },
+      { id: "person-1", name: "自分", role: "メンバー", memo: "" },
+      { id: "person-2", name: "相手", role: "メンバー", memo: "" },
     ],
     payments: [],
   };
@@ -1310,6 +1311,8 @@ function initSettlement() {
       .map((person, index) => ({
         id: person.id || makeId("person"),
         name: String(person.name || `参加者${index + 1}`).slice(0, 24),
+        role: String(person.role || "メンバー").slice(0, 24),
+        memo: String(person.memo || "").slice(0, 60),
       }))
       .filter((person) => person.name.trim());
     const safePeople = normalizedPeople.length ? normalizedPeople : [...defaults.people];
@@ -1347,14 +1350,25 @@ function initSettlement() {
 
   function renderPeople() {
     personList.innerHTML = "";
+    if (memberSummary) {
+      memberSummary.textContent = `登録メンバー ${state.people.length}人`;
+    }
 
     state.people.forEach((person, index) => {
       const row = document.createElement("div");
       row.className = "person-row";
       row.innerHTML = `
-        <label class="field-chip">
-          <span>参加者</span>
+        <label class="field-chip member-name-field">
+          <span>名前</span>
           <input class="person-name" type="text" value="${escapeHtml(person.name)}" aria-label="参加者名">
+        </label>
+        <label class="field-chip member-role-field">
+          <span>役割</span>
+          <input class="person-role" type="text" value="${escapeHtml(person.role)}" placeholder="例: 幹事" aria-label="メンバーの役割">
+        </label>
+        <label class="field-chip member-memo-field">
+          <span>メモ</span>
+          <input class="person-memo" type="text" value="${escapeHtml(person.memo)}" placeholder="例: 25歳 / 運転担当" aria-label="メンバーメモ">
         </label>
         <button class="delete-button" type="button" ${state.people.length <= 1 ? "disabled" : ""}>削除</button>
       `;
@@ -1364,6 +1378,16 @@ function initSettlement() {
         save();
         renderPayments();
         renderResult();
+      });
+      row.querySelector(".person-role").addEventListener("input", (event) => {
+        state.people[index].role = event.target.value;
+        save();
+        renderPayments();
+        renderResult();
+      });
+      row.querySelector(".person-memo").addEventListener("input", (event) => {
+        state.people[index].memo = event.target.value;
+        save();
       });
       row.querySelector(".delete-button").addEventListener("click", () => {
         const removed = state.people[index];
@@ -1382,7 +1406,7 @@ function initSettlement() {
     return state.people
       .map((person) => `
         <option value="${escapeHtml(person.id)}" ${person.id === selectedId ? "selected" : ""}>
-          ${escapeHtml(person.name || "参加者")}
+          ${escapeHtml(`${person.name || "参加者"}${person.role ? ` / ${person.role}` : ""}`)}
         </option>
       `)
       .join("");
@@ -1494,7 +1518,7 @@ function initSettlement() {
     const balanceRows = balances.map((person) => `
         <div class="settlement-balance-row">
           <span>${escapeHtml(person.name)}</span>
-          <small>支払い ${formatYen(person.paid)} / 負担 ${formatYen(person.share)}</small>
+          <small>${escapeHtml(person.role || "メンバー")} / 支払い ${formatYen(person.paid)} / 負担 ${formatYen(person.share)}</small>
         </div>
     `).join("");
     const transferRows = transfers.length
@@ -1527,7 +1551,12 @@ function initSettlement() {
   }
 
   addPersonButton.addEventListener("click", () => {
-    state.people.push({ id: makeId("person"), name: `参加者${state.people.length + 1}` });
+    state.people.push({
+      id: makeId("person"),
+      name: `参加者${state.people.length + 1}`,
+      role: "メンバー",
+      memo: "",
+    });
     persistAndRender();
   });
 

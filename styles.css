@@ -1315,6 +1315,16 @@ svg {
   gap: 10px;
 }
 
+.member-summary {
+  margin: -2px 0 12px;
+  padding: 10px 12px;
+  background: var(--leaf-soft);
+  border: 1px solid rgba(31, 122, 92, 0.18);
+  border-radius: var(--radius-sm);
+  color: var(--leaf);
+  font-weight: 500;
+}
+
 .person-row,
 .payment-row {
   display: grid;
@@ -1323,7 +1333,15 @@ svg {
 }
 
 .person-row {
-  grid-template-columns: minmax(0, 1fr) 58px;
+  grid-template-columns: minmax(0, 1fr) minmax(110px, 0.55fr) 58px;
+  padding: 10px;
+  background: #fffdf8;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+}
+
+.member-memo-field {
+  grid-column: 1 / -1;
 }
 
 .payment-row {
@@ -1763,6 +1781,10 @@ svg {
   }
 
   .settlement-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .person-row {
     grid-template-columns: 1fr;
   }
 
