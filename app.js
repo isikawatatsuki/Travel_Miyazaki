@@ -879,6 +879,281 @@ function initCostCalculator() {
   applyStateToInputs();
 }
 
+function initSettlement() {
+  const storageKey = "tripShioriSettlement";
+  const personList = document.getElementById("personList");
+  const paymentList = document.getElementById("paymentList");
+  const addPersonButton = document.getElementById("addPersonButton");
+  const addPaymentButton = document.getElementById("addPaymentButton");
+  const paymentTotal = document.getElementById("paymentTotal");
+  const paymentPerPerson = document.getElementById("paymentPerPerson");
+  const settlementResult = document.getElementById("settlementResult");
+
+  if (!personList || !paymentList) return;
+
+  const defaults = {
+    people: [
+      { id: "person-1", name: "自分" },
+      { id: "person-2", name: "相手" },
+    ],
+    payments: [],
+  };
+
+  let state = loadState();
+
+  function numberValue(value) {
+    return Math.max(0, Math.round(Number(value || 0)));
+  }
+
+  function makeId(prefix) {
+    return `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  }
+
+  function normalizeState(value = {}) {
+    const people = Array.isArray(value.people) && value.people.length
+      ? value.people
+      : defaults.people;
+    const normalizedPeople = people
+      .map((person, index) => ({
+        id: person.id || makeId("person"),
+        name: String(person.name || `参加者${index + 1}`).slice(0, 24),
+      }))
+      .filter((person) => person.name.trim());
+    const safePeople = normalizedPeople.length ? normalizedPeople : [...defaults.people];
+    const safeIds = new Set(safePeople.map((person) => person.id));
+    const payments = Array.isArray(value.payments) ? value.payments : [];
+
+    return {
+      people: safePeople,
+      payments: payments.map((payment) => ({
+        id: payment.id || makeId("payment"),
+        title: String(payment.title || "").slice(0, 32),
+        payerId: safeIds.has(payment.payerId) ? payment.payerId : safePeople[0].id,
+        amount: numberValue(payment.amount),
+      })),
+    };
+  }
+
+  function loadState() {
+    try {
+      return normalizeState(JSON.parse(localStorage.getItem(storageKey) || "{}"));
+    } catch {
+      return normalizeState(defaults);
+    }
+  }
+
+  function save() {
+    localStorage.setItem(storageKey, JSON.stringify(state));
+    groupSync.scheduleSave();
+  }
+
+  function persistAndRender() {
+    save();
+    render();
+  }
+
+  function renderPeople() {
+    personList.innerHTML = "";
+
+    state.people.forEach((person, index) => {
+      const row = document.createElement("div");
+      row.className = "person-row";
+      row.innerHTML = `
+        <label class="field-chip">
+          <span>参加者</span>
+          <input class="person-name" type="text" value="${escapeHtml(person.name)}" aria-label="参加者名">
+        </label>
+        <button class="delete-button" type="button" ${state.people.length <= 1 ? "disabled" : ""}>削除</button>
+      `;
+
+      row.querySelector(".person-name").addEventListener("input", (event) => {
+        state.people[index].name = event.target.value;
+        save();
+        renderPayments();
+        renderResult();
+      });
+      row.querySelector(".delete-button").addEventListener("click", () => {
+        const removed = state.people[index];
+        state.people.splice(index, 1);
+        state.payments.forEach((payment) => {
+          if (payment.payerId === removed.id) payment.payerId = state.people[0].id;
+        });
+        persistAndRender();
+      });
+
+      personList.appendChild(row);
+    });
+  }
+
+  function payerOptions(selectedId) {
+    return state.people
+      .map((person) => `
+        <option value="${escapeHtml(person.id)}" ${person.id === selectedId ? "selected" : ""}>
+          ${escapeHtml(person.name || "参加者")}
+        </option>
+      `)
+      .join("");
+  }
+
+  function renderPayments() {
+    paymentList.innerHTML = "";
+
+    if (!state.payments.length) {
+      const empty = document.createElement("p");
+      empty.className = "empty-souvenir";
+      empty.textContent = "まだ支払いメモはありません。";
+      paymentList.appendChild(empty);
+      return;
+    }
+
+    state.payments.forEach((payment, index) => {
+      const row = document.createElement("div");
+      row.className = "payment-row";
+      row.innerHTML = `
+        <label class="field-chip payment-title-field">
+          <span>内容</span>
+          <input class="payment-title" type="text" value="${escapeHtml(payment.title)}" placeholder="例: タクシー代" aria-label="支払い内容">
+        </label>
+        <label class="field-chip">
+          <span>払った人</span>
+          <select class="payment-payer" aria-label="払った人">${payerOptions(payment.payerId)}</select>
+        </label>
+        <label class="field-chip">
+          <span>金額</span>
+          <input class="payment-amount" type="number" inputmode="numeric" min="0" step="100" value="${payment.amount}" aria-label="支払い金額">
+        </label>
+        <button class="delete-button" type="button" aria-label="支払いメモを削除">削除</button>
+      `;
+
+      row.querySelector(".payment-title").addEventListener("input", (event) => {
+        state.payments[index].title = event.target.value;
+        save();
+      });
+      row.querySelector(".payment-payer").addEventListener("change", (event) => {
+        state.payments[index].payerId = event.target.value;
+        persistAndRender();
+      });
+      row.querySelector(".payment-amount").addEventListener("input", (event) => {
+        state.payments[index].amount = numberValue(event.target.value);
+        save();
+        renderResult();
+      });
+      row.querySelector(".delete-button").addEventListener("click", () => {
+        state.payments.splice(index, 1);
+        persistAndRender();
+      });
+
+      paymentList.appendChild(row);
+    });
+  }
+
+  function renderResult() {
+    const peopleCount = Math.max(1, state.people.length);
+    const total = state.payments.reduce((sum, payment) => sum + numberValue(payment.amount), 0);
+    const baseShare = Math.floor(total / peopleCount);
+    const remainder = total % peopleCount;
+    const balances = state.people.map((person, index) => {
+      const paid = state.payments
+        .filter((payment) => payment.payerId === person.id)
+        .reduce((sum, payment) => sum + numberValue(payment.amount), 0);
+      const share = baseShare + (index < remainder ? 1 : 0);
+      return {
+        ...person,
+        paid,
+        share,
+        balance: paid - share,
+      };
+    });
+    const debtors = balances
+      .filter((person) => person.balance < 0)
+      .map((person) => ({ ...person, amount: Math.abs(person.balance) }));
+    const creditors = balances
+      .filter((person) => person.balance > 0)
+      .map((person) => ({ ...person, amount: person.balance }));
+    const transfers = [];
+    let debtorIndex = 0;
+    let creditorIndex = 0;
+
+    while (debtors[debtorIndex] && creditors[creditorIndex]) {
+      const amount = Math.min(debtors[debtorIndex].amount, creditors[creditorIndex].amount);
+      if (amount > 0) {
+        transfers.push({
+          from: debtors[debtorIndex].name,
+          to: creditors[creditorIndex].name,
+          amount,
+        });
+      }
+      debtors[debtorIndex].amount -= amount;
+      creditors[creditorIndex].amount -= amount;
+      if (debtors[debtorIndex].amount <= 0) debtorIndex += 1;
+      if (creditors[creditorIndex].amount <= 0) creditorIndex += 1;
+    }
+
+    paymentTotal.textContent = formatYen(total);
+    paymentPerPerson.textContent = remainder ? `${formatYen(baseShare)}〜${formatYen(baseShare + 1)}` : formatYen(baseShare);
+
+    if (!total) {
+      settlementResult.innerHTML = '<p class="empty-souvenir">支払いを追加すると精算案が出ます。</p>';
+      return;
+    }
+
+    const balanceRows = balances.map((person) => `
+        <div class="settlement-balance-row">
+          <span>${escapeHtml(person.name)}</span>
+          <small>支払い ${formatYen(person.paid)} / 負担 ${formatYen(person.share)}</small>
+        </div>
+    `).join("");
+    const transferRows = transfers.length
+      ? transfers.map((transfer) => `
+        <div class="settlement-transfer-row">
+          <strong>${escapeHtml(transfer.from)}</strong>
+          <span>→</span>
+          <strong>${escapeHtml(transfer.to)}</strong>
+          <em>${formatYen(transfer.amount)}</em>
+        </div>
+      `).join("")
+      : '<p class="empty-souvenir">今のところ精算は不要です。</p>';
+
+    settlementResult.innerHTML = `
+      <div class="settlement-balance-list">${balanceRows}</div>
+      <div class="settlement-transfer-list">${transferRows}</div>
+    `;
+  }
+
+  function render() {
+    renderPeople();
+    renderPayments();
+    renderResult();
+  }
+
+  function setState(nextState) {
+    state = normalizeState(nextState);
+    save();
+    render();
+  }
+
+  addPersonButton.addEventListener("click", () => {
+    state.people.push({ id: makeId("person"), name: `参加者${state.people.length + 1}` });
+    persistAndRender();
+  });
+
+  addPaymentButton.addEventListener("click", () => {
+    state.payments.push({
+      id: makeId("payment"),
+      title: "",
+      payerId: state.people[0].id,
+      amount: 0,
+    });
+    persistAndRender();
+  });
+
+  groupSync.register("settlement", {
+    get: () => state,
+    set: setState,
+  });
+  render();
+}
+
 function initChecklist() {
   const storageKey = "tripShioriChecklist";
   const legacyStorageKey = "miyakonojoTripChecklist";
@@ -1231,6 +1506,7 @@ document.addEventListener("DOMContentLoaded", () => {
   initTripSettings();
   initMap();
   initCostCalculator();
+  initSettlement();
   initChecklist();
   initSharedNotes();
   initGroupControls();

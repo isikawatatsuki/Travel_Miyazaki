@@ -1117,6 +1117,124 @@ svg {
   outline-offset: 2px;
 }
 
+.settlement-section {
+  padding-top: 20px;
+}
+
+.settlement-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr) minmax(280px, 0.7fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.settlement-card {
+  padding: 18px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.person-list,
+.payment-list {
+  display: grid;
+  gap: 10px;
+}
+
+.person-row,
+.payment-row {
+  display: grid;
+  gap: 8px;
+  align-items: end;
+}
+
+.person-row {
+  grid-template-columns: minmax(0, 1fr) 58px;
+}
+
+.payment-row {
+  grid-template-columns: minmax(0, 1fr) 116px 108px 58px;
+  padding: 10px;
+  background: #fffdf8;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+}
+
+.payment-row select {
+  width: 100%;
+  min-height: 42px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #fff;
+  color: var(--ink);
+  font: inherit;
+}
+
+.payment-amount {
+  text-align: right;
+}
+
+.settlement-totals {
+  display: grid;
+  gap: 10px;
+  margin: 12px 0 16px;
+}
+
+.settlement-totals div,
+.settlement-balance-row,
+.settlement-transfer-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  background: #f7fbf8;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+
+.settlement-totals dt,
+.settlement-balance-row small {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.settlement-totals dd {
+  margin: 0;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.settlement-result {
+  display: grid;
+  gap: 12px;
+}
+
+.settlement-balance-list,
+.settlement-transfer-list {
+  display: grid;
+  gap: 8px;
+}
+
+.settlement-transfer-row {
+  background: #fff2c7;
+  font-variant-numeric: tabular-nums;
+}
+
+.settlement-transfer-row span {
+  color: var(--leaf);
+  font-weight: 700;
+}
+
+.settlement-transfer-row em {
+  margin-left: auto;
+  color: #a93859;
+  font-style: normal;
+  font-weight: 700;
+}
+
 .checklist-tools {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -1441,6 +1559,22 @@ svg {
   .shared-note-tools,
   .checklist {
     grid-template-columns: 1fr;
+  }
+
+  .settlement-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .payment-row {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .payment-title-field {
+    grid-column: 1 / -1;
+  }
+
+  .payment-row .delete-button {
+    width: 100%;
   }
 
   .shared-note-item {

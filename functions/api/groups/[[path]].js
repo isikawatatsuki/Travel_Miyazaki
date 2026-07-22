@@ -32,7 +32,9 @@ async function readBody(request) {
 function sanitizeState(value) {
   const state = value && typeof value === "object" ? value : {};
   return JSON.stringify({
+    tripSettings: state.tripSettings || null,
     adjust: state.adjust || null,
+    settlement: state.settlement || null,
     checklist: state.checklist || null,
     notes: state.notes || null,
     spots: Array.isArray(state.spots) ? state.spots : [],

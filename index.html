@@ -422,6 +422,47 @@
         </aside>
       </section>
 
+      <section class="section settlement-section" id="settlement">
+        <div class="section-heading compact">
+          <p class="eyebrow">Recopei</p>
+          <h2>立替・割り勘メモ</h2>
+          <p>誰がいくら払ったかを入れると、2人でどう精算するかを自動で出します。旅グループ参加中は相手にも同期されます。</p>
+        </div>
+
+        <div class="settlement-layout">
+          <div class="settlement-card">
+            <div class="mini-heading">
+              <span>人数設定</span>
+              <button class="mini-button" type="button" id="addPersonButton">追加</button>
+            </div>
+            <div class="person-list" id="personList"></div>
+          </div>
+
+          <div class="settlement-card">
+            <div class="mini-heading">
+              <span>支払いメモ</span>
+              <button class="mini-button" type="button" id="addPaymentButton">追加</button>
+            </div>
+            <div class="payment-list" id="paymentList"></div>
+          </div>
+
+          <aside class="settlement-card settlement-result-card">
+            <p class="panel-label">Split</p>
+            <dl class="settlement-totals">
+              <div>
+                <dt>立替合計</dt>
+                <dd id="paymentTotal">0円</dd>
+              </div>
+              <div>
+                <dt>1人あたり</dt>
+                <dd id="paymentPerPerson">0円</dd>
+              </div>
+            </dl>
+            <div class="settlement-result" id="settlementResult"></div>
+          </aside>
+        </div>
+      </section>
+
       <section class="section" id="checklist">
         <div class="section-heading">
           <p class="eyebrow">Checklist</p>
@@ -459,6 +500,6 @@
       <p>旅のしおり Web版</p>
     </footer>
 
-    <script src="./app.js?v=20260722-pwa1"></script>
+    <script src="./app.js?v=20260722-settlement1"></script>
   </body>
 </html>
