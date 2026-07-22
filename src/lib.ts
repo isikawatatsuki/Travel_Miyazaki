@@ -22,7 +22,13 @@ export function readStorage<T>(key: string, fallback: T): T {
 export function usePersistentState<T>(key: string, fallback: T) {
   const [state, setState] = useState<T>(() => readStorage(key, fallback));
   useEffect(() => {
-    localStorage.setItem(key, JSON.stringify(state));
+    window.dispatchEvent(new CustomEvent("trip-storage", { detail: { phase: "saving" } }));
+    try {
+      localStorage.setItem(key, JSON.stringify(state));
+      window.dispatchEvent(new CustomEvent("trip-storage", { detail: { phase: "saved", at: new Date().toISOString() } }));
+    } catch {
+      window.dispatchEvent(new CustomEvent("trip-storage", { detail: { phase: "error" } }));
+    }
   }, [key, state]);
   return [state, setState] as const;
 }

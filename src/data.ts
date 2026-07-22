@@ -1,4 +1,4 @@
-import type { AdjustState, ChecklistState, NotesState, ScheduleDay, ScheduleState, SettlementState, TripSettings } from "./types";
+import type { AdjustState, AlbumState, ChecklistState, HistoryState, NotesState, ReservationsState, ScheduleDay, ScheduleState, SettlementState, SharedState, TripSettings } from "./types";
 
 export const defaultTripSettings: TripSettings = {
   tripName: "旅のしおり",
@@ -88,5 +88,27 @@ export const defaultNotes: NotesState = {
     "宿は料金、禁煙・喫煙、チェックイン時間、キャンセル条件だけ最後に見ておく。",
   ].map((text, index) => ({ id: `default-note-${index}`, text })),
 };
+
+export const defaultReservations: ReservationsState = { items: [] };
+export const defaultAlbum: AlbumState = { items: [] };
+export const defaultHistory: HistoryState = { items: [] };
+
+export function createDefaultSharedState(tripName = defaultTripSettings.tripName): SharedState {
+  return {
+    tripSettings: { ...defaultTripSettings, tripName },
+    schedule: { ...defaultSchedule, items: defaultSchedule.items.map((item) => ({ ...item })) },
+    adjust: { ...defaultAdjust, customItems: [], souvenirs: [] },
+    settlement: {
+      people: defaultSettlement.people.map((person) => ({ ...person })),
+      payments: [],
+    },
+    checklist: { items: defaultChecklist.items.map((item) => ({ ...item })) },
+    notes: { items: defaultNotes.items.map((item) => ({ ...item })) },
+    reservations: { ...defaultReservations, items: [] },
+    album: { ...defaultAlbum, items: [] },
+    history: { ...defaultHistory, items: [] },
+    spots: [],
+  };
+}
 
 export const baseCost = { flight: 36200, access: 2360 };
