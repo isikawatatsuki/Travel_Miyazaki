@@ -1,6 +1,7 @@
 import { Plus, ReceiptText, Trash2, UsersRound } from "lucide-react";
 import { useTrip } from "../TripContext";
 import { baseCost } from "../data";
+import { getBudgetSummary, getSettlementSummary } from "../derived";
 import { makeId, yen } from "../lib";
 import type { Payment } from "../types";
 import { EmptyState, IconButton, Panel, SectionHeading } from "../components/ui";
@@ -9,11 +10,10 @@ const amount = (value: unknown) => Math.max(0, Number(value || 0));
 
 export function MoneyPage() {
   const { adjust, setAdjust, settlement, setSettlement } = useTrip();
-  const hotel = adjust.breakfast ? amount(adjust.hotelBreakfast) : amount(adjust.hotelNoBreakfast);
-  const souvenirs = adjust.souvenirs.reduce((sum, item) => sum + amount(item.qty) * amount(item.price), 0);
-  const custom = adjust.customItems.reduce((sum, item) => sum + amount(item.amount), 0);
-  const perPerson = baseCost.flight + baseCost.access + hotel + souvenirs + custom;
-  const tripTotal = perPerson * Math.max(1, settlement.people.length);
+  const budget = getBudgetSummary(adjust, settlement.people.length);
+  const settlementSummary = getSettlementSummary(settlement);
+  const { hotel, souvenirs, perPerson, tripTotal, peopleCount } = budget;
+  const { paidTotal, baseShare, remainder, transfers } = settlementSummary;
 
   const updatePayment = (id: string, patch: Partial<Payment>) => setSettlement((current) => ({
     ...current,
@@ -23,29 +23,6 @@ export function MoneyPage() {
     ...current,
     payments: [...current.payments, { id: makeId("payment"), title: "", payerId: current.people[0]?.id || "", amount: 0 }],
   }));
-
-  const paidTotal = settlement.payments.reduce((sum, item) => sum + amount(item.amount), 0);
-  const peopleCount = Math.max(1, settlement.people.length);
-  const baseShare = Math.floor(paidTotal / peopleCount);
-  const remainder = paidTotal % peopleCount;
-  const balances = settlement.people.map((person, index) => ({
-    ...person,
-    paid: settlement.payments.filter((payment) => payment.payerId === person.id).reduce((sum, payment) => sum + amount(payment.amount), 0),
-    share: baseShare + (index < remainder ? 1 : 0),
-  })).map((person) => ({ ...person, balance: person.paid - person.share }));
-  const debtors = balances.filter((person) => person.balance < 0).map((person) => ({ ...person, left: -person.balance }));
-  const creditors = balances.filter((person) => person.balance > 0).map((person) => ({ ...person, left: person.balance }));
-  const transfers: Array<{ from: string; to: string; amount: number }> = [];
-  let debtorIndex = 0;
-  let creditorIndex = 0;
-  while (debtors[debtorIndex] && creditors[creditorIndex]) {
-    const transfer = Math.min(debtors[debtorIndex].left, creditors[creditorIndex].left);
-    if (transfer) transfers.push({ from: debtors[debtorIndex].name, to: creditors[creditorIndex].name, amount: transfer });
-    debtors[debtorIndex].left -= transfer;
-    creditors[creditorIndex].left -= transfer;
-    if (!debtors[debtorIndex].left) debtorIndex += 1;
-    if (!creditors[creditorIndex].left) creditorIndex += 1;
-  }
 
   return (
     <div className="page">
