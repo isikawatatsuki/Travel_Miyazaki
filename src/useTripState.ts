@@ -88,9 +88,10 @@ export function useTripState() {
 
   useEffect(() => {
     const onStorage = (event: Event) => {
-      const detail = (event as CustomEvent<{ phase: SavePhase; at?: string }>).detail;
+      const detail = (event as CustomEvent<{ phase: SavePhase; at?: string; message?: string }>).detail;
       if (!detail) return;
       if (!activeGroup) setSavePhase(detail.phase);
+      if (detail.phase === "error" && detail.message) setSyncStatus(detail.message);
       if (detail.at) {
         setLastSavedAt(detail.at);
         try { localStorage.setItem("tripShioriLastSavedAt", JSON.stringify(detail.at)); } catch { /* storage status already reports the error */ }

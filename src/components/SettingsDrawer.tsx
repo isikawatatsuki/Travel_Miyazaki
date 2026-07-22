@@ -1,4 +1,4 @@
-import { Archive, CheckCircle2, Download, HardDrive, LoaderCircle, Luggage, MapPinned, Plus, RotateCcw, Save, Share2, Smartphone, Undo2, WifiOff, X } from "lucide-react";
+import { AlertCircle, Archive, CheckCircle2, Download, HardDrive, LoaderCircle, Luggage, MapPinned, Plus, RotateCcw, Save, Share2, Smartphone, Undo2, WifiOff, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTrip } from "../TripContext";
 import { defaultTripSettings } from "../data";
@@ -14,7 +14,25 @@ interface SaveProgress {
   percent: number;
   title: string;
   detail: string;
-  complete?: boolean;
+  state: "saving" | "complete" | "error";
+}
+
+function waitForSettingsSave() {
+  return new Promise<void>((resolve, reject) => {
+    const timeout = window.setTimeout(() => {
+      window.removeEventListener("trip-storage", listener);
+      reject(new Error("保存の確認に時間がかかっています。もう一度お試しください。"));
+    }, 5000);
+    const listener = (event: Event) => {
+      const detail = (event as CustomEvent<{ key?: string; phase?: string; message?: string }>).detail;
+      if (detail?.key !== "tripShioriSettings" || !["saved", "error"].includes(detail.phase || "")) return;
+      window.clearTimeout(timeout);
+      window.removeEventListener("trip-storage", listener);
+      if (detail.phase === "saved") resolve();
+      else reject(new Error(detail.message || "設定を保存できませんでした。"));
+    };
+    window.addEventListener("trip-storage", listener);
+  });
 }
 
 export function SettingsDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -41,22 +59,32 @@ export function SettingsDrawer({ open, onClose }: { open: boolean; onClose: () =
 
   const field = <K extends keyof TripSettings>(key: K, value: TripSettings[K]) => setDraft((current) => ({ ...current, [key]: value }));
   const save = async () => {
-    if (saveProgress) return;
+    if (saveProgress && saveProgress.state !== "error") return;
     const wait = (duration: number) => new Promise((resolve) => window.setTimeout(resolve, duration));
     setStatus("");
-    setSaveProgress({ percent: 15, title: "設定を確認中", detail: "入力した内容を確認しています" });
-    await wait(260);
-    setSaveProgress({ percent: 45, title: "保存中", detail: "旅行データを保存しています" });
-    const formatter = (date: string) => date.replaceAll("-", ".");
-    setTripSettings({ ...draft, dateLabel: `${formatter(draft.startDate)} - ${formatter(draft.endDate).slice(5)}` });
-    await wait(420);
-    setSaveProgress({ percent: 80, title: "画面へ反映中", detail: "しおりの表示を更新しています" });
-    await wait(360);
-    setSaveProgress({ percent: 100, title: "更新完了", detail: "設定を反映しました", complete: true });
-    setStatus("設定を反映しました");
-    await wait(720);
-    setSaveProgress(null);
-    onClose();
+    try {
+      setSaveProgress({ percent: 15, title: "設定を確認中", detail: "入力した内容を確認しています", state: "saving" });
+      await wait(220);
+      const startDate = typeof draft.startDate === "string" && draft.startDate ? draft.startDate : defaultTripSettings.startDate;
+      const endDate = typeof draft.endDate === "string" && draft.endDate ? draft.endDate : defaultTripSettings.endDate;
+      const formatter = (date: string) => date.replaceAll("-", ".");
+      const nextSettings = { ...defaultTripSettings, ...draft, startDate, endDate, dateLabel: `${formatter(startDate)} - ${formatter(endDate).slice(5)}` };
+      const persisted = waitForSettingsSave();
+      setSaveProgress({ percent: 45, title: "端末へ保存中", detail: "保存完了を確認しています", state: "saving" });
+      setTripSettings(nextSettings);
+      await persisted;
+      setSaveProgress({ percent: 80, title: "画面へ反映中", detail: "しおりの表示を更新しています", state: "saving" });
+      await wait(320);
+      setSaveProgress({ percent: 100, title: "更新完了", detail: "設定を保存しました", state: "complete" });
+      setStatus("設定を保存しました");
+      await wait(760);
+      setSaveProgress(null);
+      onClose();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "設定を保存できませんでした。";
+      setSaveProgress({ percent: 45, title: "保存できませんでした", detail: message, state: "error" });
+      setStatus(message);
+    }
   };
   const install = async () => {
     if (installPrompt) {
@@ -141,9 +169,9 @@ export function SettingsDrawer({ open, onClose }: { open: boolean; onClose: () =
         </div>
       </aside>
       {saveProgress && <div className="save-progress-layer">
-        <section className={`save-progress-dialog ${saveProgress.complete ? "is-complete" : ""}`} role="dialog" aria-modal="true" aria-labelledby="save-progress-title" aria-describedby="save-progress-detail">
+        <section className={`save-progress-dialog is-${saveProgress.state}`} role="dialog" aria-modal="true" aria-labelledby="save-progress-title" aria-describedby="save-progress-detail">
           <div className="save-progress-icon" aria-hidden="true">
-            {saveProgress.complete ? <CheckCircle2 size={34} /> : <LoaderCircle className="spin" size={34} />}
+            {saveProgress.state === "complete" ? <CheckCircle2 size={34} /> : saveProgress.state === "error" ? <AlertCircle size={34} /> : <LoaderCircle className="spin" size={34} />}
           </div>
           <p className="eyebrow">UPDATING</p>
           <h2 id="save-progress-title">{saveProgress.title}</h2>
@@ -152,6 +180,10 @@ export function SettingsDrawer({ open, onClose }: { open: boolean; onClose: () =
             <i style={{ transform: `scaleX(${saveProgress.percent / 100})` }} />
           </div>
           <strong>{saveProgress.percent}%</strong>
+          {saveProgress.state === "error" && <div className="save-progress-actions">
+            <button className="button button-quiet" type="button" onClick={() => setSaveProgress(null)}>閉じる</button>
+            <button className="button button-primary" type="button" onClick={save}>もう一度</button>
+          </div>}
         </section>
       </div>}
     </>
