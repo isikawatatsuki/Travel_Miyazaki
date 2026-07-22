@@ -301,53 +301,17 @@
       <section class="section" id="schedule">
         <div class="section-heading">
           <p class="eyebrow">Timeline</p>
-          <h2>出発日の予定</h2>
+          <h2>旅の予定</h2>
+          <p>日付ごとに予定を追加・編集できます。旅グループ参加中は相手にも同期されます。</p>
         </div>
 
-        <ol class="timeline">
-          <li>
-            <time>05:40</time>
-            <div>
-              <h3>市岡元町を出る</h3>
-              <p>弁天町駅まで徒歩10分。朝早いので、荷物と天気を見つつちょい余裕を持つ。</p>
-            </div>
-          </li>
-          <li>
-            <time>05:50</time>
-            <div>
-              <h3>弁天町駅</h3>
-              <p>弁天町から関空まで、1人片道1,180円で見ています。</p>
-            </div>
-          </li>
-          <li>
-            <time>07:00</time>
-            <div>
-              <h3>関西空港駅</h3>
-              <p>エアロプラザ1階から、第2ターミナル行きの無料連絡バスへ。</p>
-            </div>
-          </li>
-          <li>
-            <time>07:15</time>
-            <div>
-              <h3>関空第2ターミナル</h3>
-              <p>Peachのチェックイン、手荷物、保安検査へ。混むかもなので、ここは早めに動く。</p>
-            </div>
-          </li>
-          <li>
-            <time>08:30</time>
-            <div>
-              <h3 data-trip-text="outboundTimelineTitle">MM193 出発</h3>
-              <p data-trip-text="outboundTimelineBody">関西空港から鹿児島空港へ。09:45到着予定。</p>
-            </div>
-          </li>
-          <li>
-            <time>9/23 16:30</time>
-            <div>
-              <h3 data-trip-text="returnTimelineTitle">MM198 復路出発</h3>
-              <p data-trip-text="returnTimelineBody">鹿児島空港から関西空港へ。17:50到着予定。</p>
-            </div>
-          </li>
-        </ol>
+        <div class="schedule-editor">
+          <div class="schedule-tabs" id="scheduleTabs" role="tablist" aria-label="日付を選ぶ"></div>
+          <div class="schedule-actions">
+            <button class="button primary" type="button" id="addScheduleItemButton">予定を追加</button>
+          </div>
+          <ol class="timeline schedule-list" id="scheduleItems"></ol>
+        </div>
       </section>
 
       <section class="section grid-two" id="cost">
@@ -500,6 +464,6 @@
       <p>旅のしおり Web版</p>
     </footer>
 
-    <script src="./app.js?v=20260722-settlement1"></script>
+    <script src="./app.js?v=20260722-schedule1"></script>
   </body>
 </html>

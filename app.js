@@ -572,6 +572,275 @@ function initMap() {
   });
 }
 
+function initScheduleEditor() {
+  const storageKey = "tripShioriSchedule";
+  const tabsEl = document.getElementById("scheduleTabs");
+  const listEl = document.getElementById("scheduleItems");
+  const addButton = document.getElementById("addScheduleItemButton");
+
+  if (!tabsEl || !listEl || !addButton) return;
+
+  const days = [
+    { id: "2026-09-21", label: "9/21", detail: "Day 1" },
+    { id: "2026-09-22", label: "9/22", detail: "Day 2" },
+    { id: "2026-09-23", label: "9/23", detail: "Day 3" },
+  ];
+  const defaults = {
+    activeDay: days[0].id,
+    items: [
+      {
+        id: "schedule-ikoaka",
+        day: "2026-09-21",
+        time: "05:40",
+        title: "市岡元町を出る",
+        memo: "弁天町駅まで徒歩10分。朝早いので、荷物と天気を見つつちょい余裕を持つ。",
+        mapUrl: "",
+        isTimeUnset: false,
+      },
+      {
+        id: "schedule-bentencho",
+        day: "2026-09-21",
+        time: "05:50",
+        title: "弁天町駅",
+        memo: "弁天町から関空まで、1人片道1,180円で見ています。",
+        mapUrl: "",
+        isTimeUnset: false,
+      },
+      {
+        id: "schedule-kix-station",
+        day: "2026-09-21",
+        time: "07:00",
+        title: "関西空港駅",
+        memo: "エアロプラザ1階から、第2ターミナル行きの無料連絡バスへ。",
+        mapUrl: "",
+        isTimeUnset: false,
+      },
+      {
+        id: "schedule-kix-t2",
+        day: "2026-09-21",
+        time: "07:15",
+        title: "関空第2ターミナル",
+        memo: "Peachのチェックイン、手荷物、保安検査へ。混むかもなので、ここは早めに動く。",
+        mapUrl: "",
+        isTimeUnset: false,
+      },
+      {
+        id: "schedule-mm193",
+        day: "2026-09-21",
+        time: "08:30",
+        title: "MM193 出発",
+        memo: "関西空港から鹿児島空港へ。09:45到着予定。",
+        mapUrl: "",
+        isTimeUnset: false,
+      },
+      {
+        id: "schedule-mm198",
+        day: "2026-09-23",
+        time: "16:30",
+        title: "MM198 復路出発",
+        memo: "鹿児島空港から関西空港へ。17:50到着予定。",
+        mapUrl: "",
+        isTimeUnset: false,
+      },
+    ],
+  };
+
+  let state = loadState();
+
+  function makeId() {
+    return `schedule-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  }
+
+  function normalizeState(value = {}) {
+    const validDayIds = new Set(days.map((day) => day.id));
+    const items = Array.isArray(value.items) ? value.items : defaults.items;
+    return {
+      activeDay: validDayIds.has(value.activeDay) ? value.activeDay : days[0].id,
+      items: items.map((item) => ({
+        id: item.id || makeId(),
+        day: validDayIds.has(item.day) ? item.day : days[0].id,
+        time: String(item.time || "").slice(0, 5),
+        title: String(item.title || "").slice(0, 40),
+        memo: String(item.memo || "").slice(0, 120),
+        mapUrl: String(item.mapUrl || "").slice(0, 300),
+        isTimeUnset: Boolean(item.isTimeUnset),
+      })),
+    };
+  }
+
+  function loadState() {
+    try {
+      return normalizeState(JSON.parse(localStorage.getItem(storageKey) || "{}"));
+    } catch {
+      return normalizeState(defaults);
+    }
+  }
+
+  function save() {
+    localStorage.setItem(storageKey, JSON.stringify(state));
+    groupSync.scheduleSave();
+  }
+
+  function sortedItems() {
+    return state.items
+      .filter((item) => item.day === state.activeDay)
+      .sort((a, b) => {
+        if (a.isTimeUnset !== b.isTimeUnset) return a.isTimeUnset ? 1 : -1;
+        return (a.time || "99:99").localeCompare(b.time || "99:99");
+      });
+  }
+
+  function persistAndRender() {
+    save();
+    render();
+  }
+
+  function renderTabs() {
+    tabsEl.innerHTML = "";
+    days.forEach((day) => {
+      const count = state.items.filter((item) => item.day === day.id).length;
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = `schedule-tab${state.activeDay === day.id ? " is-active" : ""}`;
+      button.setAttribute("role", "tab");
+      button.setAttribute("aria-selected", state.activeDay === day.id ? "true" : "false");
+      button.innerHTML = `
+        <strong>${escapeHtml(day.label)}</strong>
+        <span>${escapeHtml(day.detail)} / ${count}件</span>
+      `;
+      button.addEventListener("click", () => {
+        state.activeDay = day.id;
+        persistAndRender();
+      });
+      tabsEl.appendChild(button);
+    });
+  }
+
+  function renderItems() {
+    listEl.innerHTML = "";
+    const items = sortedItems();
+
+    if (!items.length) {
+      const empty = document.createElement("li");
+      empty.className = "schedule-empty";
+      empty.innerHTML = `
+        <time>未定</time>
+        <div>
+          <h3>まだ予定はありません</h3>
+          <p>「予定を追加」から、行きたい場所や移動メモを入れられます。</p>
+        </div>
+      `;
+      listEl.appendChild(empty);
+      return;
+    }
+
+    items.forEach((item) => {
+      const index = state.items.findIndex((candidate) => candidate.id === item.id);
+      const row = document.createElement("li");
+      row.className = "schedule-item";
+      row.innerHTML = `
+        <time>${item.isTimeUnset ? "未定" : escapeHtml(item.time || "未定")}</time>
+        <div class="schedule-item-card">
+          <div class="schedule-item-grid">
+            <label class="field-chip">
+              <span>日付</span>
+              <select class="schedule-day" aria-label="予定の日付">
+                ${days.map((day) => `<option value="${day.id}" ${day.id === item.day ? "selected" : ""}>${day.label}</option>`).join("")}
+              </select>
+            </label>
+            <label class="field-chip">
+              <span>時刻</span>
+              <input class="schedule-time" type="time" value="${escapeHtml(item.time)}" aria-label="予定の時刻" ${item.isTimeUnset ? "disabled" : ""}>
+            </label>
+            <label class="schedule-unset-field">
+              <input class="schedule-unset" type="checkbox" ${item.isTimeUnset ? "checked" : ""}>
+              <span>時間未定</span>
+            </label>
+            <label class="field-chip schedule-title-field">
+              <span>内容</span>
+              <input class="schedule-title" type="text" value="${escapeHtml(item.title)}" placeholder="例: ランチ" aria-label="予定の内容">
+            </label>
+            <label class="field-chip schedule-memo-field">
+              <span>メモ</span>
+              <input class="schedule-memo" type="text" value="${escapeHtml(item.memo)}" placeholder="例: 集合場所、予約名、注意点" aria-label="予定のメモ">
+            </label>
+            <label class="field-chip schedule-map-field">
+              <span>地図URL</span>
+              <input class="schedule-map" type="url" value="${escapeHtml(item.mapUrl)}" placeholder="Google Maps URL" aria-label="予定の地図URL">
+            </label>
+          </div>
+          <div class="schedule-row-actions">
+            ${item.mapUrl ? `<a class="mini-button schedule-map-link" href="${escapeHtml(item.mapUrl)}" target="_blank" rel="noreferrer">地図</a>` : ""}
+            <button class="delete-button" type="button">削除</button>
+          </div>
+        </div>
+      `;
+
+      row.querySelector(".schedule-day").addEventListener("change", (event) => {
+        state.items[index].day = event.target.value;
+        state.activeDay = event.target.value;
+        persistAndRender();
+      });
+      row.querySelector(".schedule-time").addEventListener("input", (event) => {
+        state.items[index].time = event.target.value;
+        persistAndRender();
+      });
+      row.querySelector(".schedule-unset").addEventListener("change", (event) => {
+        state.items[index].isTimeUnset = event.target.checked;
+        persistAndRender();
+      });
+      row.querySelector(".schedule-title").addEventListener("input", (event) => {
+        state.items[index].title = event.target.value;
+        save();
+      });
+      row.querySelector(".schedule-memo").addEventListener("input", (event) => {
+        state.items[index].memo = event.target.value;
+        save();
+      });
+      row.querySelector(".schedule-map").addEventListener("input", (event) => {
+        state.items[index].mapUrl = event.target.value;
+        save();
+      });
+      row.querySelector(".delete-button").addEventListener("click", () => {
+        state.items.splice(index, 1);
+        persistAndRender();
+      });
+
+      listEl.appendChild(row);
+    });
+  }
+
+  function render() {
+    renderTabs();
+    renderItems();
+  }
+
+  function setState(nextState) {
+    state = normalizeState(nextState);
+    save();
+    render();
+  }
+
+  addButton.addEventListener("click", () => {
+    state.items.push({
+      id: makeId(),
+      day: state.activeDay,
+      time: "",
+      title: "",
+      memo: "",
+      mapUrl: "",
+      isTimeUnset: true,
+    });
+    persistAndRender();
+  });
+
+  groupSync.register("schedule", {
+    get: () => state,
+    set: setState,
+  });
+  render();
+}
+
 function initGroupControls() {
   const createButton = document.getElementById("createGroupButton");
   const joinButton = document.getElementById("joinGroupButton");
@@ -1505,6 +1774,7 @@ document.addEventListener("DOMContentLoaded", () => {
   initCountdown();
   initTripSettings();
   initMap();
+  initScheduleEditor();
   initCostCalculator();
   initSettlement();
   initChecklist();

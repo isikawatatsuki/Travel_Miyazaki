@@ -929,6 +929,118 @@ svg {
   line-height: 1.75;
 }
 
+.schedule-editor {
+  display: grid;
+  gap: 16px;
+}
+
+.schedule-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.schedule-tab {
+  display: grid;
+  gap: 4px;
+  min-height: 64px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.schedule-tab strong {
+  font-family: var(--font-ui);
+  font-size: 20px;
+  font-weight: 500;
+}
+
+.schedule-tab span {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.schedule-tab.is-active {
+  border-color: rgba(31, 122, 92, 0.35);
+  background: var(--leaf-soft);
+  color: var(--leaf);
+}
+
+.schedule-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.schedule-item-card {
+  display: grid;
+  gap: 12px;
+}
+
+.schedule-item-grid {
+  display: grid;
+  grid-template-columns: 112px 104px 108px minmax(0, 1fr);
+  gap: 10px;
+  align-items: end;
+}
+
+.schedule-title-field,
+.schedule-memo-field,
+.schedule-map-field {
+  grid-column: 1 / -1;
+}
+
+.schedule-item-grid select,
+.schedule-item-grid input {
+  width: 100%;
+  min-height: 42px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #fff;
+  color: var(--ink);
+  font: inherit;
+}
+
+.schedule-unset-field {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  min-height: 42px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #fffdf8;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.schedule-unset-field input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--leaf);
+}
+
+.schedule-row-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.schedule-map-link {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+}
+
+.schedule-empty {
+  opacity: 0.92;
+}
+
 .cost-table {
   overflow: hidden;
   border-radius: var(--radius-lg);
@@ -1545,6 +1657,29 @@ svg {
     min-height: 54px;
     justify-content: start;
     padding-left: 18px;
+  }
+
+  .schedule-tabs {
+    grid-template-columns: 1fr;
+  }
+
+  .schedule-actions {
+    display: grid;
+  }
+
+  .schedule-item-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .schedule-row-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .schedule-row-actions .mini-button,
+  .schedule-row-actions .delete-button {
+    width: 100%;
+    justify-content: center;
   }
 
   .checklist-tools {
