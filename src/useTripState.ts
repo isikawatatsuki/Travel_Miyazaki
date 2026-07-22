@@ -163,15 +163,23 @@ export function useTripState() {
     const target = trips.find((trip) => trip.id === id);
     if (!target || target.id === activeTripId) return;
     applyingTrip.current = true;
+    setTrips((current) => current.map((trip) => trip.id === activeTripId ? { ...trip, name: tripSettings.tripName, updatedAt: new Date().toISOString(), state: sharedState } : trip));
     setActiveTripId(target.id);
     applySharedState(target.state);
     setSyncStatus(`${target.name}に切り替えました`);
     window.setTimeout(() => { applyingTrip.current = false; }, 180);
-  }, [activeTripId, applySharedState, setActiveTripId, trips]);
+  }, [activeTripId, applySharedState, setActiveTripId, setTrips, sharedState, tripSettings.tripName, trips]);
 
   const createTrip = useCallback(async (name: string) => {
     const now = new Date().toISOString();
     const state = createDefaultSharedState(name.trim() || "新しい旅行");
+    const start = new Date();
+    const end = new Date(start);
+    end.setDate(end.getDate() + 2);
+    const date = (value: Date) => [value.getFullYear(), String(value.getMonth() + 1).padStart(2, "0"), String(value.getDate()).padStart(2, "0")].join("-");
+    const startDate = date(start);
+    const endDate = date(end);
+    state.tripSettings = { ...state.tripSettings, startDate, endDate, dateLabel: `${startDate.replaceAll("-", ".")} - ${endDate.slice(5).replace("-", ".")}`, routeLabel: "出発地から目的地へ", outboundLabel: "未設定", returnLabel: "未設定", hotelName: "未設定", hotelAddress: "", mapOrigin: "出発地", mapDestination: "目的地", mapNote: "" };
     state.schedule = { activeDay: state.tripSettings.startDate, items: [] };
     const trip: TravelProfile = { id: makeId("trip"), name: state.tripSettings.tripName, createdAt: now, updatedAt: now, archived: false, state };
     applyingTrip.current = true;

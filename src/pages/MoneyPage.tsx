@@ -1,6 +1,5 @@
 import { Plus, ReceiptText, Trash2, UsersRound } from "lucide-react";
 import { useTrip } from "../TripContext";
-import { baseCost } from "../data";
 import { getBudgetSummary, getSettlementSummary } from "../derived";
 import { makeId, yen } from "../lib";
 import type { Payment } from "../types";
@@ -36,13 +35,17 @@ export function MoneyPage() {
         <SectionHeading eyebrow="ADJUST" title="予算を調整" />
         <Panel className="budget-panel">
           <div className="cost-list">
-            <div><span>Peach 往復</span><strong>{yen.format(baseCost.flight)}</strong></div>
-            <div><span>市岡元町〜関空 往復</span><strong>{yen.format(baseCost.access)}</strong></div>
+            <div><span>主な交通費</span><strong>{yen.format(adjust.transportCost)}</strong></div>
+            <div><span>空港・駅までのアクセス</span><strong>{yen.format(adjust.accessCost)}</strong></div>
             <div><span>ホテル</span><strong>{yen.format(hotel)}</strong></div>
             <div><span>お土産</span><strong>{yen.format(souvenirs)}</strong></div>
             {adjust.customItems.map((item) => <div key={item.id}><span>{item.name || "追加項目"}</span><strong>{yen.format(amount(item.amount))}</strong></div>)}
           </div>
           <label className="switch-row"><span><strong>朝食をつける</strong><small>ホテル料金を切り替えます</small></span><input type="checkbox" role="switch" checked={adjust.breakfast} onChange={(event) => setAdjust((current) => ({ ...current, breakfast: event.target.checked }))} /></label>
+          <div className="field-grid two">
+            <label><span>主な交通費</span><input type="number" inputMode="numeric" min="0" value={adjust.transportCost} onChange={(event) => setAdjust((current) => ({ ...current, transportCost: amount(event.target.value) }))} /></label>
+            <label><span>空港・駅までのアクセス</span><input type="number" inputMode="numeric" min="0" value={adjust.accessCost} onChange={(event) => setAdjust((current) => ({ ...current, accessCost: amount(event.target.value) }))} /></label>
+          </div>
           <div className="field-grid two">
             <label><span>朝食なし</span><input type="number" inputMode="numeric" min="0" value={adjust.hotelNoBreakfast} onChange={(event) => setAdjust((current) => ({ ...current, hotelNoBreakfast: amount(event.target.value) }))} /></label>
             <label><span>朝食あり</span><input type="number" inputMode="numeric" min="0" value={adjust.hotelBreakfast} onChange={(event) => setAdjust((current) => ({ ...current, hotelBreakfast: amount(event.target.value) }))} /></label>
