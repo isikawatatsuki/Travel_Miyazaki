@@ -33,6 +33,7 @@ function sanitizeState(value) {
   const state = value && typeof value === "object" ? value : {};
   return JSON.stringify({
     tripSettings: state.tripSettings || null,
+    schedule: state.schedule || null,
     adjust: state.adjust || null,
     settlement: state.settlement || null,
     checklist: state.checklist || null,
