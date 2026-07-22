@@ -38,6 +38,9 @@ function sanitizeState(value) {
     settlement: state.settlement || null,
     checklist: state.checklist || null,
     notes: state.notes || null,
+    reservations: state.reservations || null,
+    album: state.album || null,
+    history: state.history || null,
     spots: Array.isArray(state.spots) ? state.spots : [],
   });
 }
@@ -62,12 +65,15 @@ async function createGroup(env, request) {
     .bind(id, name, joinCode, editToken, stateJson)
     .run();
 
+  const created = await env.DB.prepare("SELECT updated_at FROM groups WHERE id = ?").bind(id).first();
+
   return json({
     group: {
       id,
       name,
       joinCode,
       editToken,
+      updatedAt: created?.updated_at,
       state: JSON.parse(stateJson),
     },
   });
@@ -82,7 +88,7 @@ async function joinGroup(env, request) {
   }
 
   const group = await env.DB.prepare(
-    "SELECT id, name, join_code, edit_token, state_json FROM groups WHERE join_code = ?",
+    "SELECT id, name, join_code, edit_token, state_json, updated_at FROM groups WHERE join_code = ?",
   )
     .bind(joinCode)
     .first();
@@ -97,6 +103,7 @@ async function joinGroup(env, request) {
       name: group.name,
       joinCode: group.join_code,
       editToken: group.edit_token,
+      updatedAt: group.updated_at,
       state: JSON.parse(group.state_json),
     },
   });
@@ -132,16 +139,22 @@ async function updateGroup(env, request, id) {
   const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "") || body.editToken || "";
   const stateJson = sanitizeState(body.state);
 
-  const group = await env.DB.prepare("SELECT edit_token FROM groups WHERE id = ?").bind(id).first();
+  const group = await env.DB.prepare("SELECT edit_token, updated_at FROM groups WHERE id = ?").bind(id).first();
   if (!group || token !== group.edit_token) {
     return json({ error: "グループを更新できませんでした。" }, 403);
   }
 
-  await env.DB.prepare("UPDATE groups SET state_json = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?")
+  if (body.expectedUpdatedAt && body.expectedUpdatedAt !== group.updated_at) {
+    return json({ error: "別の端末で更新されています。最新状態を読み込んでから、もう一度変更してください。", conflict: true }, 409);
+  }
+
+  await env.DB.prepare("UPDATE groups SET state_json = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?")
     .bind(stateJson, id)
     .run();
 
-  return json({ ok: true, state: JSON.parse(stateJson) });
+  const updated = await env.DB.prepare("SELECT updated_at FROM groups WHERE id = ?").bind(id).first();
+
+  return json({ ok: true, group: { id, updatedAt: updated?.updated_at }, state: JSON.parse(stateJson) });
 }
 
 export async function onRequest({ request, env, params }) {

@@ -1,4 +1,4 @@
-import { Download, HardDrive, RotateCcw, Save, Share2, WifiOff, X } from "lucide-react";
+import { Archive, Download, HardDrive, MapPinned, Plus, RotateCcw, Save, Share2, Smartphone, Suitcase, Undo2, WifiOff, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTrip } from "../TripContext";
 import { defaultTripSettings } from "../data";
@@ -11,10 +11,12 @@ interface InstallPromptEvent extends Event {
 }
 
 export function SettingsDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const { tripSettings, setTripSettings } = useTrip();
+  const { tripSettings, setTripSettings, trips, activeTripId, createTrip, switchTrip, archiveTrip, restoreTrip } = useTrip();
   const [draft, setDraft] = useState(tripSettings);
   const [status, setStatus] = useState("");
   const [installPrompt, setInstallPrompt] = useState<InstallPromptEvent | null>(null);
+  const [settingsTab, setSettingsTab] = useState<"trip" | "move" | "app">("trip");
+  const [newTripName, setNewTripName] = useState("");
 
   useEffect(() => { if (open) setDraft(tripSettings); }, [open, tripSettings]);
   useEffect(() => {
@@ -55,11 +57,28 @@ export function SettingsDrawer({ open, onClose }: { open: boolean; onClose: () =
       <aside className={`settings-drawer ${open ? "is-open" : ""}`} aria-hidden={!open} aria-labelledby="settings-title">
         <div className="drawer-header"><div><p className="eyebrow">SETTINGS</p><h2 id="settings-title">旅の設定</h2></div><IconButton label="設定を閉じる" onClick={onClose}><X size={22} /></IconButton></div>
         <div className="drawer-body">
+          <div className="settings-tabs" role="tablist" aria-label="設定カテゴリ">
+            <button type="button" role="tab" aria-selected={settingsTab === "trip"} className={settingsTab === "trip" ? "is-active" : ""} onClick={() => setSettingsTab("trip")}><Suitcase size={17} />旅行</button>
+            <button type="button" role="tab" aria-selected={settingsTab === "move"} className={settingsTab === "move" ? "is-active" : ""} onClick={() => setSettingsTab("move")}><MapPinned size={17} />移動・宿</button>
+            <button type="button" role="tab" aria-selected={settingsTab === "app"} className={settingsTab === "app" ? "is-active" : ""} onClick={() => setSettingsTab("app")}><Smartphone size={17} />アプリ</button>
+          </div>
+          {settingsTab === "trip" && <>
+          <section className="trip-manager" aria-labelledby="trip-manager-title">
+            <div className="storage-guide-heading"><Suitcase size={19} /><h3 id="trip-manager-title">旅行を切り替える</h3></div>
+            <div className="trip-list">{trips.filter((trip) => !trip.archived).map((trip) => <div className={trip.id === activeTripId ? "is-active" : ""} key={trip.id}>
+              <button type="button" onClick={() => switchTrip(trip.id)}><strong>{trip.name}</strong><small>{new Intl.DateTimeFormat("ja-JP", { month: "numeric", day: "numeric" }).format(new Date(trip.updatedAt))} 更新</small></button>
+              <IconButton label={`${trip.name}をアーカイブ`} disabled={trips.filter((item) => !item.archived).length <= 1} onClick={() => archiveTrip(trip.id)}><Archive size={17} /></IconButton>
+            </div>)}</div>
+            <form className="new-trip-form" onSubmit={(event) => { event.preventDefault(); if (!newTripName.trim()) return; createTrip(newTripName); setNewTripName(""); }}><label><span>新しい旅行名</span><input value={newTripName} placeholder="例：北海道旅行" onChange={(event) => setNewTripName(event.target.value)} /></label><button className="button button-secondary" type="submit"><Plus size={17} />作成</button></form>
+            {trips.some((trip) => trip.archived) && <details className="archived-trips"><summary>アーカイブした旅行</summary>{trips.filter((trip) => trip.archived).map((trip) => <div key={trip.id}><span>{trip.name}</span><button className="button button-quiet small" type="button" onClick={() => restoreTrip(trip.id)}><Undo2 size={16} />戻す</button></div>)}</details>}
+          </section>
           <fieldset><legend>基本情報</legend>
             <label><span>しおりのタイトル</span><input value={draft.tripName} onChange={(event) => field("tripName", event.target.value)} /></label>
             <div className="field-grid two"><label><span>出発日</span><input type="date" value={draft.startDate} onChange={(event) => field("startDate", event.target.value)} /></label><label><span>帰宅日</span><input type="date" min={draft.startDate} value={draft.endDate} onChange={(event) => field("endDate", event.target.value)} /></label></div>
             <label><span>旅のルート</span><input value={draft.routeLabel} placeholder="例：大阪から札幌へ" onChange={(event) => field("routeLabel", event.target.value)} /></label>
           </fieldset>
+          </>}
+          {settingsTab === "move" && <>
           <fieldset><legend>移動</legend>
             <label><span>行きの便・交通</span><input value={draft.outboundLabel} onChange={(event) => field("outboundLabel", event.target.value)} /></label>
             <label><span>帰りの便・交通</span><input value={draft.returnLabel} onChange={(event) => field("returnLabel", event.target.value)} /></label>
@@ -77,6 +96,8 @@ export function SettingsDrawer({ open, onClose }: { open: boolean; onClose: () =
             <label><span>ホテル名</span><input value={draft.hotelName} onChange={(event) => field("hotelName", event.target.value)} /></label>
             <label><span>住所</span><input value={draft.hotelAddress} onChange={(event) => field("hotelAddress", event.target.value)} /></label>
           </fieldset>
+          </>}
+          {settingsTab === "app" && <>
           <div className="app-actions">
             <button className="button button-secondary" type="button" onClick={install}><Download size={18} />ホーム画面に追加</button>
             <button className="button button-secondary" type="button" onClick={() => window.print()}>印刷する</button>
@@ -93,6 +114,7 @@ export function SettingsDrawer({ open, onClose }: { open: boolean; onClose: () =
             </div>
             <p className="storage-guide-note">ヘッダーの表示は現在の保存方法を示すもので、保存完了を毎回確認する表示ではありません。ブラウザのサイトデータを削除すると、端末保存の内容も消去されます。</p>
           </section>
+          </>}
           <p className="drawer-status" aria-live="polite">{status}</p>
         </div>
         <div className="drawer-footer">

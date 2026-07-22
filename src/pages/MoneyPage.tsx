@@ -21,7 +21,7 @@ export function MoneyPage() {
   }));
   const addPayment = () => setSettlement((current) => ({
     ...current,
-    payments: [...current.payments, { id: makeId("payment"), title: "", payerId: current.people[0]?.id || "", amount: 0 }],
+    payments: [...current.payments, { id: makeId("payment"), title: "", payerId: current.people[0]?.id || "", amount: 0, participantIds: current.people.map((person) => person.id) }],
   }));
 
   return (
@@ -70,7 +70,7 @@ export function MoneyPage() {
       </section>
 
       <section className="section-block">
-        <SectionHeading eyebrow="PAYMENTS" title="立替・割り勘メモ" description={`${peopleCount}人で均等に割り勘します。`} />
+        <SectionHeading eyebrow="PAYMENTS" title="立替・割り勘メモ" description="支払いごとに、払った人と割り勘するメンバーを選べます。" />
         <Panel className="payment-panel">
           <div className="settlement-metrics"><div><ReceiptText /><span>支払い合計</span><strong>{yen.format(paidTotal)}</strong></div><div><UsersRound /><span>1人あたり</span><strong>{yen.format(baseShare)}{remainder ? `〜${yen.format(baseShare + 1)}` : ""}</strong></div></div>
           <div className="subsection-head"><h3>支払いメモ</h3><button className="button button-secondary small" onClick={addPayment}><Plus size={17} />追加</button></div>
@@ -79,6 +79,13 @@ export function MoneyPage() {
               <label><span>内容</span><input value={payment.title} placeholder="例：夕食" onChange={(event) => updatePayment(payment.id, { title: event.target.value })} /></label>
               <label><span>払った人</span><select value={payment.payerId} onChange={(event) => updatePayment(payment.id, { payerId: event.target.value })}>{settlement.people.map((person) => <option value={person.id} key={person.id}>{person.name}</option>)}</select></label>
               <label><span>金額</span><input type="number" inputMode="numeric" min="0" value={payment.amount} onChange={(event) => updatePayment(payment.id, { amount: amount(event.target.value) })} /></label>
+              <fieldset className="payment-participants"><legend>割り勘する人</legend><div>{settlement.people.map((person) => {
+                const selected = payment.participantIds?.length ? payment.participantIds : settlement.people.map((member) => member.id);
+                return <label key={person.id}><input type="checkbox" checked={selected.includes(person.id)} onChange={(event) => {
+                  const next = event.target.checked ? [...selected, person.id] : selected.filter((id) => id !== person.id);
+                  updatePayment(payment.id, { participantIds: next.length ? next : [person.id] });
+                }} />{person.name}</label>;
+              })}</div></fieldset>
               <IconButton label="支払いを削除" className="danger" onClick={() => setSettlement((current) => ({ ...current, payments: current.payments.filter((entry) => entry.id !== payment.id) }))}><Trash2 size={18} /></IconButton>
             </div>
           )) : <EmptyState>支払いを追加すると精算結果が出ます。</EmptyState>}
