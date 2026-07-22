@@ -21,7 +21,7 @@
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="icon" href="./icons/favicon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
-    <link rel="stylesheet" href="./styles.css?v=20260722-members1" />
+    <link rel="stylesheet" href="./styles.css?v=20260722-members-section1" />
   </head>
   <body>
     <a class="skip-link" href="#main">本文へ移動</a>
@@ -33,6 +33,7 @@
         <a href="#route">地図</a>
         <a href="#schedule">予定</a>
         <a href="#schedule-settings">予定設定</a>
+        <a href="#members">メンバー</a>
         <a href="#cost">費用</a>
         <a href="#checklist">持ち物</a>
         <button class="settings-toggle" type="button" id="openTripSettingsButton" aria-label="旅の設定を開く" aria-controls="tripSettingsDrawer" aria-expanded="false">
@@ -401,6 +402,25 @@
         </aside>
       </section>
 
+      <section class="section members-section" id="members">
+        <div class="section-heading compact">
+          <p class="eyebrow">Members</p>
+          <h2>メンバー登録</h2>
+          <p data-participant-template="ここで登録した{count}人を基準に、しおりの人数表記と立替の割り勘計算を行います。">ここで登録した2人を基準に、しおりの人数表記と立替の割り勘計算を行います。</p>
+        </div>
+
+        <div class="members-panel">
+          <div class="settlement-card member-card">
+            <div class="mini-heading">
+              <span>登録メンバー</span>
+              <button class="mini-button" type="button" id="addPersonButton">追加</button>
+            </div>
+            <p class="member-summary" id="memberSummary">登録メンバー 2人</p>
+            <div class="person-list" id="personList"></div>
+          </div>
+        </div>
+      </section>
+
       <section class="section settlement-section" id="settlement">
         <div class="section-heading compact">
           <p class="eyebrow">Recopei</p>
@@ -409,15 +429,6 @@
         </div>
 
         <div class="settlement-layout">
-          <div class="settlement-card">
-            <div class="mini-heading">
-              <span>メンバー登録</span>
-              <button class="mini-button" type="button" id="addPersonButton">追加</button>
-            </div>
-            <p class="member-summary" id="memberSummary">登録メンバー 2人</p>
-            <div class="person-list" id="personList"></div>
-          </div>
-
           <div class="settlement-card">
             <div class="mini-heading">
               <span>支払いメモ</span>
@@ -499,6 +510,6 @@
       <p>旅のしおり Web版</p>
     </footer>
 
-    <script src="./app.js?v=20260722-members1"></script>
+    <script src="./app.js?v=20260722-members-section1"></script>
   </body>
 </html>
