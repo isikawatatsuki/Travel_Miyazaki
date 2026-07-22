@@ -57,7 +57,7 @@ svg { flex: 0 0 auto; }
 @keyframes page-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 .eyebrow { margin: 0 0 6px; color: var(--green); font-size: 12px; font-weight: 900; text-transform: uppercase; }
 
-.hero-section { position: relative; min-height: 440px; margin: 0 -16px 28px; padding: 64px 24px 40px; overflow: hidden; text-align: center; background: #dcece4; border-bottom: 1px solid #bcd0c5; }
+.hero-section { position: relative; margin: 0 -16px 28px; padding: 52px 24px 88px; overflow: hidden; text-align: center; background: #dcece4; border-bottom: 1px solid #bcd0c5; }
 .hero-section::before, .hero-section::after { content: ""; position: absolute; border: 1px solid rgba(35, 116, 91, 0.28); border-radius: 50%; }
 .hero-section::before { width: 280px; height: 280px; left: -170px; bottom: -80px; }
 .hero-section::after { width: 210px; height: 210px; right: -120px; top: 20px; }
@@ -65,7 +65,7 @@ svg { flex: 0 0 auto; }
 .hero-route i { width: 42px; border-top: 2px dashed rgba(20, 82, 63, 0.48); }
 .hero-section h1 { position: relative; z-index: 1; margin: 8px 0; font-family: "Kiwi Maru", serif; font-size: 42px; line-height: 1.25; letter-spacing: 0; }
 .hero-destination { position: relative; z-index: 1; margin: 0; color: #385b4e; font-size: 16px; }
-.trip-note-ticket { position: relative; z-index: 2; width: min(320px, calc(100% - 24px)); margin: 42px auto 0; padding: 18px 20px; display: grid; gap: 4px; text-align: left; background: var(--paper); border: 1px solid #bdc8c1; border-radius: 8px; box-shadow: var(--shadow); transform: rotate(-2deg); animation: ticket-in 480ms cubic-bezier(.2,.8,.2,1) 100ms both; }
+.trip-note-ticket { position: relative; z-index: 2; width: min(320px, calc(100% - 24px)); margin: 30px auto 0; padding: 18px 20px; display: grid; gap: 4px; text-align: left; background: var(--paper); border: 1px solid #bdc8c1; border-radius: 8px; box-shadow: var(--shadow); transform: rotate(-2deg); animation: ticket-in 480ms cubic-bezier(.2,.8,.2,1) 100ms both; }
 .trip-note-ticket::after { content: ""; position: absolute; right: 20px; top: 16px; width: 46px; height: 46px; border: 2px solid var(--pink); border-radius: 50%; opacity: 0.65; }
 .trip-note-ticket span { color: var(--pink); font-family: "Kiwi Maru", serif; font-size: 13px; }
 .trip-note-ticket strong { font-size: 22px; }
@@ -258,7 +258,7 @@ input:disabled { color: #8b9792; background: #eef0ed; }
 
 @media (min-width: 700px) {
   .main-content { padding-inline: 28px; }
-  .hero-section { margin-inline: -28px; min-height: 470px; }
+  .hero-section { margin-inline: -28px; padding-top: 56px; padding-bottom: 96px; }
   .quick-grid { grid-template-columns: repeat(3, 1fr); }
   .home-overview { grid-template-columns: repeat(3, 1fr); }
   .money-summary, .settlement-metrics { grid-template-columns: repeat(2, 1fr); }
