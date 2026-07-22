@@ -18,7 +18,7 @@ const pages: Array<{ id: PageKey; label: string; icon: typeof Home }> = [
   { id: "packing", label: "持ち物", icon: Luggage },
   { id: "share", label: "共有", icon: Share2 },
 ];
-const validPages: PageKey[] = [...pages.map((page) => page.id), "details"];
+const validPages: PageKey[] = [...pages.map((page) => page.id), "details", "album"];
 
 function pageFromHash(): PageKey {
   const value = window.location.hash.replace("#", "") as PageKey;
@@ -62,6 +62,7 @@ function AppShell() {
     packing: <PackingPage />,
     share: <SharePage />,
     details: <DetailsPage />,
+    album: <DetailsPage initialView="album" />,
   }[page];
 
   return (

@@ -1,4 +1,4 @@
-import { ChevronDown, Cloud, Plus, RefreshCw, Trash2, UserPlus, UsersRound } from "lucide-react";
+import { Camera, ChevronDown, Cloud, Plus, RefreshCw, Trash2, UserPlus, UsersRound } from "lucide-react";
 import { useState } from "react";
 import { useTrip } from "../TripContext";
 import { makeId } from "../lib";
@@ -6,7 +6,7 @@ import type { Person } from "../types";
 import { EmptyState, IconButton, Panel, SectionHeading } from "../components/ui";
 
 export function SharePage() {
-  const { settlement, setSettlement, notes, setNotes, groups, activeGroup, syncStatus, createGroup, joinGroup, refreshGroup, switchGroup } = useTrip();
+  const { settlement, setSettlement, notes, setNotes, album, groups, activeGroup, syncStatus, createGroup, joinGroup, refreshGroup, switchGroup } = useTrip();
   const [newNote, setNewNote] = useState("");
   const [groupName, setGroupName] = useState("旅行グループ");
   const [joinCode, setJoinCode] = useState("");
@@ -40,6 +40,15 @@ export function SharePage() {
             </div>
           ))}
           <button className="button button-secondary add-wide" onClick={() => setSettlement((current) => ({ ...current, people: [...current.people, { id: makeId("person"), name: `参加者${current.people.length + 1}`, role: "メンバー", memo: "" }] }))}><UserPlus size={19} />メンバーを追加</button>
+        </Panel>
+      </section>
+
+      <section className="section-block">
+        <SectionHeading eyebrow="PHOTOS" title="写真アルバム" action={<span className="count-badge">{album.items.length}枚</span>} />
+        <Panel className="album-entry">
+          <div className="album-entry-icon"><Camera size={24} aria-hidden="true" /></div>
+          <div><strong>撮った写真を追加</strong><p>カメラで撮るか、スマホの写真から選べます。</p></div>
+          <a className="button button-primary" href="#album"><Camera size={18} />写真を追加・見る</a>
         </Panel>
       </section>
 

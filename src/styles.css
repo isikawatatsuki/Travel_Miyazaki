@@ -313,6 +313,13 @@ input:disabled { color: #8b9792; background: #eef0ed; }
 .file-button span { flex: 1; color: inherit; }
 .file-button input, .visually-hidden { position: absolute !important; width: 1px !important; height: 1px !important; overflow: hidden !important; clip: rect(0 0 0 0) !important; white-space: nowrap !important; }
 .album-grid { display: grid; gap: 14px; margin-top: 18px; }
+.photo-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+.photo-actions .button { cursor: pointer; }
+.photo-actions .is-disabled { opacity: 0.45; pointer-events: none; }
+.album-entry { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 14px; padding: 18px; }
+.album-entry-icon { width: 48px; height: 48px; display: grid; place-items: center; color: var(--green-dark); background: var(--green-soft); border-radius: 50%; }
+.album-entry strong { display: block; }
+.album-entry p { margin: 4px 0 0; color: var(--muted); font-size: 13px; line-height: 1.55; }
 .photo-card { position: relative; display: grid; overflow: hidden; background: var(--paper); border: 1px solid var(--line); border-radius: 8px; box-shadow: var(--shadow); }
 .photo-card > img { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; background: var(--green-soft); }
 .photo-card > div { display: grid; gap: 10px; padding: 14px; }
@@ -391,6 +398,10 @@ input:disabled { color: #8b9792; background: #eef0ed; }
   .settings-tabs button, .detail-tabs button { font-size: 12px; }
   .photo-meta { grid-template-columns: 1fr; }
   .payment-participants { grid-column: 1 / -1; }
+  .photo-actions { width: 100%; justify-content: stretch; }
+  .photo-actions .button { flex: 1; padding-inline: 10px; white-space: nowrap; }
+  .album-entry { grid-template-columns: auto 1fr; }
+  .album-entry .button { grid-column: 1 / -1; }
 }
 
 @media (prefers-reduced-motion: reduce) {

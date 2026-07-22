@@ -1,4 +1,4 @@
-import { useRef, useState, type ChangeEvent } from "react";
+import { useEffect, useState, type ChangeEvent } from "react";
 import { Camera, CalendarClock, FileText, History, ImagePlus, MapPin, Paperclip, Plus, RotateCcw, Trash2 } from "lucide-react";
 import { useTrip } from "../TripContext";
 import { makeId } from "../lib";
@@ -35,12 +35,12 @@ async function compressPhoto(file: File) {
 
 const typeLabels: Record<ReservationType, string> = { transport: "移動", stay: "宿泊", activity: "遊び・食事", other: "その他" };
 
-export function DetailsPage() {
+export function DetailsPage({ initialView = "reservations" }: { initialView?: DetailView }) {
   const { tripSettings, reservations, setReservations, album, setAlbum, history, canUndo, undoLastChange } = useTrip();
-  const [view, setView] = useState<DetailView>("reservations");
+  const [view, setView] = useState<DetailView>(initialView);
   const [photoBusy, setPhotoBusy] = useState(false);
   const [message, setMessage] = useState("");
-  const photoInput = useRef<HTMLInputElement>(null);
+  useEffect(() => { setView(initialView); }, [initialView]);
 
   const updateReservation = (id: string, patch: Partial<Reservation>) => setReservations((current) => ({
     items: current.items.map((item) => item.id === id ? { ...item, ...patch } : item),
@@ -61,12 +61,22 @@ export function DetailsPage() {
     if (!files.length) return;
     setPhotoBusy(true); setMessage("");
     try {
-      const created = await Promise.all(files.map(async (file) => ({
-        id: makeId("photo"), dataUrl: await compressPhoto(file), caption: "", date: tripSettings.startDate,
-        place: "", createdAt: new Date().toISOString(),
-      })));
+      const created = [];
+      let failed = 0;
+      for (const file of files) {
+        try {
+          let dataUrl = "";
+          try { dataUrl = await compressPhoto(file); }
+          catch {
+            if (file.size > 600_000) throw new Error("画像を圧縮できませんでした。");
+            dataUrl = await readFile(file);
+          }
+          created.push({ id: makeId("photo"), dataUrl, caption: "", date: tripSettings.startDate, place: "", createdAt: new Date().toISOString() });
+        } catch { failed += 1; }
+      }
+      if (!created.length) throw new Error("写真を読み込めませんでした。");
       setAlbum((current) => ({ items: [...created, ...current.items].slice(0, 12) }));
-      setMessage(`${created.length}枚の写真を追加しました。`);
+      setMessage(failed ? `${created.length}枚を追加しました。${failed}枚は読み込めませんでした。` : `${created.length}枚の写真を追加しました。`);
     } catch { setMessage("写真を追加できませんでした。"); }
     finally { setPhotoBusy(false); event.target.value = ""; }
   };
@@ -94,8 +104,12 @@ export function DetailsPage() {
     </section>}
 
     {view === "album" && <section>
-      <SectionHeading eyebrow="MEMORIES" title="旅のアルバム" description="最大12枚。写真は軽くして、この旅行の共有データに保存します。" action={<button className="button button-primary small" type="button" disabled={photoBusy || album.items.length >= 12} onClick={() => photoInput.current?.click()}><ImagePlus size={17} />{photoBusy ? "追加中…" : "写真を追加"}</button>} />
-      <input className="visually-hidden" ref={photoInput} type="file" accept="image/*" capture="environment" multiple onChange={addPhotos} />
+      <SectionHeading eyebrow="MEMORIES" title="旅のアルバム" description="最大12枚。写真は軽くして、この旅行の共有データに保存します。" action={<div className="photo-actions">
+        <label className={`button button-secondary small ${photoBusy || album.items.length >= 12 ? "is-disabled" : ""}`} htmlFor="album-camera"><Camera size={17} />カメラで撮る</label>
+        <label className={`button button-primary small ${photoBusy || album.items.length >= 12 ? "is-disabled" : ""}`} htmlFor="album-files"><ImagePlus size={17} />{photoBusy ? "追加中…" : "写真を選ぶ"}</label>
+      </div>} />
+      <input className="visually-hidden" id="album-camera" type="file" accept="image/*" capture="environment" disabled={photoBusy || album.items.length >= 12} onChange={addPhotos} />
+      <input className="visually-hidden" id="album-files" type="file" accept="image/*" multiple disabled={photoBusy || album.items.length >= 12} onChange={addPhotos} />
       {album.items.length ? <div className="album-grid">{album.items.map((photo) => <article className="photo-card" key={photo.id}>
         <img src={photo.dataUrl} alt={photo.caption || "旅行の写真"} />
         <div><label><span>ひとこと</span><input value={photo.caption} placeholder="この日の思い出" onChange={(event) => setAlbum((current) => ({ items: current.items.map((item) => item.id === photo.id ? { ...item, caption: event.target.value } : item) }))} /></label><div className="photo-meta"><label><span>日付</span><input type="date" value={photo.date} onChange={(event) => setAlbum((current) => ({ items: current.items.map((item) => item.id === photo.id ? { ...item, date: event.target.value } : item) }))} /></label><label><span>場所</span><input value={photo.place} placeholder="場所" onChange={(event) => setAlbum((current) => ({ items: current.items.map((item) => item.id === photo.id ? { ...item, place: event.target.value } : item) }))} /></label></div></div>
