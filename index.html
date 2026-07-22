@@ -21,7 +21,7 @@
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="icon" href="./icons/favicon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
-    <link rel="stylesheet" href="./styles.css" />
+    <link rel="stylesheet" href="./styles.css?v=20260722-schedule-page1" />
   </head>
   <body>
     <a class="skip-link" href="#main">本文へ移動</a>
@@ -32,6 +32,7 @@
         <a href="#group">共有</a>
         <a href="#route">地図</a>
         <a href="#schedule">予定</a>
+        <a href="#schedule-settings">予定設定</a>
         <a href="#cost">費用</a>
         <a href="#checklist">持ち物</a>
         <button class="settings-toggle" type="button" id="openTripSettingsButton" aria-label="旅の設定を開く" aria-controls="tripSettingsDrawer" aria-expanded="false">
@@ -186,7 +187,7 @@
       </div>
     </aside>
 
-    <main id="main">
+    <main id="main" class="page-view">
       <section class="summary-strip" aria-label="当日の重要情報">
         <div>
           <span>出発まで</span>
@@ -302,15 +303,15 @@
         <div class="section-heading">
           <p class="eyebrow">Timeline</p>
           <h2>旅の予定</h2>
-          <p>日付ごとに予定を追加・編集できます。旅グループ参加中は相手にも同期されます。</p>
+          <p>決まっている予定を日付ごとに見られます。編集は予定設定ページでできます。</p>
         </div>
 
-        <div class="schedule-editor">
-          <div class="schedule-tabs" id="scheduleTabs" role="tablist" aria-label="日付を選ぶ"></div>
+        <div class="schedule-viewer">
+          <div class="schedule-tabs" id="scheduleViewTabs" role="tablist" aria-label="日付を選ぶ"></div>
           <div class="schedule-actions">
-            <button class="button primary" type="button" id="addScheduleItemButton">予定を追加</button>
+            <a class="button primary" href="#schedule-settings">予定を編集する</a>
           </div>
-          <ol class="timeline schedule-list" id="scheduleItems"></ol>
+          <ol class="timeline schedule-list" id="scheduleViewItems"></ol>
         </div>
       </section>
 
@@ -460,10 +461,29 @@
       </section>
     </main>
 
+    <main class="page-view schedule-settings-page" id="scheduleSettingsPage" hidden>
+      <section class="section schedule-settings-section" aria-labelledby="scheduleSettingsTitle">
+        <div class="section-heading">
+          <p class="eyebrow">Schedule Settings</p>
+          <h2 id="scheduleSettingsTitle">予定設定</h2>
+          <p>旅行中の予定をここでまとめて編集できます。旅グループ参加中は相手にも同期されます。</p>
+        </div>
+
+        <div class="schedule-editor">
+          <div class="schedule-settings-header">
+            <a class="button secondary" href="#schedule">しおりに戻る</a>
+            <button class="button primary" type="button" id="addScheduleItemButton">予定を追加</button>
+          </div>
+          <div class="schedule-tabs" id="scheduleTabs" role="tablist" aria-label="編集する日付を選ぶ"></div>
+          <ol class="timeline schedule-list" id="scheduleItems"></ol>
+        </div>
+      </section>
+    </main>
+
     <footer class="site-footer">
       <p>旅のしおり Web版</p>
     </footer>
 
-    <script src="./app.js?v=20260722-schedule1"></script>
+    <script src="./app.js?v=20260722-schedule-page1"></script>
   </body>
 </html>

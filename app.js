@@ -577,8 +577,10 @@ function initScheduleEditor() {
   const tabsEl = document.getElementById("scheduleTabs");
   const listEl = document.getElementById("scheduleItems");
   const addButton = document.getElementById("addScheduleItemButton");
+  const viewTabsEl = document.getElementById("scheduleViewTabs");
+  const viewListEl = document.getElementById("scheduleViewItems");
 
-  if (!tabsEl || !listEl || !addButton) return;
+  if (!tabsEl || !listEl || !addButton || !viewTabsEl || !viewListEl) return;
 
   const days = [
     { id: "2026-09-21", label: "9/21", detail: "Day 1" },
@@ -695,8 +697,8 @@ function initScheduleEditor() {
     render();
   }
 
-  function renderTabs() {
-    tabsEl.innerHTML = "";
+  function renderTabs(targetEl) {
+    targetEl.innerHTML = "";
     days.forEach((day) => {
       const count = state.items.filter((item) => item.day === day.id).length;
       const button = document.createElement("button");
@@ -712,7 +714,40 @@ function initScheduleEditor() {
         state.activeDay = day.id;
         persistAndRender();
       });
-      tabsEl.appendChild(button);
+      targetEl.appendChild(button);
+    });
+  }
+
+  function renderViewItems() {
+    viewListEl.innerHTML = "";
+    const items = sortedItems();
+
+    if (!items.length) {
+      const empty = document.createElement("li");
+      empty.className = "schedule-empty";
+      empty.innerHTML = `
+        <time>未定</time>
+        <div>
+          <h3>まだ予定はありません</h3>
+          <p>予定設定ページから、行きたい場所や移動メモを入れられます。</p>
+        </div>
+      `;
+      viewListEl.appendChild(empty);
+      return;
+    }
+
+    items.forEach((item) => {
+      const row = document.createElement("li");
+      row.className = "schedule-view-item";
+      row.innerHTML = `
+        <time>${item.isTimeUnset ? "未定" : escapeHtml(item.time || "未定")}</time>
+        <div>
+          <h3>${escapeHtml(item.title || "予定")}</h3>
+          <p>${escapeHtml(item.memo || "メモはまだありません。")}</p>
+          ${item.mapUrl ? `<a class="mini-button schedule-map-link" href="${escapeHtml(item.mapUrl)}" target="_blank" rel="noreferrer">地図で見る</a>` : ""}
+        </div>
+      `;
+      viewListEl.appendChild(row);
     });
   }
 
@@ -811,7 +846,9 @@ function initScheduleEditor() {
   }
 
   function render() {
-    renderTabs();
+    renderTabs(tabsEl);
+    renderTabs(viewTabsEl);
+    renderViewItems();
     renderItems();
   }
 
@@ -1646,6 +1683,34 @@ function initPrint() {
   });
 }
 
+function initPageRouting() {
+  const homePage = document.getElementById("main");
+  const scheduleSettingsPage = document.getElementById("scheduleSettingsPage");
+  if (!homePage || !scheduleSettingsPage) return;
+
+  function route() {
+    const isScheduleSettings = window.location.hash === "#schedule-settings";
+    homePage.hidden = isScheduleSettings;
+    scheduleSettingsPage.hidden = !isScheduleSettings;
+    document.body.classList.toggle("schedule-settings-mode", isScheduleSettings);
+
+    if (isScheduleSettings) {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+
+    if (window.location.hash) {
+      const target = document.querySelector(window.location.hash);
+      if (target) {
+        window.requestAnimationFrame(() => target.scrollIntoView({ behavior: "smooth", block: "start" }));
+      }
+    }
+  }
+
+  window.addEventListener("hashchange", route);
+  route();
+}
+
 function initRevealAnimations() {
   const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const tripNote = document.querySelector(".hero-card");
@@ -1780,6 +1845,7 @@ document.addEventListener("DOMContentLoaded", () => {
   initChecklist();
   initSharedNotes();
   initGroupControls();
+  initPageRouting();
   initRevealAnimations();
   initPrint();
   initPwa();
