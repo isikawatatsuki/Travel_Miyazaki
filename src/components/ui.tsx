@@ -1,4 +1,4 @@
-import type { ButtonHTMLAttributes, PropsWithChildren, ReactNode } from "react";
+import type { ButtonHTMLAttributes, HTMLAttributes, PropsWithChildren, ReactNode } from "react";
 import { ChevronRight } from "lucide-react";
 
 export function SectionHeading({ eyebrow, title, description, action }: { eyebrow: string; title: string; description?: string; action?: ReactNode }) {
@@ -14,8 +14,8 @@ export function SectionHeading({ eyebrow, title, description, action }: { eyebro
   );
 }
 
-export function Panel({ children, className = "" }: PropsWithChildren<{ className?: string }>) {
-  return <div className={`panel ${className}`}>{children}</div>;
+export function Panel({ children, className = "", ...props }: PropsWithChildren<HTMLAttributes<HTMLDivElement>>) {
+  return <div className={`panel ${className}`} {...props}>{children}</div>;
 }
 
 export function IconButton({ label, children, className = "", ...props }: PropsWithChildren<{ label: string; className?: string } & ButtonHTMLAttributes<HTMLButtonElement>>) {
