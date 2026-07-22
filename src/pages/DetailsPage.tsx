@@ -2,7 +2,7 @@ import { useEffect, useState, type ChangeEvent } from "react";
 import { Camera, CalendarClock, FileText, History, ImagePlus, MapPin, Paperclip, Plus, RotateCcw, Trash2 } from "lucide-react";
 import { useTrip } from "../TripContext";
 import { makeId } from "../lib";
-import type { Reservation, ReservationType } from "../types";
+import type { AlbumPhoto, Reservation, ReservationType } from "../types";
 import { EmptyState, IconButton, Panel, SectionHeading } from "../components/ui";
 
 type DetailView = "reservations" | "album" | "history";
@@ -61,7 +61,7 @@ export function DetailsPage({ initialView = "reservations" }: { initialView?: De
     if (!files.length) return;
     setPhotoBusy(true); setMessage("");
     try {
-      const created = [];
+      const created: AlbumPhoto[] = [];
       let failed = 0;
       for (const file of files) {
         try {
