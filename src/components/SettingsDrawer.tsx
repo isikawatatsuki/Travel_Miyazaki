@@ -1,4 +1,4 @@
-import { Archive, Download, HardDrive, MapPinned, Plus, RotateCcw, Save, Share2, Smartphone, Suitcase, Undo2, WifiOff, X } from "lucide-react";
+import { Archive, Download, HardDrive, Luggage, MapPinned, Plus, RotateCcw, Save, Share2, Smartphone, Undo2, WifiOff, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTrip } from "../TripContext";
 import { defaultTripSettings } from "../data";
@@ -58,13 +58,13 @@ export function SettingsDrawer({ open, onClose }: { open: boolean; onClose: () =
         <div className="drawer-header"><div><p className="eyebrow">SETTINGS</p><h2 id="settings-title">旅の設定</h2></div><IconButton label="設定を閉じる" onClick={onClose}><X size={22} /></IconButton></div>
         <div className="drawer-body">
           <div className="settings-tabs" role="tablist" aria-label="設定カテゴリ">
-            <button type="button" role="tab" aria-selected={settingsTab === "trip"} className={settingsTab === "trip" ? "is-active" : ""} onClick={() => setSettingsTab("trip")}><Suitcase size={17} />旅行</button>
+            <button type="button" role="tab" aria-selected={settingsTab === "trip"} className={settingsTab === "trip" ? "is-active" : ""} onClick={() => setSettingsTab("trip")}><Luggage size={17} />旅行</button>
             <button type="button" role="tab" aria-selected={settingsTab === "move"} className={settingsTab === "move" ? "is-active" : ""} onClick={() => setSettingsTab("move")}><MapPinned size={17} />移動・宿</button>
             <button type="button" role="tab" aria-selected={settingsTab === "app"} className={settingsTab === "app" ? "is-active" : ""} onClick={() => setSettingsTab("app")}><Smartphone size={17} />アプリ</button>
           </div>
           {settingsTab === "trip" && <>
           <section className="trip-manager" aria-labelledby="trip-manager-title">
-            <div className="storage-guide-heading"><Suitcase size={19} /><h3 id="trip-manager-title">旅行を切り替える</h3></div>
+            <div className="storage-guide-heading"><Luggage size={19} /><h3 id="trip-manager-title">旅行を切り替える</h3></div>
             <div className="trip-list">{trips.filter((trip) => !trip.archived).map((trip) => <div className={trip.id === activeTripId ? "is-active" : ""} key={trip.id}>
               <button type="button" onClick={() => switchTrip(trip.id)}><strong>{trip.name}</strong><small>{new Intl.DateTimeFormat("ja-JP", { month: "numeric", day: "numeric" }).format(new Date(trip.updatedAt))} 更新</small></button>
               <IconButton label={`${trip.name}をアーカイブ`} disabled={trips.filter((item) => !item.archived).length <= 1} onClick={() => archiveTrip(trip.id)}><Archive size={17} /></IconButton>

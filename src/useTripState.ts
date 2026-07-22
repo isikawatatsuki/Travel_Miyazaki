@@ -132,7 +132,7 @@ export function useTripState() {
 
   useEffect(() => {
     if (!sectionRef.current) { sectionRef.current = sectionSnapshot; previousUndoStateRef.current = sharedState; return; }
-    const changed = Object.keys(sectionSnapshot).filter((key) => sectionRef.current?.[key] !== sectionSnapshot[key]);
+    const changed = (Object.keys(sectionSnapshot) as Array<keyof typeof sectionSnapshot>).filter((key) => sectionRef.current?.[key] !== sectionSnapshot[key]);
     const previousState = previousUndoStateRef.current;
     sectionRef.current = sectionSnapshot;
     previousUndoStateRef.current = sharedState;
