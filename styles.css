@@ -393,6 +393,14 @@ svg {
   color: var(--leaf);
 }
 
+.install-status {
+  min-height: 26px;
+  margin: 12px auto 0;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
 .hero-card,
 .info-panel,
 .calculator,
