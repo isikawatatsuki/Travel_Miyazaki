@@ -113,4 +113,4 @@ export type Group = {
   state?: Partial<SharedState>;
 };
 
-export type PageKey = "home" | "plan" | "money" | "packing" | "share" | "details";
+export type PageKey = "home" | "plan" | "money" | "packing" | "share" | "details" | "album";
