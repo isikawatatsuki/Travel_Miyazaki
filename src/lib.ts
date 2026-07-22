@@ -22,12 +22,15 @@ export function readStorage<T>(key: string, fallback: T): T {
 export function usePersistentState<T>(key: string, fallback: T) {
   const [state, setState] = useState<T>(() => readStorage(key, fallback));
   useEffect(() => {
-    window.dispatchEvent(new CustomEvent("trip-storage", { detail: { phase: "saving" } }));
+    window.dispatchEvent(new CustomEvent("trip-storage", { detail: { phase: "saving", key } }));
     try {
       localStorage.setItem(key, JSON.stringify(state));
-      window.dispatchEvent(new CustomEvent("trip-storage", { detail: { phase: "saved", at: new Date().toISOString() } }));
-    } catch {
-      window.dispatchEvent(new CustomEvent("trip-storage", { detail: { phase: "error" } }));
+      window.dispatchEvent(new CustomEvent("trip-storage", { detail: { phase: "saved", key, at: new Date().toISOString() } }));
+    } catch (error) {
+      const message = error instanceof DOMException && error.name === "QuotaExceededError"
+        ? "端末の保存容量が不足しています。写真や添付ファイルを減らしてください。"
+        : "端末へ保存できませんでした。";
+      window.dispatchEvent(new CustomEvent("trip-storage", { detail: { phase: "error", key, message } }));
     }
   }, [key, state]);
   return [state, setState] as const;
