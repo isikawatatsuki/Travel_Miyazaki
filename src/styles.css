@@ -121,9 +121,9 @@ svg { flex: 0 0 auto; }
 .plan-timeline { overflow: hidden; padding: 4px 20px; }
 .plan-timeline-row { display: grid; grid-template-columns: 72px minmax(0, 1fr); gap: 16px; min-height: 104px; padding: 18px 0; border-bottom: 1px solid var(--line); }
 .plan-timeline-row:last-child { border-bottom: 0; }
-.plan-time { position: relative; display: flex; justify-content: flex-end; padding-top: 3px; color: var(--green-dark); font-weight: 900; font-variant-numeric: tabular-nums; }
-.plan-time i { position: absolute; top: 33px; right: 7px; bottom: -19px; width: 1px; background: #b8cbc1; }
-.plan-time::after { content: ""; position: absolute; top: 10px; right: 3px; width: 9px; height: 9px; background: var(--paper); border: 3px solid var(--green); border-radius: 50%; transform: translateX(100%); }
+.plan-time { position: relative; display: flex; justify-content: flex-end; padding: 3px 22px 0 0; color: var(--green-dark); font-weight: 900; font-variant-numeric: tabular-nums; }
+.plan-time i { position: absolute; top: 31px; right: 7px; bottom: -19px; width: 1px; background: #b8cbc1; }
+.plan-time::after { content: ""; position: absolute; top: 7px; right: 0; width: 8px; height: 8px; background: var(--paper); border: 3px solid var(--green); border-radius: 50%; }
 .plan-timeline-row:last-child .plan-time i { display: none; }
 .plan-event { min-width: 0; padding-left: 4px; }
 .plan-event small { display: block; margin-bottom: 3px; color: var(--pink); font-size: 11px; font-weight: 900; }
@@ -299,7 +299,7 @@ input:disabled { color: #8b9792; background: #eef0ed; }
   .stay-summary { grid-template-columns: auto 1fr; }
   .stay-summary .button { grid-column: 1 / -1; }
   .plan-timeline { padding-inline: 14px; }
-  .plan-timeline-row { grid-template-columns: 58px minmax(0, 1fr); gap: 12px; }
+  .plan-timeline-row { grid-template-columns: 68px minmax(0, 1fr); gap: 10px; }
   .schedule-card { padding: 14px; }
   .schedule-card-head { display: grid; grid-template-columns: 44px minmax(0, 1fr) 44px; align-items: center; }
   .schedule-card-head .step-number { grid-column: 1; grid-row: 1 / 3; }
