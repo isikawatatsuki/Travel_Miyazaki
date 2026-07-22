@@ -1,4 +1,4 @@
-import { Archive, Download, HardDrive, Luggage, MapPinned, Plus, RotateCcw, Save, Share2, Smartphone, Undo2, WifiOff, X } from "lucide-react";
+import { Archive, CheckCircle2, Download, HardDrive, LoaderCircle, Luggage, MapPinned, Plus, RotateCcw, Save, Share2, Smartphone, Undo2, WifiOff, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTrip } from "../TripContext";
 import { defaultTripSettings } from "../data";
@@ -10,6 +10,13 @@ interface InstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
 }
 
+interface SaveProgress {
+  percent: number;
+  title: string;
+  detail: string;
+  complete?: boolean;
+}
+
 export function SettingsDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { tripSettings, setTripSettings, trips, activeTripId, createTrip, switchTrip, archiveTrip, restoreTrip } = useTrip();
   const [draft, setDraft] = useState(tripSettings);
@@ -17,6 +24,7 @@ export function SettingsDrawer({ open, onClose }: { open: boolean; onClose: () =
   const [installPrompt, setInstallPrompt] = useState<InstallPromptEvent | null>(null);
   const [settingsTab, setSettingsTab] = useState<"trip" | "move" | "app">("trip");
   const [newTripName, setNewTripName] = useState("");
+  const [saveProgress, setSaveProgress] = useState<SaveProgress | null>(null);
 
   useEffect(() => { if (open) setDraft(tripSettings); }, [open, tripSettings]);
   useEffect(() => {
@@ -26,19 +34,29 @@ export function SettingsDrawer({ open, onClose }: { open: boolean; onClose: () =
   }, []);
   useEffect(() => {
     if (!open) return;
-    const onKeyDown = (event: KeyboardEvent) => { if (event.key === "Escape") onClose(); };
+    const onKeyDown = (event: KeyboardEvent) => { if (event.key === "Escape" && !saveProgress) onClose(); };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [onClose, open]);
+  }, [onClose, open, saveProgress]);
 
   const field = <K extends keyof TripSettings>(key: K, value: TripSettings[K]) => setDraft((current) => ({ ...current, [key]: value }));
   const save = async () => {
-    setStatus("反映中...");
-    await new Promise((resolve) => window.setTimeout(resolve, 450));
+    if (saveProgress) return;
+    const wait = (duration: number) => new Promise((resolve) => window.setTimeout(resolve, duration));
+    setStatus("");
+    setSaveProgress({ percent: 15, title: "設定を確認中", detail: "入力した内容を確認しています" });
+    await wait(260);
+    setSaveProgress({ percent: 45, title: "保存中", detail: "旅行データを保存しています" });
     const formatter = (date: string) => date.replaceAll("-", ".");
     setTripSettings({ ...draft, dateLabel: `${formatter(draft.startDate)} - ${formatter(draft.endDate).slice(5)}` });
+    await wait(420);
+    setSaveProgress({ percent: 80, title: "画面へ反映中", detail: "しおりの表示を更新しています" });
+    await wait(360);
+    setSaveProgress({ percent: 100, title: "更新完了", detail: "設定を反映しました", complete: true });
     setStatus("設定を反映しました");
-    window.setTimeout(onClose, 350);
+    await wait(720);
+    setSaveProgress(null);
+    onClose();
   };
   const install = async () => {
     if (installPrompt) {
@@ -53,9 +71,9 @@ export function SettingsDrawer({ open, onClose }: { open: boolean; onClose: () =
 
   return (
     <>
-      <button className={`drawer-scrim ${open ? "is-open" : ""}`} type="button" aria-label="設定を閉じる" onClick={onClose} />
+      <button className={`drawer-scrim ${open ? "is-open" : ""}`} type="button" aria-label="設定を閉じる" onClick={saveProgress ? undefined : onClose} disabled={Boolean(saveProgress)} />
       <aside className={`settings-drawer ${open ? "is-open" : ""}`} aria-hidden={!open} aria-labelledby="settings-title">
-        <div className="drawer-header"><div><p className="eyebrow">SETTINGS</p><h2 id="settings-title">旅の設定</h2></div><IconButton label="設定を閉じる" onClick={onClose}><X size={22} /></IconButton></div>
+        <div className="drawer-header"><div><p className="eyebrow">SETTINGS</p><h2 id="settings-title">旅の設定</h2></div><IconButton label="設定を閉じる" onClick={onClose} disabled={Boolean(saveProgress)}><X size={22} /></IconButton></div>
         <div className="drawer-body">
           <div className="settings-tabs" role="tablist" aria-label="設定カテゴリ">
             <button type="button" role="tab" aria-selected={settingsTab === "trip"} className={settingsTab === "trip" ? "is-active" : ""} onClick={() => setSettingsTab("trip")}><Luggage size={17} />旅行</button>
@@ -118,10 +136,24 @@ export function SettingsDrawer({ open, onClose }: { open: boolean; onClose: () =
           <p className="drawer-status" aria-live="polite">{status}</p>
         </div>
         <div className="drawer-footer">
-          <button className="button button-quiet" type="button" onClick={() => { setDraft(defaultTripSettings); setStatus("初期値を読み込みました。反映すると保存されます"); }}><RotateCcw size={18} />初期値</button>
-          <button className="button button-primary" type="button" onClick={save}><Save size={18} />反映する</button>
+          <button className="button button-quiet" type="button" disabled={Boolean(saveProgress)} onClick={() => { setDraft(defaultTripSettings); setStatus("初期値を読み込みました。反映すると保存されます"); }}><RotateCcw size={18} />初期値</button>
+          <button className="button button-primary" type="button" disabled={Boolean(saveProgress)} onClick={save}>{saveProgress ? <LoaderCircle className="spin" size={18} /> : <Save size={18} />}{saveProgress ? "更新中" : "反映する"}</button>
         </div>
       </aside>
+      {saveProgress && <div className="save-progress-layer">
+        <section className={`save-progress-dialog ${saveProgress.complete ? "is-complete" : ""}`} role="dialog" aria-modal="true" aria-labelledby="save-progress-title" aria-describedby="save-progress-detail">
+          <div className="save-progress-icon" aria-hidden="true">
+            {saveProgress.complete ? <CheckCircle2 size={34} /> : <LoaderCircle className="spin" size={34} />}
+          </div>
+          <p className="eyebrow">UPDATING</p>
+          <h2 id="save-progress-title">{saveProgress.title}</h2>
+          <p id="save-progress-detail">{saveProgress.detail}</p>
+          <div className="save-progress-track" role="progressbar" aria-label="設定の更新進捗" aria-valuemin={0} aria-valuemax={100} aria-valuenow={saveProgress.percent}>
+            <i style={{ transform: `scaleX(${saveProgress.percent / 100})` }} />
+          </div>
+          <strong>{saveProgress.percent}%</strong>
+        </section>
+      </div>}
     </>
   );
 }
