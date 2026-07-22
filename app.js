@@ -1171,6 +1171,61 @@ function initRevealAnimations() {
   }
 }
 
+function initPwa() {
+  const installButton = document.getElementById("installPwaButton");
+  const installStatus = document.getElementById("installPwaStatus");
+  let deferredPrompt = null;
+
+  const isStandalone =
+    window.matchMedia("(display-mode: standalone)").matches ||
+    window.navigator.standalone === true;
+  const isIos = /iphone|ipad|ipod/i.test(window.navigator.userAgent);
+
+  function showStatus(message) {
+    if (installStatus) installStatus.textContent = message;
+  }
+
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("./sw.js").catch(() => {
+        showStatus("オフライン準備に失敗しました。通信が安定している時にもう一度開いてください。");
+      });
+    });
+  }
+
+  if (!installButton) return;
+
+  if (isStandalone) {
+    installButton.hidden = true;
+    showStatus("");
+    return;
+  }
+
+  window.addEventListener("beforeinstallprompt", (event) => {
+    event.preventDefault();
+    deferredPrompt = event;
+    installButton.hidden = false;
+    showStatus("この端末にアプリとして追加できます。");
+  });
+
+  installButton.addEventListener("click", async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      await deferredPrompt.userChoice.catch(() => null);
+      deferredPrompt = null;
+      showStatus("追加できたら、ホーム画面から開けます。");
+      return;
+    }
+
+    if (isIos) {
+      showStatus("iPhoneはSafariの共有ボタンから「ホーム画面に追加」を選んでください。");
+      return;
+    }
+
+    showStatus("ブラウザのメニューから「アプリをインストール」または「ホーム画面に追加」を選んでください。");
+  });
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   initCountdown();
   initTripSettings();
@@ -1181,4 +1236,5 @@ document.addEventListener("DOMContentLoaded", () => {
   initGroupControls();
   initRevealAnimations();
   initPrint();
+  initPwa();
 });

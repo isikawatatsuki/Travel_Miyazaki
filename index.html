@@ -8,12 +8,19 @@
       name="description"
       content="旅行の日程、地図、費用、持ち物、共有メモをスマホでさくっと見られる旅のしおりです。"
     />
+    <meta name="theme-color" content="#1f7a5c" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="旅しおり" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       href="https://fonts.googleapis.com/css2?family=Kiwi+Maru:wght@400;500&family=Noto+Sans+JP:wght@400;500;700;900&family=Zen+Old+Mincho:wght@700;900&display=swap"
       rel="stylesheet"
     />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="icon" href="./icons/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
@@ -53,7 +60,14 @@
               </span>
               印刷する
             </button>
+            <button class="button secondary" type="button" id="installPwaButton">
+              <span class="button-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5" /><path d="M5 19h14" /></svg>
+              </span>
+              ホームに追加
+            </button>
           </div>
+          <p class="install-status" id="installPwaStatus" aria-live="polite"></p>
         </div>
 
         <div class="hero-illustration" aria-hidden="true">
@@ -445,6 +459,6 @@
       <p>旅のしおり Web版</p>
     </footer>
 
-    <script src="./app.js?v=20260703-settingsdrawer1"></script>
+    <script src="./app.js?v=20260722-pwa1"></script>
   </body>
 </html>
