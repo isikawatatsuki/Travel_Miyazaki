@@ -52,7 +52,7 @@ function AppShell() {
     <div className="app-shell">
       <header className="app-header">
         <a className="brand" href="#home" aria-label="旅のしおり ホーム">
-          <span>Trip Note</span>
+          <span>tabi log</span>
           <strong>旅のしおり</strong>
         </a>
         <div className="header-actions">
