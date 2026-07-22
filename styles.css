@@ -58,6 +58,14 @@ body.settings-open {
   overflow: hidden;
 }
 
+.page-view[hidden] {
+  display: none;
+}
+
+body.schedule-settings-mode .hero {
+  display: none;
+}
+
 a {
   color: inherit;
 }
@@ -109,6 +117,7 @@ svg {
 #group,
 #route,
 #schedule,
+#schedule-settings,
 #cost,
 #checklist {
   scroll-margin-top: calc(var(--topbar-height) + 18px);
@@ -929,9 +938,21 @@ svg {
   line-height: 1.75;
 }
 
+.schedule-viewer,
 .schedule-editor {
   display: grid;
   gap: 16px;
+}
+
+.schedule-settings-page {
+  min-height: calc(100vh - var(--topbar-height));
+}
+
+.schedule-settings-header {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
 }
 
 .schedule-tabs {
@@ -1035,6 +1056,10 @@ svg {
   display: inline-flex;
   align-items: center;
   text-decoration: none;
+}
+
+.schedule-view-item .schedule-map-link {
+  margin-top: 12px;
 }
 
 .schedule-empty {
@@ -1665,6 +1690,11 @@ svg {
 
   .schedule-actions {
     display: grid;
+  }
+
+  .schedule-settings-header {
+    display: grid;
+    grid-template-columns: 1fr;
   }
 
   .schedule-item-grid {
