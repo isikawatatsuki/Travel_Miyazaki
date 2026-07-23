@@ -52,6 +52,8 @@ export function DetailsPage({ initialView = "reservations" }: { initialView?: De
   const attachReservation = async (id: string, event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
+    const allowedTypes = ["application/pdf", "image/jpeg", "image/png", "image/webp"];
+    if (!allowedTypes.includes(file.type)) { setMessage("PDF・JPEG・PNG・WebPだけ添付できます。"); event.target.value = ""; return; }
     if (file.size > 250_000) { setMessage("添付ファイルは250KB以下にしてください。"); event.target.value = ""; return; }
     updateReservation(id, { attachmentName: file.name, attachmentData: await readFile(file) });
     setMessage("予約資料を保存しました。");
@@ -96,9 +98,9 @@ export function DetailsPage({ initialView = "reservations" }: { initialView?: De
         <div className="reservation-card-head"><select aria-label="予約の種類" value={item.type} onChange={(event) => updateReservation(item.id, { type: event.target.value as ReservationType })}>{Object.entries(typeLabels).map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select><IconButton label="予約を削除" className="danger" onClick={() => setReservations((current) => ({ items: current.items.filter((entry) => entry.id !== item.id) }))}><Trash2 size={18} /></IconButton></div>
         <label><span>予約名</span><input value={item.title} placeholder="例：Peach MM193" onChange={(event) => updateReservation(item.id, { title: event.target.value })} /></label>
         <div className="field-grid two"><label><span>日付</span><input type="date" value={item.date} onChange={(event) => updateReservation(item.id, { date: event.target.value })} /></label><label><span>時間</span><input type="time" value={item.time} onChange={(event) => updateReservation(item.id, { time: event.target.value })} /></label></div>
-        <div className="field-grid two"><label><span>予約番号</span><input type="password" value={item.reference} placeholder="入力内容は伏せ字で表示" onChange={(event) => updateReservation(item.id, { reference: event.target.value })} /></label><label><span>キャンセル期限</span><input type="date" value={item.deadline} onChange={(event) => updateReservation(item.id, { deadline: event.target.value })} /></label></div>
+        <div className="field-grid two"><label><span>予約番号（この端末のみ）</span><input type="password" value={item.reference} placeholder="共有先には送信しません" onChange={(event) => updateReservation(item.id, { reference: event.target.value })} /></label><label><span>キャンセル期限</span><input type="date" value={item.deadline} onChange={(event) => updateReservation(item.id, { deadline: event.target.value })} /></label></div>
         <label><span>メモ</span><textarea rows={2} value={item.memo} onChange={(event) => updateReservation(item.id, { memo: event.target.value })} /></label>
-        <label className="file-button"><Paperclip size={17} /><span>{item.attachmentName || "予約画面・PDFを添付（250KBまで）"}</span><input type="file" accept="image/*,.pdf" onChange={(event) => attachReservation(item.id, event)} /></label>
+        <label className="file-button"><Paperclip size={17} /><span>{item.attachmentName || "端末だけに予約画面・PDFを添付（250KBまで）"}</span><input type="file" accept="application/pdf,image/jpeg,image/png,image/webp" onChange={(event) => attachReservation(item.id, event)} /></label>
         {item.attachmentData && <a className="inline-map-link" href={item.attachmentData} target="_blank" rel="noreferrer"><FileText size={17} />添付資料を開く</a>}
       </Panel>) : <EmptyState>予約情報はまだありません。</EmptyState>}</div>
     </section>}

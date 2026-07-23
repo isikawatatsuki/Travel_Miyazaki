@@ -51,6 +51,15 @@ export function mapsEmbed(origin: string, destination: string) {
   return `https://maps.google.com/maps?${params}`;
 }
 
+export function safeExternalUrl(value: string) {
+  try {
+    const url = new URL(value);
+    return ["https:", "http:"].includes(url.protocol) ? url.toString() : "";
+  } catch {
+    return "";
+  }
+}
+
 export function useOnlineStatus() {
   const [online, setOnline] = useState(() => navigator.onLine);
   useEffect(() => {

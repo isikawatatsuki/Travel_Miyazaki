@@ -71,6 +71,13 @@ export function useTripState() {
     spots: [],
   }), [adjust, album, checklist, history, notes, reservations, schedule, settlement, tripSettings]);
 
+  const remoteSharedState = useMemo<SharedState>(() => ({
+    ...sharedState,
+    reservations: {
+      items: reservations.items.map((item) => ({ ...item, reference: "", attachmentName: "", attachmentData: "" })),
+    },
+  }), [reservations.items, sharedState]);
+
   const applySharedState = useCallback((state?: Partial<SharedState>) => {
     if (!state) return;
     applyingRemote.current = true;
@@ -80,7 +87,18 @@ export function useTripState() {
     if (state.settlement) setSettlement({ ...defaultSettlement, ...state.settlement });
     if (state.checklist) setChecklist({ ...defaultChecklist, ...state.checklist });
     if (state.notes) setNotes({ ...defaultNotes, ...state.notes });
-    setReservations(state.reservations ? { ...defaultReservations, ...state.reservations } : defaultReservations);
+    setReservations((current) => {
+      if (!state.reservations) return defaultReservations;
+      const incoming = Array.isArray(state.reservations.items) ? state.reservations.items : [];
+      return {
+        ...defaultReservations,
+        ...state.reservations,
+        items: incoming.map((item) => {
+          const local = current.items.find((entry) => entry.id === item.id);
+          return { ...item, reference: local?.reference || "", attachmentName: local?.attachmentName || "", attachmentData: local?.attachmentData || "" };
+        }),
+      };
+    });
     setAlbum(state.album ? { ...defaultAlbum, ...state.album } : defaultAlbum);
     setHistory(state.history ? { ...defaultHistory, ...state.history } : defaultHistory);
     window.setTimeout(() => { applyingRemote.current = false; }, 120);
@@ -220,9 +238,9 @@ export function useTripState() {
 
   const createGroup = useCallback(async (name: string) => {
     setSavePhase("syncing"); setSyncStatus("グループを作成中...");
-    const result = await request<{ group: Group }>("/api/groups", { method: "POST", body: JSON.stringify({ name, state: sharedState }) });
-    groupFingerprintRef.current = JSON.stringify(sharedState); rememberGroup(result.group); setSavePhase("synced"); setSyncStatus("グループを作成しました");
-  }, [rememberGroup, request, sharedState]);
+    const result = await request<{ group: Group }>("/api/groups", { method: "POST", body: JSON.stringify({ name, state: remoteSharedState }) });
+    groupFingerprintRef.current = JSON.stringify(remoteSharedState); rememberGroup(result.group); setSavePhase("synced"); setSyncStatus("グループを作成しました");
+  }, [rememberGroup, remoteSharedState, request]);
 
   const joinGroup = useCallback(async (joinCode: string) => {
     setSavePhase("syncing"); setSyncStatus("グループに参加中...");
@@ -233,8 +251,11 @@ export function useTripState() {
   const refreshGroup = useCallback(async (target = activeGroup) => {
     if (!target) return;
     setSavePhase("syncing"); setSyncStatus("共有データを更新中...");
-    const result = await request<{ group: Group }>(`/api/groups/${target.id}?token=${encodeURIComponent(target.editToken)}`);
-    groupFingerprintRef.current = JSON.stringify(result.group.state || {}); applySharedState(result.group.state); rememberGroup(result.group); setSavePhase("synced"); setSyncStatus("最新の状態です");
+    const result = await request<{ group: Group }>(`/api/groups/${target.id}`, {
+      headers: { authorization: `Bearer ${target.readToken || target.editToken}` },
+    });
+    const refreshed = { ...result.group, readToken: target.readToken, editToken: target.editToken };
+    groupFingerprintRef.current = JSON.stringify(refreshed.state || {}); applySharedState(refreshed.state); rememberGroup(refreshed); setSavePhase("synced"); setSyncStatus("最新の状態です");
   }, [activeGroup, applySharedState, rememberGroup, request]);
 
   const switchGroup = useCallback(async (id: string) => {
@@ -244,7 +265,7 @@ export function useTripState() {
 
   useEffect(() => {
     if (!activeGroup) { groupFingerprintRef.current = ""; return; }
-    const fingerprint = JSON.stringify(sharedState);
+    const fingerprint = JSON.stringify(remoteSharedState);
     if (!groupFingerprintRef.current) { groupFingerprintRef.current = fingerprint; return; }
     if (fingerprint === groupFingerprintRef.current || applyingRemote.current || applyingTrip.current) return;
     setSavePhase("syncing"); setSyncStatus("変更を共有中...");
@@ -253,7 +274,7 @@ export function useTripState() {
         const result = await request<{ group: Group }>(`/api/groups/${activeGroup.id}`, {
           method: "PUT",
           headers: { authorization: `Bearer ${activeGroup.editToken}` },
-          body: JSON.stringify({ state: sharedState, expectedUpdatedAt: groupVersionRef.current }),
+          body: JSON.stringify({ state: remoteSharedState, expectedUpdatedAt: groupVersionRef.current }),
         });
         if (result.group?.updatedAt) groupVersionRef.current = result.group.updatedAt;
         groupFingerprintRef.current = fingerprint;
@@ -263,7 +284,7 @@ export function useTripState() {
       }
     }, 900);
     return () => window.clearTimeout(timer);
-  }, [activeGroup, request, sharedState]);
+  }, [activeGroup, remoteSharedState, request]);
 
   const retrySave = useCallback(() => {
     try {
