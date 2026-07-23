@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Check, ExternalLink, MapPin, Plus, Settings2, Trash2 } from "lucide-react";
 import { useTrip } from "../TripContext";
 import { getScheduleDays } from "../data";
-import { makeId, mapsDirections, mapsEmbed, mapsSearch } from "../lib";
+import { makeId, mapsDirections, mapsEmbed, mapsSearch, safeExternalUrl } from "../lib";
 import type { ScheduleItem } from "../types";
 import { EmptyState, IconButton, Panel, SectionHeading } from "../components/ui";
 
@@ -53,7 +53,7 @@ export function PlanPage() {
               <label><span>予定</span><input value={item.title} maxLength={40} placeholder="例：ホテルにチェックイン" onChange={(event) => updateItem(item.id, { title: event.target.value })} /></label>
               <label><span>メモ</span><textarea value={item.memo} maxLength={120} rows={2} placeholder="待ち合わせや予約番号など" onChange={(event) => updateItem(item.id, { memo: event.target.value })} /></label>
               <label><span>地図URL</span><input type="url" value={item.mapUrl} placeholder="https://maps.google.com/..." onChange={(event) => updateItem(item.id, { mapUrl: event.target.value })} /></label>
-              {item.mapUrl && <a className="inline-map-link" href={item.mapUrl} target="_blank" rel="noreferrer"><MapPin size={17} />地図を開く</a>}
+              {safeExternalUrl(item.mapUrl) && <a className="inline-map-link" href={safeExternalUrl(item.mapUrl)} target="_blank" rel="noreferrer"><MapPin size={17} />地図を開く</a>}
             </Panel>
           )) : <EmptyState>この日の予定はまだありません。</EmptyState>}
           <button className="button button-primary add-wide" type="button" onClick={addItem}><Plus size={20} />予定を追加</button>
@@ -70,7 +70,7 @@ export function PlanPage() {
                 <small>{String(index + 1).padStart(2, "0")}</small>
                 <strong>{item.title || "予定名なし"}</strong>
                 {item.memo && <p>{item.memo}</p>}
-                {item.mapUrl && <a className="inline-map-link" href={item.mapUrl} target="_blank" rel="noreferrer"><MapPin size={17} />地図を開く</a>}
+                {safeExternalUrl(item.mapUrl) && <a className="inline-map-link" href={safeExternalUrl(item.mapUrl)} target="_blank" rel="noreferrer"><MapPin size={17} />地図を開く</a>}
               </div>
             </article>
           )) : (

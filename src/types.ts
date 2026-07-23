@@ -108,6 +108,7 @@ export type Group = {
   id: string;
   name: string;
   joinCode: string;
+  readToken?: string;
   editToken: string;
   updatedAt?: string;
   state?: Partial<SharedState>;
