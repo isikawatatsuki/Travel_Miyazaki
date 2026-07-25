@@ -12,6 +12,7 @@ import {
   defaultTripSettings,
 } from "./data";
 import { makeId, readStorage, usePersistentState } from "./lib";
+import { defaultThemeColor, migrateToTickets } from "./tickets";
 import type {
   AdjustState,
   AccountGroup,
@@ -26,6 +27,7 @@ import type {
   ScheduleState,
   SettlementState,
   SharedState,
+  Ticket,
   TravelProfile,
   TripSettings,
 } from "./types";
@@ -49,7 +51,15 @@ export function useTripState() {
   const [accountUser, setAccountUser] = useState<AccountUser | null>(null);
   const [accountGroups, setAccountGroups] = useState<AccountGroup[]>([]);
   const [activeGroup, setActiveGroup] = useState<Group | null>(() => readStorage<Group | null>("tripShioriGroup", null));
-  const [trips, setTrips] = usePersistentState<TravelProfile[]>("tripShioriTrips", readStorage<TravelProfile[]>("tripShioriTrips", []));
+  // 旧 tripShioriTrips は消さずに残す。移行結果だけ tripShioriTickets へ書くので、
+  // 何かあっても旧キーからやり直せる。
+  const [trips, setTrips] = usePersistentState<Ticket[]>("tripShioriTickets", migrateToTickets({
+    tickets: readStorage<Ticket[] | null>("tripShioriTickets", null),
+    trips: readStorage<TravelProfile[]>("tripShioriTrips", []),
+    groups: readStorage<Group[]>("tripShioriGroups", []),
+    activeGroup: readStorage<Group | null>("tripShioriGroup", null),
+    activeTripId: readStorage("tripShioriActiveTrip", ""),
+  }));
   const [activeTripId, setActiveTripId] = usePersistentState<string>("tripShioriActiveTrip", readStorage("tripShioriActiveTrip", ""));
   const [syncStatus, setSyncStatus] = useState("ローカルに保存済み");
   const [savePhase, setSavePhase] = useState<SavePhase>("saved");
@@ -127,9 +137,11 @@ export function useTripState() {
     if (trips.length || activeTripId) return;
     const now = new Date().toISOString();
     const id = makeId("trip");
-    setTrips([{ id, name: tripSettings.tripName, createdAt: now, updatedAt: now, archived: false, state: sharedState }]);
+    setTrips([{ id, name: tripSettings.tripName, createdAt: now, updatedAt: now, archived: false, state: sharedState, themeColor: defaultThemeColor(0) }]);
     setActiveTripId(id);
   }, [activeTripId, setActiveTripId, setTrips, sharedState, tripSettings.tripName, trips.length]);
+
+  const activeTicket = useMemo(() => trips.find((trip) => trip.id === activeTripId) || null, [activeTripId, trips]);
 
   useEffect(() => {
     if (!activeTripId || applyingTrip.current || applyingRemote.current) return;
@@ -182,6 +194,11 @@ export function useTripState() {
     }, 160);
   }, [applySharedState, setHistory]);
 
+  /**
+   * チケットを切り替える。共有先はチケットに紐付いたグループへ必ず差し替える。
+   * 以前は activeGroup がチケットと独立していたため、切り替え後の編集が
+   * 別チケットの内容で前のグループを上書きしていた。
+   */
   const switchTrip = useCallback(async (id: string) => {
     const target = trips.find((trip) => trip.id === id);
     if (!target || target.id === activeTripId) return;
@@ -189,11 +206,19 @@ export function useTripState() {
     setTrips((current) => current.map((trip) => trip.id === activeTripId ? { ...trip, name: tripSettings.tripName, updatedAt: new Date().toISOString(), state: sharedState } : trip));
     setActiveTripId(target.id);
     applySharedState(target.state);
-    setSyncStatus(`${target.name}に切り替えました`);
+    const linked = target.groupId
+      ? { id: target.groupId, name: target.name, joinCode: target.joinCode || "", readToken: target.readToken, editToken: target.editToken, updatedAt: target.updatedAt }
+      : null;
+    groupVersionRef.current = linked?.updatedAt || "";
+    // 切り替え直後の同期を止めるため、指紋を新しい状態で先に埋める。
+    groupFingerprintRef.current = linked ? JSON.stringify({ ...target.state, reservations: { items: (target.state.reservations?.items || []).map((item) => ({ ...item, reference: "", attachmentName: "", attachmentData: "" })) } }) : "";
+    setActiveGroup(linked);
+    if (linked) localStorage.setItem("tripShioriGroup", JSON.stringify(linked));
+    setSyncStatus(linked ? `${target.name}に切り替えました（共有中）` : `${target.name}に切り替えました`);
     window.setTimeout(() => { applyingTrip.current = false; }, 180);
   }, [activeTripId, applySharedState, setActiveTripId, setTrips, sharedState, tripSettings.tripName, trips]);
 
-  const createTrip = useCallback(async (name: string) => {
+  const createTrip = useCallback(async (name: string, themeColor?: string) => {
     const now = new Date().toISOString();
     const state = createDefaultSharedState(name.trim() || "新しい旅行");
     const start = new Date();
@@ -204,14 +229,30 @@ export function useTripState() {
     const endDate = date(end);
     state.tripSettings = { ...state.tripSettings, startDate, endDate, dateLabel: `${startDate.replaceAll("-", ".")} - ${endDate.slice(5).replace("-", ".")}`, routeLabel: "出発地から目的地へ", outboundLabel: "未設定", returnLabel: "未設定", hotelName: "未設定", hotelAddress: "", mapOrigin: "出発地", mapDestination: "目的地", mapNote: "" };
     state.schedule = { activeDay: state.tripSettings.startDate, items: [] };
-    const trip: TravelProfile = { id: makeId("trip"), name: state.tripSettings.tripName, createdAt: now, updatedAt: now, archived: false, state };
+    const trip: Ticket = { id: makeId("trip"), name: state.tripSettings.tripName, createdAt: now, updatedAt: now, archived: false, state, themeColor: themeColor || defaultThemeColor(trips.length) };
     applyingTrip.current = true;
     setTrips((current) => [...current, trip]);
     setActiveTripId(trip.id);
     applySharedState(state);
-    setSyncStatus("新しい旅行を作成しました");
+    // 新しいチケットはまだ共有していない。前のチケットのグループへ書き込まないよう外す。
+    setActiveGroup(null);
+    groupFingerprintRef.current = "";
+    groupVersionRef.current = "";
+    localStorage.removeItem("tripShioriGroup");
+    setSyncStatus("新しいチケットを作成しました");
     window.setTimeout(() => { applyingTrip.current = false; }, 180);
-  }, [applySharedState, setActiveTripId, setTrips]);
+    return trip.id;
+  }, [applySharedState, setActiveTripId, setTrips, trips.length]);
+
+  const setTicketTheme = useCallback((id: string, themeColor: string) => {
+    setTrips((current) => current.map((trip) => trip.id === id ? { ...trip, themeColor } : trip));
+  }, [setTrips]);
+
+  const completeTrip = useCallback((id: string, done: boolean) => {
+    setTrips((current) => current.map((trip) => trip.id === id
+      ? { ...trip, completedAt: done ? new Date().toISOString() : undefined, updatedAt: new Date().toISOString() }
+      : trip));
+  }, [setTrips]);
 
   const archiveTrip = useCallback(async (id: string) => {
     const available = trips.filter((trip) => trip.id !== id && !trip.archived);
@@ -267,29 +308,78 @@ export function useTripState() {
     setAccountGroups([]);
   }, [request]);
 
+  /** アカウントに紐付いたグループを、この端末のチケットとして復元する。 */
   const restoreAccountGroup = useCallback(async (id: string) => {
     const known = accountGroups.find((group) => group.id === id);
     if (!known) return;
     const result = await request<{ group: Group }>(`/api/groups/${id}`);
     const restored = { ...result.group, editToken: "" };
+    const existing = trips.find((trip) => trip.groupId === id);
+    const now = new Date().toISOString();
+    const ticketId = existing?.id || makeId("trip");
+    if (!existing) {
+      const state = { ...createDefaultSharedState(restored.name), ...(restored.state as SharedState) };
+      setTrips((current) => [...current, {
+        id: ticketId, name: restored.name, createdAt: now, updatedAt: now, archived: false, state,
+        themeColor: defaultThemeColor(current.length),
+        groupId: restored.id, joinCode: restored.joinCode, readToken: restored.readToken, editToken: restored.editToken,
+      }]);
+    }
+    applyingTrip.current = true;
+    setActiveTripId(ticketId);
     groupFingerprintRef.current = JSON.stringify(restored.state || {});
     applySharedState(restored.state);
     rememberGroup(restored);
     setSavePhase("synced");
-    setSyncStatus("アカウントから旅行を復元しました");
-  }, [accountGroups, applySharedState, rememberGroup, request]);
+    setSyncStatus("アカウントからチケットを復元しました");
+    window.setTimeout(() => { applyingTrip.current = false; }, 180);
+  }, [accountGroups, applySharedState, rememberGroup, request, setActiveTripId, setTrips, trips]);
+
+  /** 現在のチケットへグループを紐付ける。チケットとグループの対応はここでだけ作られる。 */
+  const linkGroupToTicket = useCallback((ticketId: string, group: Group) => {
+    setTrips((current) => current.map((trip) => trip.id === ticketId
+      ? { ...trip, groupId: group.id, joinCode: group.joinCode, readToken: group.readToken, editToken: group.editToken }
+      : trip));
+  }, [setTrips]);
 
   const createGroup = useCallback(async (name: string) => {
-    setSavePhase("syncing"); setSyncStatus("グループを作成中...");
+    setSavePhase("syncing"); setSyncStatus("共有を準備中...");
     const result = await request<{ group: Group }>("/api/groups", { method: "POST", body: JSON.stringify({ name, state: remoteSharedState }) });
-    groupFingerprintRef.current = JSON.stringify(remoteSharedState); rememberGroup(result.group); setSavePhase("synced"); setSyncStatus("グループを作成しました");
-  }, [rememberGroup, remoteSharedState, request]);
+    groupFingerprintRef.current = JSON.stringify(remoteSharedState);
+    rememberGroup(result.group);
+    if (activeTripId) linkGroupToTicket(activeTripId, result.group);
+    setSavePhase("synced"); setSyncStatus("このチケットを共有にしました");
+  }, [activeTripId, linkGroupToTicket, rememberGroup, remoteSharedState, request]);
 
+  /**
+   * 参加コードで参加する。参加は「新しいチケットが1枚増える」操作なので、
+   * 開いているチケットを上書きせず、新しいチケットを作ってそこへ紐付ける。
+   */
   const joinGroup = useCallback(async (joinCode: string) => {
-    setSavePhase("syncing"); setSyncStatus("グループに参加中...");
+    setSavePhase("syncing"); setSyncStatus("チケットに参加中...");
     const result = await request<{ group: Group }>("/api/groups/join", { method: "POST", body: JSON.stringify({ joinCode }) });
-    groupFingerprintRef.current = JSON.stringify(result.group.state || {}); applySharedState(result.group.state); rememberGroup(result.group); setSavePhase("synced"); setSyncStatus("共有データを読み込みました");
-  }, [applySharedState, rememberGroup, request]);
+    const group = result.group;
+    const existing = trips.find((trip) => trip.groupId === group.id);
+    const now = new Date().toISOString();
+    const ticketId = existing?.id || makeId("trip");
+    if (!existing) {
+      const state = { ...createDefaultSharedState(group.name), ...(group.state as SharedState) };
+      setTrips((current) => [...current, {
+        id: ticketId, name: group.name, createdAt: now, updatedAt: now, archived: false, state,
+        themeColor: defaultThemeColor(current.length),
+        groupId: group.id, joinCode: group.joinCode, readToken: group.readToken, editToken: group.editToken,
+      }]);
+    } else {
+      linkGroupToTicket(existing.id, group);
+    }
+    applyingTrip.current = true;
+    setActiveTripId(ticketId);
+    groupFingerprintRef.current = JSON.stringify(group.state || {});
+    applySharedState(group.state);
+    rememberGroup(group);
+    setSavePhase("synced"); setSyncStatus("チケットに参加しました");
+    window.setTimeout(() => { applyingTrip.current = false; }, 180);
+  }, [applySharedState, linkGroupToTicket, rememberGroup, request, setActiveTripId, setTrips, trips]);
 
   const refreshGroup = useCallback(async (target = activeGroup) => {
     if (!target) return;
@@ -358,7 +448,8 @@ export function useTripState() {
     helpOpen, setHelpOpen,
     accountUser, accountGroups, refreshAccount, loginWithGoogle, logout, restoreAccountGroup,
     savePhase, lastSavedAt, retrySave,
-    trips, activeTripId, createTrip, switchTrip, archiveTrip, restoreTrip,
+    trips, activeTripId, activeTicket, createTrip, switchTrip, archiveTrip, restoreTrip,
+    setTicketTheme, completeTrip,
     createGroup, joinGroup, refreshGroup, switchGroup,
   };
 }

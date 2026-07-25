@@ -2,6 +2,7 @@ import { AlertCircle, Archive, CheckCircle2, Download, HardDrive, LoaderCircle, 
 import { useEffect, useState } from "react";
 import { useTrip } from "../TripContext";
 import { defaultTripSettings } from "../data";
+import { TICKET_COLORS } from "../tickets";
 import type { TripSettings } from "../types";
 import { IconButton, PageHelp } from "./ui";
 
@@ -36,7 +37,7 @@ function waitForSettingsSave() {
 }
 
 export function SettingsDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const { tripSettings, setTripSettings, trips, activeTripId, createTrip, switchTrip, archiveTrip, restoreTrip, helpOpen, setHelpOpen } = useTrip();
+  const { tripSettings, setTripSettings, trips, activeTripId, activeTicket, setTicketTheme, createTrip, switchTrip, archiveTrip, restoreTrip, helpOpen, setHelpOpen } = useTrip();
   const [draft, setDraft] = useState(tripSettings);
   const [status, setStatus] = useState("");
   const [installPrompt, setInstallPrompt] = useState<InstallPromptEvent | null>(null);
@@ -118,6 +119,20 @@ export function SettingsDrawer({ open, onClose }: { open: boolean; onClose: () =
             <form className="new-trip-form" onSubmit={(event) => { event.preventDefault(); if (!newTripName.trim()) return; createTrip(newTripName); setNewTripName(""); }}><label><span>新しい旅行名</span><input value={newTripName} placeholder="例：北海道旅行" onChange={(event) => setNewTripName(event.target.value)} /></label><button className="button button-secondary" type="submit"><Plus size={17} />作成</button></form>
             {trips.some((trip) => trip.archived) && <details className="archived-trips"><summary>アーカイブした旅行</summary>{trips.filter((trip) => trip.archived).map((trip) => <div key={trip.id}><span>{trip.name}</span><button className="button button-quiet small" type="button" onClick={() => restoreTrip(trip.id)}><Undo2 size={16} />戻す</button></div>)}</details>}
           </section>
+          {activeTicket && (
+            <fieldset className="theme-fieldset"><legend>チケットのテーマカラー</legend>
+              <div className="color-picker" role="radiogroup" aria-label="チケットのテーマカラー">
+                {TICKET_COLORS.map((value) => (
+                  <label key={value} className="color-swatch" style={{ ["--swatch" as string]: value }}>
+                    <input type="radio" name="theme-color" value={value} checked={activeTicket.themeColor === value} onChange={() => setTicketTheme(activeTicket.id, value)} />
+                    <span aria-hidden="true" />
+                    <span className="visually-hidden">カラー {value}</span>
+                  </label>
+                ))}
+              </div>
+              <p className="field-note">チケット一覧と旅の地図での、この旅の色になります。</p>
+            </fieldset>
+          )}
           <fieldset><legend>基本情報</legend>
             <label><span>しおりのタイトル</span><input value={draft.tripName} onChange={(event) => field("tripName", event.target.value)} /></label>
             <div className="field-grid two"><label><span>出発日</span><input type="date" value={draft.startDate} onChange={(event) => field("startDate", event.target.value)} /></label><label><span>帰宅日</span><input type="date" min={draft.startDate} value={draft.endDate} onChange={(event) => field("endDate", event.target.value)} /></label></div>
