@@ -133,13 +133,9 @@ export function useTripState() {
     return () => window.removeEventListener("trip-storage", onStorage);
   }, [activeGroup]);
 
-  useEffect(() => {
-    if (trips.length || activeTripId) return;
-    const now = new Date().toISOString();
-    const id = makeId("trip");
-    setTrips([{ id, name: tripSettings.tripName, createdAt: now, updatedAt: now, archived: false, state: sharedState, themeColor: defaultThemeColor(0) }]);
-    setActiveTripId(id);
-  }, [activeTripId, setActiveTripId, setTrips, sharedState, tripSettings.tripName, trips.length]);
+  // 初期チケットは作らない。1枚も無い状態を正規の状態として扱い、
+  // 一覧では空状態を見せる。ここで自動生成すると、初回のユーザーに
+  // 身に覚えのない旅行が1件出てしまう。
 
   const activeTicket = useMemo(() => trips.find((trip) => trip.id === activeTripId) || null, [activeTripId, trips]);
 
