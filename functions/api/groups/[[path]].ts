@@ -12,6 +12,7 @@ const jsonHeaders = {
 };
 
 class ApiError extends Error {
+  declare status: number;
   constructor(message, status = 400) {
     super(message);
     this.status = status;
