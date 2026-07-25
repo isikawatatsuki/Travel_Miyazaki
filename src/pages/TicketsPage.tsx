@@ -59,7 +59,7 @@ export function TicketsPage({ onOpenTicket }: { onOpenTicket: (id: string) => vo
           <Panel className="tickets-empty">
             <TicketCheck size={36} aria-hidden="true" />
             <strong>チケットはまだありません</strong>
-            <EmptyState>上の「チケットを発行」から旅を始めるか、友だちからもらった6桁の参加コードで参加できます。</EmptyState>
+            <EmptyState>上の「チケットを発行」から旅を始めましょう。友だちからコードをもらっているなら、下の「参加コードで参加する」から参加できます。</EmptyState>
           </Panel>
         )}
       </section>
