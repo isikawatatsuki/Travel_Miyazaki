@@ -46,11 +46,6 @@ export function mapsSearch(query: string) {
   return `https://www.google.com/maps/search/?${params}`;
 }
 
-export function mapsEmbed(origin: string, destination: string) {
-  const params = new URLSearchParams({ saddr: origin, daddr: destination, hl: "ja", z: "10", output: "embed" });
-  return `https://maps.google.com/maps?${params}`;
-}
-
 export function safeExternalUrl(value: string) {
   try {
     const url = new URL(value);
