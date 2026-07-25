@@ -4,13 +4,19 @@ export type TripSettings = {
   endDate: string;
   dateLabel: string;
   routeLabel: string;
-  heroRouteLabel: string;
+  /** ホームの搭乗券風表示に出す短いコード。空なら表示しない。 */
+  originCode: string;
+  destinationCode: string;
   outboundLabel: string;
   returnLabel: string;
   hotelName: string;
   hotelAddress: string;
   departureTime: string;
   arrivalTargetTime: string;
+  /** 場所はGoogleマップのURLで持つ。地名と座標をここから同時に決めるので食い違わない。 */
+  mapOriginUrl: string;
+  mapDestinationUrl: string;
+  /** URLに地名が含まれない形式のときだけ使う表示名。 */
   mapOrigin: string;
   mapDestination: string;
   mapOriginLat: number;
@@ -33,6 +39,8 @@ export type ScheduleItem = {
   inRoute?: boolean;
   lat?: number;
   lng?: number;
+  /** 宿。日ごとに1つまでで、新しい日は前日の宿を初期値として引き継ぐ。 */
+  isStay?: boolean;
 };
 export type ScheduleState = { activeDay: string; items: ScheduleItem[] };
 

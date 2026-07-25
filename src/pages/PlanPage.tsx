@@ -1,17 +1,32 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Check, ExternalLink, MapPin, Plus, Route, Settings2, Trash2 } from "lucide-react";
 import { useTrip } from "../TripContext";
 import { getScheduleDays } from "../data";
-import { parseLatLng, scheduleItemCoordinate } from "../tickets";
+import { buildTicketRoute, parseLatLng, resolvePlace, scheduleItemCoordinate, stayForDay } from "../tickets";
 import { makeId, mapsDirections, mapsEmbed, mapsSearch, safeExternalUrl } from "../lib";
 import type { ScheduleItem } from "../types";
 import { EmptyState, IconButton, PageHelp, Panel, SectionHeading } from "../components/ui";
+import { PlaceField } from "../components/PlaceField";
 
 export function PlanPage() {
   const [isEditing, setIsEditing] = useState(false);
-  const { tripSettings, schedule, setSchedule, helpOpen, setHelpOpen } = useTrip();
+  const { tripSettings, setTripSettings, schedule, setSchedule, helpOpen, setHelpOpen } = useTrip();
+  // 地図は予定から作った経路に合わせる。予定に場所が無ければ旅行設定へ落ちる。
+  const route = useMemo(() => buildTicketRoute({ tripSettings, schedule } as Parameters<typeof buildTicketRoute>[0]), [schedule, tripSettings]);
+  const first = route.points[0];
+  const last = route.points[route.points.length - 1];
+  // 横のリストと地図は必ず同じ値から作る。予定由来なら地点名と座標が同じ予定に
+  // 属するので座標を使い、設定由来なら地名と緯度経度が別々に編集できてしまうため
+  // 両方とも地名を使う。混ぜると「リストは弁天町、地図は鹿児島空港」になる。
+  const fromSchedule = route.source === "schedule" && Boolean(first);
+  const startLabel = fromSchedule ? first.title : tripSettings.mapOrigin;
+  const endLabel = fromSchedule && last !== first ? last.title : tripSettings.mapDestination;
+  const mapFrom = fromSchedule ? `${first.lat},${first.lng}` : startLabel;
+  const mapTo = fromSchedule && last !== first ? `${last.lat},${last.lng}` : endLabel;
   const days = getScheduleDays(tripSettings);
   const activeDay = days.some((day) => day.id === schedule.activeDay) ? schedule.activeDay : days[0].id;
+  const stay = stayForDay(schedule.items, activeDay);
+  const stayPlace = stay ? resolvePlace(stay.mapUrl, stay.title) : null;
   const items = schedule.items
     .filter((item) => item.day === activeDay)
     .sort((a, b) => (a.isTimeUnset ? "99:99" : a.time).localeCompare(b.isTimeUnset ? "99:99" : b.time));
@@ -26,7 +41,10 @@ export function PlanPage() {
 
   return (
     <div className="page plan-page">
-      <PageHelp open={helpOpen} onChange={setHelpOpen}>日ごとにタブが分かれます。時刻未定でも登録でき、地図リンクから経路を開けます。</PageHelp>
+      <PageHelp open={helpOpen} onChange={setHelpOpen}>
+        <p>日ごとにタブが分かれます。時刻未定でも登録でき、地図リンクから経路を開けます。</p>
+        <p>「予定を設定」で地図URLを貼ると、その場所が<b>旅の地図</b>の経路に並びます。短縮URL（maps.app.goo.gl）は座標を持たないため使えません。</p>
+      </PageHelp>
       <SectionHeading
         eyebrow="PLAN"
         title="旅の予定"
@@ -44,6 +62,37 @@ export function PlanPage() {
 
       {isEditing ? (
         <div className="schedule-editor">
+          <Panel className="trip-places">
+            <h3>この旅の出発地と目的地</h3>
+            <p className="place-note">ホームの背景地図と、旅の地図の基準になります。予定に場所を登録すると、そちらが優先されます。</p>
+            <PlaceField title="出発地" value={{ url: tripSettings.mapOriginUrl || "", label: tripSettings.mapOrigin || "" }}
+              onChange={(next) => setTripSettings((current) => ({ ...current, mapOriginUrl: next.url, mapOrigin: next.label }))} />
+            <PlaceField title="目的地" value={{ url: tripSettings.mapDestinationUrl || "", label: tripSettings.mapDestination || "" }}
+              onChange={(next) => setTripSettings((current) => ({ ...current, mapDestinationUrl: next.url, mapDestination: next.label }))} />
+          </Panel>
+
+          <Panel className="trip-places">
+            <h3>{days.find((day) => day.id === activeDay)?.shortLabel}の宿</h3>
+            <p className="place-note">
+              {stay && stay.day !== activeDay
+                ? `${stay.day.slice(5).replace("-", "/")}の宿を引き継いでいます。この日だけ変えるならURLを入れてください。`
+                : "この日以降の宿として引き継がれます。"}
+            </p>
+            <PlaceField
+              title="宿"
+              value={{ url: stay?.day === activeDay ? stay.mapUrl : "", label: stay?.day === activeDay ? stay.title : "" }}
+              onChange={(next) => setSchedule((current) => {
+                const own = current.items.find((entry) => entry.isStay && entry.day === activeDay);
+                if (!next.url && own) return { ...current, items: current.items.filter((entry) => entry.id !== own.id) };
+                if (!next.url) return current;
+                const place = resolvePlace(next.url, next.label);
+                const patch = { mapUrl: next.url, title: place?.name || next.label || "宿", lat: place?.lat, lng: place?.lng };
+                if (own) return { ...current, items: current.items.map((entry) => entry.id === own.id ? { ...entry, ...patch } : entry) };
+                return { ...current, items: [...current.items, { id: makeId("stay"), day: activeDay, time: "", memo: "", isTimeUnset: true, isStay: true, inRoute: false, ...patch } as ScheduleItem] };
+              })}
+            />
+          </Panel>
+
           {items.length ? items.map((item, index) => (
             <Panel className="schedule-card" key={item.id}>
               <div className="schedule-card-head">
@@ -105,13 +154,18 @@ export function PlanPage() {
       <section className="section-block route-block">
         <SectionHeading eyebrow="ROUTE & STAY" title="移動とホテル" description={tripSettings.mapNote} />
         <div className="route-layout">
-          <div className="map-frame"><iframe title={`${tripSettings.mapOrigin}から${tripSettings.mapDestination}までの地図`} loading="lazy" referrerPolicy="no-referrer-when-downgrade" src={mapsEmbed(tripSettings.mapOrigin, tripSettings.mapDestination)} /></div>
+          <div className="map-frame"><iframe title={`${startLabel}から${endLabel}までの地図`} loading="lazy" referrerPolicy="no-referrer-when-downgrade" src={mapsEmbed(mapFrom, mapTo)} /></div>
           <Panel className="route-details">
-            <div><span>START</span><strong>{tripSettings.mapOrigin}</strong></div>
+            <div><span>START</span><strong>{startLabel}</strong></div>
             <i aria-hidden="true" />
-            <div><span>STAY</span><strong>{tripSettings.hotelName}</strong><small>{tripSettings.hotelAddress}</small></div>
-            <a className="button button-primary" href={mapsDirections(tripSettings.mapOrigin, tripSettings.mapDestination)} target="_blank" rel="noreferrer">Google Mapsで経路を見る<ExternalLink size={17} /></a>
-            <a className="button button-secondary" href={mapsSearch(`${tripSettings.hotelName} ${tripSettings.hotelAddress}`)} target="_blank" rel="noreferrer">住所からホテルを検索<MapPin size={17} /></a>
+            <div><span>GOAL</span><strong>{endLabel}</strong></div>
+            <i aria-hidden="true" />
+            <div><span>STAY</span><strong>{stayPlace?.name || stay?.title || tripSettings.hotelName || "未設定"}</strong>{stay && stay.day !== activeDay && <small>{stay.day.slice(5).replace("-", "/")}から引き継ぎ</small>}</div>
+            <p className="route-source">{fromSchedule ? `この地図は予定に登録した${route.points.length}地点から描いています。` : "予定に場所がまだ無いため、設定の「地図の出発地・目的地」を表示しています。"}</p>
+            <a className="button button-primary" href={mapsDirections(mapFrom, mapTo)} target="_blank" rel="noreferrer">Google Mapsで経路を見る<ExternalLink size={17} /></a>
+            {(stayPlace?.url || tripSettings.hotelName) && (
+              <a className="button button-secondary" href={stayPlace?.url || mapsSearch(`${tripSettings.hotelName} ${tripSettings.hotelAddress}`)} target="_blank" rel="noreferrer">宿を地図で見る<MapPin size={17} /></a>
+            )}
           </Panel>
         </div>
       </section>

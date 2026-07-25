@@ -1,41 +1,13 @@
 import { useEffect, useRef } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
+import { routeLine } from "../tickets";
 import type { RoutePoint } from "../tickets";
 
 export type MapRoute = { id: string; name: string; color: string; points: RoutePoint[] };
 
 /** 全体表示で使う統一色。複数の旅が重なっても色が乱れないようにする。 */
 export const UNIFIED_ROUTE_COLOR = "#4a6b8a";
-
-type Coordinates = [number, number];
-
-/** 直線だと重なった経路が判別できないので、既存のヒーロー地図と同じ緩い曲線で結ぶ。 */
-function curveBetween(origin: Coordinates, destination: Coordinates): Coordinates[] {
-  const [startLng, startLat] = origin;
-  const [endLng, endLat] = destination;
-  const dx = endLng - startLng;
-  const dy = endLat - startLat;
-  const control: Coordinates = [(startLng + endLng) / 2 - dy * 0.16, (startLat + endLat) / 2 + dx * 0.1];
-  return Array.from({ length: 25 }, (_, index) => {
-    const t = index / 24;
-    const inverse = 1 - t;
-    return [
-      inverse * inverse * startLng + 2 * inverse * t * control[0] + t * t * endLng,
-      inverse * inverse * startLat + 2 * inverse * t * control[1] + t * t * endLat,
-    ] as Coordinates;
-  });
-}
-
-function routeLine(points: RoutePoint[]): Coordinates[] {
-  const coordinates: Coordinates[] = [];
-  for (let index = 0; index < points.length - 1; index += 1) {
-    const from: Coordinates = [points[index].lng, points[index].lat];
-    const to: Coordinates = [points[index + 1].lng, points[index + 1].lat];
-    coordinates.push(...curveBetween(from, to));
-  }
-  return coordinates;
-}
 
 export function RouteMap({ routes, selectedId }: { routes: MapRoute[]; selectedId: string | null }) {
   const containerRef = useRef<HTMLDivElement>(null);

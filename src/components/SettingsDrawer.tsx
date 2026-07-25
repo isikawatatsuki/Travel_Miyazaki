@@ -137,6 +137,11 @@ export function SettingsDrawer({ open, onClose }: { open: boolean; onClose: () =
             <label><span>しおりのタイトル</span><input value={draft.tripName} onChange={(event) => field("tripName", event.target.value)} /></label>
             <div className="field-grid two"><label><span>出発日</span><input type="date" value={draft.startDate} onChange={(event) => field("startDate", event.target.value)} /></label><label><span>帰宅日</span><input type="date" min={draft.startDate} value={draft.endDate} onChange={(event) => field("endDate", event.target.value)} /></label></div>
             <label><span>旅のルート</span><input value={draft.routeLabel} placeholder="例：大阪から札幌へ" onChange={(event) => field("routeLabel", event.target.value)} /></label>
+            <div className="field-grid two">
+              <label><span>出発地コード</span><input value={draft.originCode} maxLength={4} placeholder="OSA" onChange={(event) => field("originCode", event.target.value.toUpperCase())} /></label>
+              <label><span>到着地コード</span><input value={draft.destinationCode} maxLength={4} placeholder="MIY" onChange={(event) => field("destinationCode", event.target.value.toUpperCase())} /></label>
+            </div>
+            <p className="field-note">ホームの搭乗券風の表示に使います。空にすると表示されません。</p>
           </fieldset>
           </>}
           {settingsTab === "move" && <>
@@ -144,22 +149,12 @@ export function SettingsDrawer({ open, onClose }: { open: boolean; onClose: () =
             <label><span>行きの便・交通</span><input value={draft.outboundLabel} onChange={(event) => field("outboundLabel", event.target.value)} /></label>
             <label><span>帰りの便・交通</span><input value={draft.returnLabel} onChange={(event) => field("returnLabel", event.target.value)} /></label>
             <div className="field-grid two"><label><span>家を出る時間</span><input type="time" value={draft.departureTime} onChange={(event) => field("departureTime", event.target.value)} /></label><label><span>到着目標</span><input type="time" value={draft.arrivalTargetTime} onChange={(event) => field("arrivalTargetTime", event.target.value)} /></label></div>
-            <div className="field-grid two"><label><span>地図の出発地</span><input value={draft.mapOrigin} onChange={(event) => field("mapOrigin", event.target.value)} /></label><label><span>地図の目的地</span><input value={draft.mapDestination} onChange={(event) => field("mapDestination", event.target.value)} /></label></div>
-            <details className="coordinate-settings">
-              <summary>背景ルートの位置を調整</summary>
-              <p>地図の位置がずれるときだけ、緯度・経度を調整します。</p>
-              <div className="field-grid two"><label><span>出発地の緯度</span><input type="number" step="0.000001" value={draft.mapOriginLat} onChange={(event) => field("mapOriginLat", Number(event.target.value))} /></label><label><span>出発地の経度</span><input type="number" step="0.000001" value={draft.mapOriginLng} onChange={(event) => field("mapOriginLng", Number(event.target.value))} /></label></div>
-              <div className="field-grid two"><label><span>目的地の緯度</span><input type="number" step="0.000001" value={draft.mapDestinationLat} onChange={(event) => field("mapDestinationLat", Number(event.target.value))} /></label><label><span>目的地の経度</span><input type="number" step="0.000001" value={draft.mapDestinationLng} onChange={(event) => field("mapDestinationLng", Number(event.target.value))} /></label></div>
-            </details>
+            <p className="field-note">出発地・目的地・宿は「予定」ページで設定します（Googleマップの URL で指定）。</p>
             <label><span>移動メモ</span><textarea rows={2} value={draft.mapNote} onChange={(event) => field("mapNote", event.target.value)} /></label>
-          </fieldset>
-          <fieldset><legend>泊まるところ</legend>
-            <label><span>ホテル名</span><input value={draft.hotelName} onChange={(event) => field("hotelName", event.target.value)} /></label>
-            <label><span>住所</span><input value={draft.hotelAddress} onChange={(event) => field("hotelAddress", event.target.value)} /></label>
           </fieldset>
           </>}
           {settingsTab === "app" && <>
-          <PageHelp open={helpOpen} onChange={setHelpOpen}>旅行の切り替えとアーカイブ、ホーム画面への追加を設定できます。</PageHelp>
+          <PageHelp open={helpOpen} onChange={setHelpOpen}><p>旅行の切り替えとアーカイブ、ホーム画面への追加を設定できます。</p></PageHelp>
           <label className="switch-row help-toggle"><span><strong>使い方の説明を表示する</strong><small>各ページ上部の説明を開きます</small></span><input type="checkbox" role="switch" checked={helpOpen} onChange={(event) => setHelpOpen(event.target.checked)} /></label>
           <div className="app-actions">
             <button className="button button-secondary" type="button" onClick={install}><Download size={18} />ホーム画面に追加</button>

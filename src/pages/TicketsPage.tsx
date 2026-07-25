@@ -1,15 +1,15 @@
 import { useState } from "react";
 import { Map, Plus, TicketCheck, Ticket as TicketIcon } from "lucide-react";
 import { useTrip } from "../TripContext";
-import { TICKET_COLORS, sortTickets, ticketStatus } from "../tickets";
+import { sortTickets, ticketStatus } from "../tickets";
 import { TicketCard } from "../components/TicketCard";
 import { EmptyState, Panel } from "../components/ui";
 import { AboutDeveloper } from "../components/AboutDeveloper";
+import { NewTicketDialog, type NewTicket } from "../components/NewTicketDialog";
 
 export function TicketsPage({ onOpenTicket }: { onOpenTicket: (id: string) => void }) {
   const { trips, activeTripId, createTrip, switchTrip, joinGroup } = useTrip();
-  const [name, setName] = useState("");
-  const [color, setColor] = useState(TICKET_COLORS[0]);
+  const [newOpen, setNewOpen] = useState(false);
   const [joinCode, setJoinCode] = useState("");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
@@ -36,6 +36,7 @@ export function TicketsPage({ onOpenTicket }: { onOpenTicket: (id: string) => vo
         <h1 id="ticket-list-title" className="visually-hidden">チケット一覧</h1>
 
         <nav className="tickets-actions" aria-label="チケットの操作">
+          <button className="button button-primary" type="button" onClick={() => setNewOpen(true)}><Plus size={18} aria-hidden="true" />チケットを発行</button>
           <a className="button button-secondary" href="#map"><Map size={18} aria-hidden="true" />旅の地図を見る</a>
           {archivedCount > 0 && (
             <button className="button button-quiet small" type="button" aria-pressed={showArchived} onClick={() => setShowArchived((current) => !current)}>
@@ -58,30 +59,10 @@ export function TicketsPage({ onOpenTicket }: { onOpenTicket: (id: string) => vo
           <Panel className="tickets-empty">
             <TicketCheck size={36} aria-hidden="true" />
             <strong>チケットはまだありません</strong>
-            <EmptyState>下の「新しいチケットを作る」から旅を始めるか、友だちからもらった6桁の参加コードで参加できます。</EmptyState>
+            <EmptyState>上の「チケットを発行」から旅を始めるか、友だちからもらった6桁の参加コードで参加できます。</EmptyState>
           </Panel>
         )}
       </section>
-
-      <details className="ticket-fold">
-        <summary><Plus size={18} aria-hidden="true" />新しいチケットを作る</summary>
-        <Panel className="ticket-form">
-          <form onSubmit={(event) => { event.preventDefault(); void run(async () => { const id = await createTrip(name, color); setName(""); if (id) onOpenTicket(id); }); }}>
-            <label><span>旅行名</span><input value={name} maxLength={40} placeholder="例：宮崎旅行" onChange={(event) => setName(event.target.value)} /></label>
-            <fieldset className="color-picker">
-              <legend>テーマカラー</legend>
-              {TICKET_COLORS.map((value) => (
-                <label key={value} className="color-swatch" style={{ ["--swatch" as string]: value }}>
-                  <input type="radio" name="ticket-color" value={value} checked={color === value} onChange={() => setColor(value)} />
-                  <span aria-hidden="true" />
-                  <span className="visually-hidden">カラー {value}</span>
-                </label>
-              ))}
-            </fieldset>
-            <button className="button button-primary" type="submit" disabled={busy}><Plus size={18} />チケットを作る</button>
-          </form>
-        </Panel>
-      </details>
 
       <details className="ticket-fold">
         <summary><TicketIcon size={18} aria-hidden="true" />参加コードで参加する</summary>
@@ -92,6 +73,20 @@ export function TicketsPage({ onOpenTicket }: { onOpenTicket: (id: string) => vo
           </form>
         </Panel>
       </details>
+
+      <NewTicketDialog
+        open={newOpen}
+        busy={busy}
+        onClose={() => setNewOpen(false)}
+        onCreate={(ticket: NewTicket) => void run(async () => {
+          const id = await createTrip(ticket.name, ticket.themeColor, {
+            originUrl: ticket.origin.url, originLabel: ticket.origin.label,
+            destinationUrl: ticket.destination.url, destinationLabel: ticket.destination.label,
+          });
+          setNewOpen(false);
+          if (id) onOpenTicket(id);
+        })}
+      />
 
       <AboutDeveloper />
     </div>

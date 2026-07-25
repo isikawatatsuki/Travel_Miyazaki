@@ -1,8 +1,10 @@
 import { BedDouble, BookOpen, CalendarDays, Camera, CheckCircle2, CircleDollarSign, Clock3, MapPin, Plane, StickyNote, UsersRound } from "lucide-react";
+import { useMemo } from "react";
 import { useTrip } from "../TripContext";
 import { getScheduleDays } from "../data";
 import { getBudgetSummary } from "../derived";
 import { mapsSearch, yen } from "../lib";
+import { buildTicketRoute } from "../tickets";
 import { PageHelp, PageLink, Panel, SectionHeading } from "../components/ui";
 import { HeroRouteMap } from "../components/HeroRouteMap";
 
@@ -29,15 +31,38 @@ export function HomePage() {
   const now = new Date();
   const nowTime = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
   const nextItem = displayItems.find((item) => !item.isTimeUnset && item.time >= nowTime) || displayItems[0];
+  // 背景地図は予定から作った経路をそのまま描く。予定に座標が無ければ
+  // buildTicketRoute が旅行設定の出発地・目的地へ落ちる。
+  const heroRoute = useMemo(() => buildTicketRoute({ tripSettings, schedule } as Parameters<typeof buildTicketRoute>[0]), [schedule, tripSettings]);
 
   return (
     <div className="page home-page">
-      <PageHelp open={helpOpen} onChange={setHelpOpen}>ここは確認専用です。編集は下のタブから。人数と1人あたりの金額は共有ページのメンバーが基準です。</PageHelp>
+      <PageHelp open={helpOpen} onChange={setHelpOpen}>
+        <p>ここは確認専用です。編集は下のタブから。人数と1人あたりの金額は共有ページのメンバーが基準です。</p>
+
+        <p className="page-help-lead">旅の地図に行った場所を並べるには</p>
+        <ol>
+          <li><b>予定</b>を開き、右上の「予定を設定」を押す</li>
+          <li>各予定の<b>地図URL</b>に、Googleマップのリンクを貼る</li>
+          <li>下の表示が「地図に表示できます」に変われば取り込み完了</li>
+        </ol>
+        <p>並ぶ順番は日付と時刻の順です。経路に出したくない予定は「旅の経路に含める」のチェックを外します。</p>
+
+        <p className="page-help-lead">貼っても認識されないとき</p>
+        <p>
+          共有ボタンで出る短縮URL（<code>maps.app.goo.gl/…</code>）は座標を持たないため使えません。
+          ブラウザのアドレスバーに出ている長いURL（<code>google.com/maps/@35.68,139.76…</code>）を貼るか、
+          予定ごとに表示される緯度・経度の欄へ直接入力してください。
+        </p>
+        <p>場所が分からなかった予定は経路から外れ、旅の地図でそのチケットを選ぶと名前が一覧で表示されます。</p>
+      </PageHelp>
       <section className="hero-section" aria-labelledby="hero-title">
-        <HeroRouteMap settings={tripSettings} />
-        <div className="hero-route" aria-hidden="true">
-          <span>OSA</span><i /><Plane size={26} /><i /><span>MIY</span>
-        </div>
+        <HeroRouteMap points={heroRoute.points} />
+        {(tripSettings.originCode || tripSettings.destinationCode) && (
+          <div className="hero-route" aria-hidden="true">
+            <span>{tripSettings.originCode}</span><i /><Plane size={26} /><i /><span>{tripSettings.destinationCode}</span>
+          </div>
+        )}
         <p className="eyebrow">{tripSettings.dateLabel}</p>
         <h1 id="hero-title">{tripSettings.tripName}</h1>
         <p className="hero-destination">{tripSettings.routeLabel}</p>
