@@ -94,6 +94,7 @@ export function DetailsPage({ initialView = "reservations" }: { initialView?: De
 
     {view === "reservations" && <section>
       <SectionHeading eyebrow="BOOKINGS" title="予約情報" action={<button className="button button-primary small" type="button" onClick={addReservation}><Plus size={17} />追加</button>} />
+      <p className="local-only-note">予約番号と添付ファイルはこの端末にのみ保存されます</p>
       <div className="reservation-list">{reservations.items.length ? reservations.items.map((item) => <Panel className="reservation-card" key={item.id}>
         <div className="reservation-card-head"><select aria-label="予約の種類" value={item.type} onChange={(event) => updateReservation(item.id, { type: event.target.value as ReservationType })}>{Object.entries(typeLabels).map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select><IconButton label="予約を削除" className="danger" onClick={() => setReservations((current) => ({ items: current.items.filter((entry) => entry.id !== item.id) }))}><Trash2 size={18} /></IconButton></div>
         <label><span>予約名</span><input value={item.title} placeholder="例：Peach MM193" onChange={(event) => updateReservation(item.id, { title: event.target.value })} /></label>

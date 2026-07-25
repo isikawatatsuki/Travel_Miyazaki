@@ -252,6 +252,16 @@ input:disabled { color: #8b9792; background: #eef0ed; }
 .group-manage form { padding: 16px; background: #f5f7f3; border-radius: 7px; }
 .group-manage h3 { margin: 0 0 12px; font-size: 16px; }
 .group-manage .button { width: 100%; margin-top: 10px; }
+.check-option { display: flex; flex-direction: row; align-items: center; gap: 9px; margin-top: 12px; color: var(--ink); font-size: 13px; font-weight: 700; }
+.check-option input { width: 18px; height: 18px; }
+.page-help { margin: 0 0 20px; padding: 12px 14px; color: var(--green-dark); background: var(--green-soft); border: 1px solid #c9d9d1; border-radius: 8px; }
+.page-help summary { min-height: 28px; display: flex; align-items: center; font-size: 13px; font-weight: 900; cursor: pointer; }
+.page-help p { margin: 8px 0 0; color: var(--muted); font-size: 13px; line-height: 1.65; }
+.account-panel { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 12px; padding: 18px; }
+.account-panel > div { display: grid; gap: 4px; }
+.account-panel small { color: var(--muted); line-height: 1.5; }
+.account-restore { grid-column: 1 / -1; padding-top: 12px; border-top: 1px solid var(--line); }
+.local-only-note { margin: 12px 0 0; padding: 10px 12px; color: #76571c; background: #fff7dc; border: 1px solid #ead79a; border-radius: 7px; font-size: 13px; font-weight: 700; }
 .note-row { display: flex; align-items: center; gap: 12px; min-height: 64px; padding: 10px 0; border-bottom: 1px solid var(--line); }
 .note-row:last-child { border-bottom: 0; }
 .note-row p { flex: 1; margin: 0; line-height: 1.65; overflow-wrap: anywhere; }
@@ -293,6 +303,7 @@ input:disabled { color: #8b9792; background: #eef0ed; }
 .coordinate-settings p { margin: 0 0 12px; color: var(--muted); font-size: 12px; line-height: 1.6; }
 .coordinate-settings .field-grid + .field-grid { margin-top: 10px; }
 .app-actions { display: grid; gap: 8px; }
+.help-toggle { margin-bottom: 14px; }
 .drawer-status { min-height: 44px; margin: 10px 0 0; color: var(--muted); font-size: 13px; line-height: 1.6; }
 .storage-guide { margin-top: 20px; padding: 16px; border: 1px solid #c9d9d1; border-radius: 8px; background: rgba(220, 236, 228, 0.46); }
 .storage-guide-heading { display: flex; align-items: center; gap: 8px; color: var(--green-dark); }

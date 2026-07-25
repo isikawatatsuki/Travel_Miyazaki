@@ -1,3 +1,5 @@
+import { ensureAuthTables, resolveSession } from "../auth-shared.js";
+
 const MAX_BODY_BYTES = 4_000_000;
 const TOKEN_TTL_MS = 180 * 24 * 60 * 60 * 1000;
 const JOIN_CODE_TTL_MS = 90 * 24 * 60 * 60 * 1000;
@@ -108,7 +110,6 @@ function sanitizeState(value) {
     reservations: state.reservations || null,
     album: state.album || null,
     history: state.history || null,
-    spots: Array.isArray(state.spots) ? state.spots : [],
   });
   if (sanitized?.reservations?.items && Array.isArray(sanitized.reservations.items)) {
     sanitized.reservations.items = sanitized.reservations.items.map((item) => ({
@@ -130,6 +131,7 @@ async function ensureSecurityTables(env) {
     env.DB.prepare("CREATE INDEX IF NOT EXISTS idx_group_tokens_group_id ON group_tokens(group_id)"),
     env.DB.prepare("CREATE TABLE IF NOT EXISTS join_rate_limits (identity_hash TEXT PRIMARY KEY, attempts INTEGER NOT NULL, window_started_at INTEGER NOT NULL, blocked_until INTEGER NOT NULL DEFAULT 0)"),
   ]);
+  await ensureAuthTables(env);
 }
 
 async function issueDeviceTokens(env, groupId) {
@@ -144,7 +146,7 @@ async function issueDeviceTokens(env, groupId) {
   return { readToken, editToken };
 }
 
-async function verifyToken(env, group, token, requiredPermission) {
+async function verifyDeviceToken(env, group, token, requiredPermission) {
   if (!token) return false;
   const tokenHash = await hashValue(token);
   const member = await env.DB.prepare("SELECT permission, expires_at FROM group_tokens WHERE token_hash = ? AND group_id = ?").bind(tokenHash, group.id).first();
@@ -158,6 +160,16 @@ async function verifyToken(env, group, token, requiredPermission) {
     env.DB.prepare("INSERT OR REPLACE INTO group_tokens (token_hash, group_id, permission, created_at, expires_at) VALUES (?, ?, 'edit', ?, ?)").bind(tokenHash, group.id, Date.now(), Date.now() + TOKEN_TTL_MS),
   ]);
   return true;
+}
+
+export async function resolveAccess(env, request, group, requiredPermission) {
+  const user = await resolveSession(env, request);
+  if (user) {
+    const membership = await env.DB.prepare("SELECT role FROM group_members WHERE group_id = ? AND user_id = ?").bind(group.id, user.id).first();
+    if (membership && (requiredPermission === "read" || ["owner", "editor"].includes(String(membership.role)))) return true;
+  }
+  const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "") || "";
+  return verifyDeviceToken(env, group, token, requiredPermission);
 }
 
 async function rateLimitIdentity(request, action) {
@@ -196,11 +208,14 @@ async function createGroup(env, request) {
   }
 
   const now = Date.now();
-  await env.DB.batch([
+  const user = await resolveSession(env, request);
+  const statements = [
     env.DB.prepare("INSERT INTO groups (id, name, join_code, edit_token, state_json) VALUES (?, ?, ?, ?, ?)").bind(id, name, joinCode, `sha256:${ownerHash}`, stateJson),
     env.DB.prepare("INSERT INTO group_security (group_id, join_expires_at, created_at) VALUES (?, ?, ?)").bind(id, now + JOIN_CODE_TTL_MS, now),
     env.DB.prepare("INSERT INTO group_tokens (token_hash, group_id, permission, created_at, expires_at) VALUES (?, ?, 'edit', ?, ?)").bind(ownerHash, id, now, now + TOKEN_TTL_MS),
-  ]);
+  ];
+  if (user) statements.push(env.DB.prepare("INSERT INTO group_members (group_id, user_id, role, joined_at) VALUES (?, ?, 'owner', ?)").bind(id, user.id, now));
+  await env.DB.batch(statements);
   const readToken = makeToken("read");
   await env.DB.prepare("INSERT INTO group_tokens (token_hash, group_id, permission, created_at, expires_at) VALUES (?, ?, 'read', ?, ?)").bind(await hashValue(readToken), id, now, now + TOKEN_TTL_MS).run();
   const created = await env.DB.prepare("SELECT updated_at FROM groups WHERE id = ?").bind(id).first();
@@ -221,22 +236,40 @@ async function joinGroup(env, request) {
 }
 
 async function readGroup(env, request, id) {
-  const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "") || "";
   const group = await env.DB.prepare("SELECT id, name, join_code, edit_token, state_json, updated_at FROM groups WHERE id = ?").bind(id).first();
-  if (!group || !(await verifyToken(env, group, token, "read"))) throw new ApiError("グループを読み込めませんでした。", 404);
+  if (!group || !(await resolveAccess(env, request, group, "read"))) throw new ApiError("グループを読み込めませんでした。", 404);
   return json({ group: { id: group.id, name: group.name, joinCode: group.join_code, updatedAt: group.updated_at, state: JSON.parse(group.state_json) } });
 }
 
 async function updateGroup(env, request, id) {
-  const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "") || "";
   const body = await readBody(request);
   const stateJson = sanitizeState(body.state);
   const group = await env.DB.prepare("SELECT id, edit_token, updated_at FROM groups WHERE id = ?").bind(id).first();
-  if (!group || !(await verifyToken(env, group, token, "edit"))) throw new ApiError("グループを更新できませんでした。", 403);
+  if (!group || !(await resolveAccess(env, request, group, "edit"))) throw new ApiError("グループを更新できませんでした。", 403);
   if (body.expectedUpdatedAt && body.expectedUpdatedAt !== group.updated_at) throw new ApiError("別の端末で更新されています。最新状態を読み込んでから、もう一度変更してください。", 409);
   await env.DB.prepare("UPDATE groups SET state_json = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?").bind(stateJson, id).run();
   const updated = await env.DB.prepare("SELECT updated_at FROM groups WHERE id = ?").bind(id).first();
   return json({ ok: true, group: { id, updatedAt: updated?.updated_at } });
+}
+
+async function listGroups(env, request) {
+  const user = await resolveSession(env, request);
+  if (!user) throw new ApiError("ログインしてください。", 401);
+  const result = await env.DB.prepare("SELECT groups.id, groups.name, groups.join_code, groups.state_json, groups.updated_at, group_members.role FROM group_members JOIN groups ON groups.id = group_members.group_id WHERE group_members.user_id = ? ORDER BY groups.updated_at DESC").bind(user.id).all();
+  return json({ groups: (result.results || []).map((group) => ({ id: group.id, name: group.name, joinCode: group.join_code, updatedAt: group.updated_at, role: group.role, state: JSON.parse(String(group.state_json)) })) });
+}
+
+export async function claimGroup(env, request, id) {
+  const user = await resolveSession(env, request);
+  const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "") || "";
+  if (!user || !token) throw new ApiError("ログインと端末の編集権限が必要です。", 401);
+  const group = await env.DB.prepare("SELECT id, edit_token FROM groups WHERE id = ?").bind(id).first();
+  if (!group || !(await verifyDeviceToken(env, group, token, "edit"))) throw new ApiError("グループを引き継げませんでした。", 403);
+  const current = await env.DB.prepare("SELECT role FROM group_members WHERE group_id = ? AND user_id = ?").bind(id, user.id).first();
+  const owner = await env.DB.prepare("SELECT user_id FROM group_members WHERE group_id = ? AND role = 'owner' LIMIT 1").bind(id).first();
+  const role = current?.role || (owner ? "editor" : "owner");
+  await env.DB.prepare("INSERT OR REPLACE INTO group_members (group_id, user_id, role, joined_at) VALUES (?, ?, ?, ?)").bind(id, user.id, role, Date.now()).run();
+  return json({ ok: true, role });
 }
 
 export async function onRequest({ request, env, params }) {
@@ -245,10 +278,12 @@ export async function onRequest({ request, env, params }) {
     await ensureSecurityTables(env);
     const method = request.method.toUpperCase();
     const parts = String(params.path || "").split("/").filter(Boolean);
+    if (method === "GET" && parts.length === 0) return listGroups(env, request);
     if (method === "POST" && parts.length === 0) return createGroup(env, request);
     if (method === "POST" && parts[0] === "join") return joinGroup(env, request);
     if (method === "GET" && parts.length === 1) return readGroup(env, request, parts[0]);
     if (method === "PUT" && parts.length === 1) return updateGroup(env, request, parts[0]);
+    if (method === "POST" && parts.length === 2 && parts[1] === "claim") return claimGroup(env, request, parts[0]);
     return json({ error: "Not found" }, 404);
   } catch (error) {
     if (error instanceof ApiError) {
