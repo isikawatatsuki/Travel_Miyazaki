@@ -43,18 +43,14 @@ export function HomePage() {
         <p className="page-help-lead">旅の地図に行った場所を並べるには</p>
         <ol>
           <li><b>予定</b>を開き、右上の「予定を設定」を押す</li>
-          <li>各予定の<b>地図URL</b>に、Googleマップのリンクを貼る</li>
-          <li>下の表示が「地図に表示できます」に変われば取り込み完了</li>
+          <li>各予定の<b>場所</b>に、Googleマップのリンクを貼る</li>
+          <li>店名や駅名が表示されれば取り込み完了</li>
         </ol>
-        <p>並ぶ順番は日付と時刻の順です。経路に出したくない予定は「旅の経路に含める」のチェックを外します。</p>
-
-        <p className="page-help-lead">貼っても認識されないとき</p>
         <p>
-          共有ボタンで出る短縮URL（<code>maps.app.goo.gl/…</code>）は座標を持たないため使えません。
-          ブラウザのアドレスバーに出ている長いURL（<code>google.com/maps/@35.68,139.76…</code>）を貼るか、
-          予定ごとに表示される緯度・経度の欄へ直接入力してください。
+          スマホのGoogleマップで<b>共有</b>して出るリンクをそのまま貼れます。
+          並ぶ順番は日付と時刻の順で、経路に出したくない予定は「旅の経路に含める」のチェックを外します。
         </p>
-        <p>場所が分からなかった予定は経路から外れ、旅の地図でそのチケットを選ぶと名前が一覧で表示されます。</p>
+        <p>場所が読み取れなかった予定は経路から外れ、旅の地図でそのチケットを選ぶと名前が一覧で表示されます。</p>
       </PageHelp>
       <section className="hero-section" aria-labelledby="hero-title">
         <HeroRouteMap points={heroRoute.points} />

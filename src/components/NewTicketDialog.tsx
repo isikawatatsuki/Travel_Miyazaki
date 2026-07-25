@@ -6,11 +6,19 @@ import { PlaceField, type PlaceValue } from "./PlaceField";
 export type NewTicket = {
   name: string;
   themeColor: string;
+  startDate: string;
+  endDate: string;
   origin: PlaceValue;
   destination: PlaceValue;
 };
 
 const empty: PlaceValue = { url: "", label: "" };
+
+function isoDate(offsetDays: number) {
+  const date = new Date();
+  date.setDate(date.getDate() + offsetDays);
+  return [date.getFullYear(), String(date.getMonth() + 1).padStart(2, "0"), String(date.getDate()).padStart(2, "0")].join("-");
+}
 
 /**
  * チケットを発行するときに、名前・色・出発地・目的地をまとめて尋ねる。
@@ -25,6 +33,8 @@ export function NewTicketDialog({ open, onClose, onCreate, busy }: {
 }) {
   const [name, setName] = useState("");
   const [themeColor, setThemeColor] = useState(TICKET_COLORS[0]);
+  const [startDate, setStartDate] = useState(isoDate(0));
+  const [endDate, setEndDate] = useState(isoDate(2));
   const [origin, setOrigin] = useState<PlaceValue>(empty);
   const [destination, setDestination] = useState<PlaceValue>(empty);
   const nameRef = useRef<HTMLInputElement>(null);
@@ -32,6 +42,7 @@ export function NewTicketDialog({ open, onClose, onCreate, busy }: {
   useEffect(() => {
     if (!open) return;
     setName(""); setThemeColor(TICKET_COLORS[0]); setOrigin(empty); setDestination(empty);
+    setStartDate(isoDate(0)); setEndDate(isoDate(2));
     const focus = window.setTimeout(() => nameRef.current?.focus(), 60);
     const onKeyDown = (event: KeyboardEvent) => { if (event.key === "Escape" && !busy) onClose(); };
     window.addEventListener("keydown", onKeyDown);
@@ -52,11 +63,16 @@ export function NewTicketDialog({ open, onClose, onCreate, busy }: {
           <button className="icon-button" type="button" aria-label="閉じる" disabled={busy} onClick={onClose}><X size={20} /></button>
         </header>
 
-        <form onSubmit={(event) => { event.preventDefault(); onCreate({ name, themeColor, origin, destination }); }}>
+        <form onSubmit={(event) => { event.preventDefault(); onCreate({ name, themeColor, startDate, endDate, origin, destination }); }}>
           <label>
             <span>旅行名</span>
             <input ref={nameRef} value={name} maxLength={40} placeholder="例：宮崎旅行" onChange={(event) => setName(event.target.value)} />
           </label>
+
+          <div className="field-grid two">
+            <label><span>出発日</span><input type="date" value={startDate} onChange={(event) => setStartDate(event.target.value)} /></label>
+            <label><span>帰宅日</span><input type="date" min={startDate} value={endDate} onChange={(event) => setEndDate(event.target.value)} /></label>
+          </div>
 
           <fieldset className="color-picker">
             <legend>テーマカラー</legend>
