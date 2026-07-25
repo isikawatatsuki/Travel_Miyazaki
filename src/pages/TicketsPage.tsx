@@ -1,12 +1,12 @@
 import { useState } from "react";
-import { LogIn, LogOut, Map, Plus, TicketCheck, Ticket as TicketIcon } from "lucide-react";
+import { Map, Plus, TicketCheck, Ticket as TicketIcon } from "lucide-react";
 import { useTrip } from "../TripContext";
 import { TICKET_COLORS, sortTickets, ticketStatus } from "../tickets";
 import { TicketCard } from "../components/TicketCard";
 import { EmptyState, Panel } from "../components/ui";
 
 export function TicketsPage({ onOpenTicket }: { onOpenTicket: (id: string) => void }) {
-  const { trips, activeTripId, createTrip, switchTrip, joinGroup, accountUser, loginWithGoogle, logout } = useTrip();
+  const { trips, activeTripId, createTrip, switchTrip, joinGroup } = useTrip();
   const [name, setName] = useState("");
   const [color, setColor] = useState(TICKET_COLORS[0]);
   const [joinCode, setJoinCode] = useState("");
@@ -30,19 +30,13 @@ export function TicketsPage({ onOpenTicket }: { onOpenTicket: (id: string) => vo
 
   return (
     <div className="page tickets-page">
-      <header className="tickets-hero">
-        <img src="/icons/icon-192.png" alt="" width={56} height={56} className="tickets-logo" />
-        <div>
-          <p className="eyebrow">TRAVEL TICKETS</p>
-          <h1>旅のチケット</h1>
-          <p className="tickets-lead">作った旅・参加した旅がチケットになります。選ぶと、その旅の予定・お金・持ち物を開けます。</p>
-        </div>
-        <div className="tickets-account">
-          {accountUser
-            ? <button className="button button-quiet small" type="button" onClick={() => run(logout)} disabled={busy}><LogOut size={16} />{accountUser.displayName || "ログアウト"}</button>
-            : <button className="button button-quiet small" type="button" onClick={loginWithGoogle}><LogIn size={16} />ログイン</button>}
-        </div>
-      </header>
+      {/* 空と雲。動きは prefers-reduced-motion で止まる。装飾なので支援技術からは隠す。 */}
+      <div className="sky" aria-hidden="true">
+        <span className="cloud cloud-1" />
+        <span className="cloud cloud-2" />
+        <span className="cloud cloud-3" />
+        <span className="cloud cloud-4" />
+      </div>
 
       <nav className="tickets-actions" aria-label="チケットの操作">
         <a className="button button-secondary" href="#map"><Map size={18} aria-hidden="true" />旅の地図を見る</a>
@@ -80,8 +74,8 @@ export function TicketsPage({ onOpenTicket }: { onOpenTicket: (id: string) => vo
         )}
       </section>
 
-      <section className="section-block">
-        <div className="section-heading"><div><p className="eyebrow">NEW</p><h2>新しいチケットを作る</h2></div></div>
+      <details className="ticket-fold">
+        <summary><Plus size={18} aria-hidden="true" />新しいチケットを作る</summary>
         <Panel className="ticket-form">
           <form onSubmit={(event) => { event.preventDefault(); void run(async () => { const id = await createTrip(name, color); setName(""); if (id) onOpenTicket(id); }); }}>
             <label><span>旅行名</span><input value={name} maxLength={40} placeholder="例：宮崎旅行" onChange={(event) => setName(event.target.value)} /></label>
@@ -98,17 +92,17 @@ export function TicketsPage({ onOpenTicket }: { onOpenTicket: (id: string) => vo
             <button className="button button-primary" type="submit" disabled={busy}><Plus size={18} />チケットを作る</button>
           </form>
         </Panel>
-      </section>
+      </details>
 
-      <section className="section-block">
-        <div className="section-heading"><div><p className="eyebrow">JOIN</p><h2>参加コードで参加する</h2></div></div>
+      <details className="ticket-fold">
+        <summary><TicketIcon size={18} aria-hidden="true" />参加コードで参加する</summary>
         <Panel className="ticket-form">
           <form onSubmit={(event) => { event.preventDefault(); void run(async () => { await joinGroup(joinCode); setJoinCode(""); }); }}>
             <label><span>6桁の参加コード</span><input value={joinCode} inputMode="numeric" pattern="[0-9]{6}" maxLength={6} placeholder="123456" onChange={(event) => setJoinCode(event.target.value.replace(/\D/g, ""))} /></label>
             <button className="button button-secondary" type="submit" disabled={busy || joinCode.length !== 6}><TicketIcon size={18} />チケットに参加</button>
           </form>
         </Panel>
-      </section>
+      </details>
     </div>
   );
 }

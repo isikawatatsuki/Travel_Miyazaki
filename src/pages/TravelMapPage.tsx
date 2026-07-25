@@ -4,8 +4,9 @@ import { useTrip } from "../TripContext";
 import { buildTicketRoute, sortTickets, ticketStatus } from "../tickets";
 import { RouteMap, type MapRoute } from "../components/RouteMap";
 import { EmptyState, Panel } from "../components/ui";
+import type { PageKey } from "../types";
 
-export function TravelMapPage({ onOpenTicket }: { onOpenTicket: (id: string) => void }) {
+export function TravelMapPage({ onOpenTicket }: { onOpenTicket: (id: string, target?: PageKey) => void }) {
   const { trips, switchTrip } = useTrip();
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
@@ -24,7 +25,7 @@ export function TravelMapPage({ onOpenTicket }: { onOpenTicket: (id: string) => 
 
   const selected = withRoutes.find((entry) => entry.ticket.id === selectedId) || null;
 
-  const open = async (id: string) => { await switchTrip(id); onOpenTicket(id); };
+  const open = async (id: string, target?: PageKey) => { await switchTrip(id); onOpenTicket(id, target); };
 
   return (
     <div className="page travel-map-page">
@@ -103,11 +104,14 @@ export function TravelMapPage({ onOpenTicket }: { onOpenTicket: (id: string) => 
                 )}
 
                 <div className="map-detail-links">
-                  <button className="button button-secondary small" type="button" onClick={() => void open(selected.ticket.id)}>
-                    <Images size={16} aria-hidden="true" />写真とメモを見る
+                  <button className="button button-secondary small" type="button" onClick={() => void open(selected.ticket.id, "album")}>
+                    <Images size={16} aria-hidden="true" />写真を見る
+                  </button>
+                  <button className="button button-secondary small" type="button" onClick={() => void open(selected.ticket.id, "share")}>
+                    <NotebookPen size={16} aria-hidden="true" />共有メモを見る
                   </button>
                   <button className="button button-quiet small" type="button" onClick={() => void open(selected.ticket.id)}>
-                    <NotebookPen size={16} aria-hidden="true" />このチケットを開く
+                    このチケットを開く
                   </button>
                 </div>
               </div>

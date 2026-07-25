@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { AlertCircle, ArrowLeft, CalendarDays, CircleDollarSign, Cloud, HardDrive, Home, Luggage, RefreshCw, Settings, Share2, WifiOff, X } from "lucide-react";
+import { AlertCircle, ArrowLeft, CalendarDays, CircleDollarSign, Cloud, HardDrive, Home, LogIn, LogOut, Luggage, RefreshCw, Settings, Share2, WifiOff, X } from "lucide-react";
 import { TripProvider, useTrip } from "./TripContext";
 import { useOnlineStatus } from "./lib";
 import type { PageKey } from "./types";
@@ -34,7 +34,7 @@ function AppShell() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [storageOpen, setStorageOpen] = useState(false);
   const online = useOnlineStatus();
-  const { activeGroup, activeTicket, syncStatus, savePhase, lastSavedAt, retrySave } = useTrip();
+  const { activeGroup, activeTicket, syncStatus, savePhase, lastSavedAt, retrySave, accountUser, loginWithGoogle, logout } = useTrip();
 
   const storageLabel = !online
     ? "オフライン"
@@ -51,6 +51,8 @@ function AppShell() {
   useEffect(() => {
     const onHashChange = () => {
       setPage(pageFromHash());
+      // チケット一覧には設定を開くボタンが無いので、遷移したら閉じておく。
+      setSettingsOpen(false);
       window.scrollTo({ top: 0, behavior: "smooth" });
       window.requestAnimationFrame(() => document.getElementById("main-content")?.focus());
     };
@@ -59,7 +61,7 @@ function AppShell() {
     return () => window.removeEventListener("hashchange", onHashChange);
   }, []);
 
-  const goToTicket = (_id: string) => { window.location.hash = "#home"; };
+  const goToTicket = (_id: string, target: PageKey = "home") => { window.location.hash = `#${target}`; };
 
   const pageContent = {
     tickets: <TicketsPage onOpenTicket={goToTicket} />,
@@ -87,15 +89,15 @@ function AppShell() {
             </span>
           </a>
         ) : (
-          <a className="brand" href="#tickets" aria-label="旅のチケット">
-            <img src="/icons/icon-192.png" alt="" width={30} height={30} />
-            <span>
-              <small>tabi log</small>
-              <strong>旅のチケット</strong>
-            </span>
+          <a className="brand brand-logo" href="#tickets" aria-label="Tabilog ホーム">
+            <img src="/icons/icon-192.png" alt="" width={32} height={32} />
+            <strong>Tabilog</strong>
           </a>
         )}
         <div className="header-actions">
+          {!inTicket && (accountUser
+            ? <button className="button button-quiet small" type="button" onClick={() => void logout()}><LogOut size={16} aria-hidden="true" />{accountUser.displayName || "ログアウト"}</button>
+            : <button className="button button-quiet small" type="button" onClick={loginWithGoogle}><LogIn size={16} aria-hidden="true" />ログイン</button>)}
           <div className="storage-status-wrap">
             <button className={`sync-pill ${!online ? "is-offline" : ""} ${savePhase === "error" ? "is-error" : ""}`} type="button" aria-expanded={storageOpen} onClick={() => setStorageOpen((current) => !current)} title={syncStatus}>
               <StorageIcon size={14} aria-hidden="true" />{storageLabel}
