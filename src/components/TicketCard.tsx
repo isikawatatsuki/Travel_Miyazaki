@@ -1,4 +1,4 @@
-import { Archive, CalendarDays, CheckCircle2, MapPin, Plane, Users } from "lucide-react";
+import { Archive, CalendarDays, CheckCircle2, Plane, Users } from "lucide-react";
 import { countdownLabel, STATUS_LABELS, ticketStatus } from "../tickets";
 import type { Ticket, TicketStatus } from "../types";
 
@@ -9,10 +9,9 @@ const STATUS_ICONS: Record<TicketStatus, typeof Plane> = {
   archived: Archive,
 };
 
-function dateRange(ticket: Ticket) {
-  const { startDate, endDate } = ticket.state.tripSettings || {};
-  if (!startDate || !endDate) return "日程未設定";
-  return `${startDate.replaceAll("-", ".")} → ${endDate.replaceAll("-", ".")}`;
+/** 券面の日付は「2026.09.21」ではなく「09.21」まで落とし、年は別に小さく置く。 */
+function short(date?: string) {
+  return date ? date.slice(5).replace("-", ".") : "--.--";
 }
 
 export function TicketCard({ ticket, onOpen, active = false }: { ticket: Ticket; onOpen: () => void; active?: boolean }) {
@@ -20,37 +19,61 @@ export function TicketCard({ ticket, onOpen, active = false }: { ticket: Ticket;
   const StatusIcon = STATUS_ICONS[status];
   const settings = ticket.state.tripSettings || {};
   const members = ticket.state.settlement?.people?.length || 0;
+  const year = settings.startDate?.slice(0, 4) || "";
 
   return (
     <article className={`ticket is-${status} ${active ? "is-active" : ""}`} style={{ ["--ticket" as string]: ticket.themeColor }}>
       <button className="ticket-open" type="button" onClick={onOpen}>
-        <span className="ticket-stub" aria-hidden="true">
-          <span className="ticket-stub-mark">TRAVEL<br />TICKET</span>
+        {/* 半券。券面の左端を縦に走り、状態をここで宣言する。 */}
+        <span className="ticket-stub">
+          <span className="ticket-stub-status">
+            <StatusIcon size={13} aria-hidden="true" />
+            {STATUS_LABELS[status]}
+          </span>
         </span>
-        <span className="ticket-body">
-          <span className="ticket-top">
-            <span className="ticket-status">
-              <StatusIcon size={14} aria-hidden="true" />
-              {STATUS_LABELS[status]}
+
+        <span className="ticket-face">
+          <span className="ticket-route">
+            <span className="ticket-place">
+              <small>FROM</small>
+              <strong>{settings.mapOrigin || "出発地未設定"}</strong>
             </span>
-            <span className="ticket-countdown">{countdownLabel(ticket)}</span>
+            <span className="ticket-arrow" aria-hidden="true" />
+            <span className="ticket-place">
+              <small>TO</small>
+              <strong>{settings.mapDestination || "目的地未設定"}</strong>
+            </span>
           </span>
 
           <span className="ticket-name">{ticket.name || "名称未設定の旅"}</span>
 
-          <span className="ticket-route">
-            <MapPin size={14} aria-hidden="true" />
-            {settings.mapOrigin || "出発地未設定"}
-            <i aria-hidden="true">→</i>
-            {settings.mapDestination || "目的地未設定"}
-          </span>
-
-          <span className="ticket-meta">
-            <span><CalendarDays size={14} aria-hidden="true" />{dateRange(ticket)}</span>
-            <span><Users size={14} aria-hidden="true" />{members}人</span>
-            {ticket.groupId && <span className="ticket-shared">共有中</span>}
+          <span className="ticket-data">
+            <span className="ticket-data-cell">
+              <small>DATE</small>
+              <b>{short(settings.startDate)}<i aria-hidden="true">–</i>{short(settings.endDate)}</b>
+              {year && <u>{year}</u>}
+            </span>
+            <span className="ticket-data-cell">
+              <small>PARTY</small>
+              <b>{String(members).padStart(2, "0")}<i aria-hidden="true">名</i></b>
+              <u><Users size={11} aria-hidden="true" />メンバー</u>
+            </span>
+            <span className="ticket-data-cell is-wide">
+              <small>STATUS</small>
+              <b className="ticket-countdown">{countdownLabel(ticket)}</b>
+              {ticket.groupId && <u>共有中</u>}
+            </span>
           </span>
         </span>
+
+        {/* 旅を終えた券に押される入国スタンプ。状態を色ではなく文字と意匠で伝える。 */}
+        {(status === "done" || status === "archived") && (
+          <span className="ticket-stamp" aria-hidden="true">
+            <b>{status === "done" ? "ARRIVED" : "ARCHIVED"}</b>
+            <em>{(settings.endDate || "").replaceAll("-", ".") || "----.--.--"}</em>
+            <i>TABILOG</i>
+          </span>
+        )}
       </button>
     </article>
   );

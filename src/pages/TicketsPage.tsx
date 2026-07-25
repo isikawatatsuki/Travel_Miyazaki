@@ -4,6 +4,7 @@ import { useTrip } from "../TripContext";
 import { TICKET_COLORS, sortTickets, ticketStatus } from "../tickets";
 import { TicketCard } from "../components/TicketCard";
 import { EmptyState, Panel } from "../components/ui";
+import { AboutDeveloper } from "../components/AboutDeveloper";
 
 export function TicketsPage({ onOpenTicket }: { onOpenTicket: (id: string) => void }) {
   const { trips, activeTripId, createTrip, switchTrip, joinGroup } = useTrip();
@@ -30,30 +31,18 @@ export function TicketsPage({ onOpenTicket }: { onOpenTicket: (id: string) => vo
 
   return (
     <div className="page tickets-page">
-      {/* 空と雲。動きは prefers-reduced-motion で止まる。装飾なので支援技術からは隠す。 */}
-      <div className="sky" aria-hidden="true">
-        <span className="cloud cloud-1" />
-        <span className="cloud cloud-2" />
-        <span className="cloud cloud-3" />
-        <span className="cloud cloud-4" />
-      </div>
-
-      <nav className="tickets-actions" aria-label="チケットの操作">
-        <a className="button button-secondary" href="#map"><Map size={18} aria-hidden="true" />旅の地図を見る</a>
-      </nav>
-
       <section className="section-block" aria-labelledby="ticket-list-title">
-        <div className="section-heading">
-          <div>
-            <p className="eyebrow">MY TICKETS</p>
-            <h2 id="ticket-list-title">チケット一覧</h2>
-          </div>
+        {/* 券そのものが見出しの役割を果たすので、見出しは支援技術にだけ残す。 */}
+        <h1 id="ticket-list-title" className="visually-hidden">チケット一覧</h1>
+
+        <nav className="tickets-actions" aria-label="チケットの操作">
+          <a className="button button-secondary" href="#map"><Map size={18} aria-hidden="true" />旅の地図を見る</a>
           {archivedCount > 0 && (
             <button className="button button-quiet small" type="button" aria-pressed={showArchived} onClick={() => setShowArchived((current) => !current)}>
               アーカイブ{showArchived ? "を隠す" : `を表示（${archivedCount}）`}
             </button>
           )}
-        </div>
+        </nav>
 
         {message && <p className="tickets-error" role="alert">{message}</p>}
 
@@ -103,6 +92,8 @@ export function TicketsPage({ onOpenTicket }: { onOpenTicket: (id: string) => vo
           </form>
         </Panel>
       </details>
+
+      <AboutDeveloper />
     </div>
   );
 }

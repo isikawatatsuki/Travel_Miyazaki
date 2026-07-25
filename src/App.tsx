@@ -12,6 +12,7 @@ import { DetailsPage } from "./pages/DetailsPage";
 import { TicketsPage } from "./pages/TicketsPage";
 import { TravelMapPage } from "./pages/TravelMapPage";
 import { SettingsDrawer } from "./components/SettingsDrawer";
+import { Sky } from "./components/Sky";
 
 const pages: Array<{ id: PageKey; label: string; icon: typeof Home }> = [
   { id: "home", label: "ホーム", icon: Home },
@@ -79,6 +80,9 @@ function AppShell() {
 
   return (
     <div className={`app-shell ${inTicket ? "" : "is-tickets"}`}>
+      {/* .page の page-in アニメーションは transform を残すため fixed の含みブロックになる。
+          空を画面全体へ広げるには、その外側に置く必要がある。 */}
+      {!inTicket && <Sky />}
       <header className="app-header">
         {inTicket ? (
           <a className="brand brand-back" href="#tickets" aria-label="チケット一覧へ戻る">
