@@ -19,7 +19,7 @@ export function PackingPage() {
 
   return (
     <div className="page">
-      <PageHelp open={helpOpen} onChange={setHelpOpen}>持ち物はグループ全員で共有される1つのリストです。</PageHelp>
+      <PageHelp open={helpOpen} onChange={setHelpOpen}><p>持ち物はグループ全員で共有される1つのリストです。</p></PageHelp>
       <SectionHeading eyebrow="PACKING" title="持っていくもの" description="チェックも追加・削除も、グループで同じ状態になります。" />
       <Panel className="progress-panel">
         <div><CheckCheck size={24} /><span>準備できたもの</span><strong>{done} / {checklist.items.length}</strong></div>

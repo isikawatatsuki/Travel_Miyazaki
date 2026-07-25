@@ -43,7 +43,7 @@ export function SharePage() {
 
   return (
     <div className="page">
-      <PageHelp open={helpOpen} onChange={setHelpOpen}>メンバー登録がすべての人数計算の基準です。6桁コードでほかの端末も参加できます。</PageHelp>
+      <PageHelp open={helpOpen} onChange={setHelpOpen}><p>メンバー登録がすべての人数計算の基準です。6桁コードでほかの端末も参加できます。</p></PageHelp>
       <SectionHeading eyebrow="TOGETHER" title="みんなで共有" description="メンバー、グループ、共有メモをまとめています。" />
 
       <section className="section-block">
