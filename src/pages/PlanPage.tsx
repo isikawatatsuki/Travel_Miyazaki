@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { Check, ExternalLink, MapPin, Plus, Settings2, Trash2 } from "lucide-react";
+import { Check, ExternalLink, MapPin, Plus, Route, Settings2, Trash2 } from "lucide-react";
 import { useTrip } from "../TripContext";
 import { getScheduleDays } from "../data";
+import { parseLatLng, scheduleItemCoordinate } from "../tickets";
 import { makeId, mapsDirections, mapsEmbed, mapsSearch, safeExternalUrl } from "../lib";
 import type { ScheduleItem } from "../types";
 import { EmptyState, IconButton, PageHelp, Panel, SectionHeading } from "../components/ui";
@@ -55,6 +56,24 @@ export function PlanPage() {
               <label><span>メモ</span><textarea value={item.memo} maxLength={120} rows={2} placeholder="待ち合わせや予約番号など" onChange={(event) => updateItem(item.id, { memo: event.target.value })} /></label>
               <label><span>地図URL</span><input type="url" value={item.mapUrl} placeholder="https://maps.google.com/..." onChange={(event) => updateItem(item.id, { mapUrl: event.target.value })} /></label>
               {safeExternalUrl(item.mapUrl) && <a className="inline-map-link" href={safeExternalUrl(item.mapUrl)} target="_blank" rel="noreferrer"><MapPin size={17} />地図を開く</a>}
+
+              <div className="route-field">
+                <label className="unset-field">
+                  <input type="checkbox" checked={item.inRoute !== false} onChange={(event) => updateItem(item.id, { inRoute: event.target.checked })} />
+                  旅の経路に含める
+                </label>
+                {item.inRoute !== false && (
+                  scheduleItemCoordinate(item)
+                    ? <p className="route-hint is-ok"><Route size={15} aria-hidden="true" />地図に表示できます</p>
+                    : <p className="route-hint is-missing"><Route size={15} aria-hidden="true" />場所が分かりません。地図URLを貼るか、緯度経度を入れてください。</p>
+                )}
+                {item.inRoute !== false && !parseLatLng(item.mapUrl) && (
+                  <div className="field-grid two">
+                    <label><span>緯度</span><input type="number" step="0.000001" value={item.lat ?? ""} placeholder="31.7362" onChange={(event) => updateItem(item.id, { lat: event.target.value === "" ? undefined : Number(event.target.value) })} /></label>
+                    <label><span>経度</span><input type="number" step="0.000001" value={item.lng ?? ""} placeholder="131.0743" onChange={(event) => updateItem(item.id, { lng: event.target.value === "" ? undefined : Number(event.target.value) })} /></label>
+                  </div>
+                )}
+              </div>
             </Panel>
           )) : <EmptyState>この日の予定はまだありません。</EmptyState>}
           <button className="button button-primary add-wide" type="button" onClick={addItem}><Plus size={20} />予定を追加</button>
