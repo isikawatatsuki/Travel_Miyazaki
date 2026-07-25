@@ -16,13 +16,27 @@ test("Google id_token の aud・iss・exp を検証する", () => {
   assert.throws(() => decodeAndValidateIdToken(jwt({ sub: "123", aud: "other", iss: "https://accounts.google.com", exp: Math.floor(now / 1000) + 60 }), "client", now));
 });
 
-test("callback は state 不一致を 400 で拒否する", async () => {
+// 全画面遷移で開かれるため、拒否は 400 ではなくアプリへの302で返す。
+// 守るべき性質は「セッションを発行しないこと」なので、そこを直接確かめる。
+test("callback は state 不一致を拒否し、セッションを発行しない", async () => {
   const response = await authRequest({
     request: new Request("https://example.com/api/auth/callback?code=abc&state=wrong", { headers: { cookie: "oauth_state=expected; oauth_verifier=verifier" } }),
     env: {},
     params: { path: "callback" },
   });
-  assert.equal(response.status, 400);
+  assert.equal(response.status, 302);
+  assert.match(response.headers.get("location"), /\?authError=state#share$/);
+  assert.ok(!response.headers.getSetCookie().some((value) => /^session=[^;]/.test(value)));
+});
+
+test("設定不足の /api/auth/google はJSONを出さずアプリへ戻す", async () => {
+  const response = await authRequest({
+    request: new Request("https://example.com/api/auth/google"),
+    env: {},
+    params: { path: "google" },
+  });
+  assert.equal(response.status, 302);
+  assert.match(response.headers.get("location"), /\?authError=not_configured#share$/);
 });
 
 test("期限切れセッションを拒否して削除する", async () => {
