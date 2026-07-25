@@ -109,7 +109,6 @@ export function createDefaultSharedState(tripName = defaultTripSettings.tripName
     reservations: { ...defaultReservations, items: [] },
     album: { ...defaultAlbum, items: [] },
     history: { ...defaultHistory, items: [] },
-    spots: [],
   };
 }
 

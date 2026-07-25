@@ -3,12 +3,12 @@ import { useTrip } from "../TripContext";
 import { getBudgetSummary, getSettlementSummary } from "../derived";
 import { makeId, yen } from "../lib";
 import type { Payment } from "../types";
-import { EmptyState, IconButton, Panel, SectionHeading } from "../components/ui";
+import { EmptyState, IconButton, PageHelp, Panel, SectionHeading } from "../components/ui";
 
 const amount = (value: unknown) => Math.max(0, Number(value || 0));
 
 export function MoneyPage() {
-  const { adjust, setAdjust, settlement, setSettlement } = useTrip();
+  const { adjust, setAdjust, settlement, setSettlement, helpOpen, setHelpOpen } = useTrip();
   const budget = getBudgetSummary(adjust, settlement.people.length);
   const settlementSummary = getSettlementSummary(settlement);
   const { hotel, souvenirs, perPerson, tripTotal, peopleCount } = budget;
@@ -25,6 +25,7 @@ export function MoneyPage() {
 
   return (
     <div className="page">
+      <PageHelp open={helpOpen} onChange={setHelpOpen}>予算は見込み、立替精算は実際に払った記録です。2つは別々に管理します。</PageHelp>
       <SectionHeading eyebrow="BUDGET" title="旅のお金" description="予算と実際の支払いを分けて確認できます。" />
       <section className="money-summary" aria-label="旅費の目安">
         <Panel className="total-card"><span>1人あたり</span><strong>{yen.format(perPerson)}</strong><small>設定した項目の合計</small></Panel>

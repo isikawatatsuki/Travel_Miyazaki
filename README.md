@@ -20,6 +20,12 @@ npm run dev
 
 グループ共有にはPagesプロジェクトのD1バインディング `DB` が必要です。初回だけ `schema.sql` をD1へ実行してください。APIは `functions/api/groups/[[path]].ts` です。
 
+Googleアカウント連携を使う場合は、Google Cloud Console の承認済みリダイレクトURIに `https://<本番ドメイン>/api/auth/callback`（ローカルは `http://localhost:5173/api/auth/callback`）を登録します。`GOOGLE_CLIENT_ID` は `wrangler.example.toml` の `[vars]` を参考に設定し、クライアントシークレットは平文の設定ファイルへ置かず、次のコマンドでSecretとして登録してください。
+
+```bash
+wrangler secret put GOOGLE_CLIENT_SECRET
+```
+
 ## 主な構成
 
 - `src/` - React画面、状態管理、型定義

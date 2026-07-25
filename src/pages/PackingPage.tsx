@@ -2,10 +2,10 @@ import { CheckCheck, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { useTrip } from "../TripContext";
 import { makeId } from "../lib";
-import { EmptyState, IconButton, Panel, SectionHeading } from "../components/ui";
+import { EmptyState, IconButton, PageHelp, Panel, SectionHeading } from "../components/ui";
 
 export function PackingPage() {
-  const { checklist, setChecklist } = useTrip();
+  const { checklist, setChecklist, helpOpen, setHelpOpen } = useTrip();
   const [newItem, setNewItem] = useState("");
   const done = checklist.items.filter((item) => item.checked).length;
   const progress = checklist.items.length ? Math.round((done / checklist.items.length) * 100) : 0;
@@ -19,6 +19,7 @@ export function PackingPage() {
 
   return (
     <div className="page">
+      <PageHelp open={helpOpen} onChange={setHelpOpen}>持ち物はグループ全員で共有される1つのリストです。</PageHelp>
       <SectionHeading eyebrow="PACKING" title="持っていくもの" description="チェックも追加・削除も、グループで同じ状態になります。" />
       <Panel className="progress-panel">
         <div><CheckCheck size={24} /><span>準備できたもの</span><strong>{done} / {checklist.items.length}</strong></div>

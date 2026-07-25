@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useTrip } from "../TripContext";
 import { defaultTripSettings } from "../data";
 import type { TripSettings } from "../types";
-import { IconButton } from "./ui";
+import { IconButton, PageHelp } from "./ui";
 
 interface InstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -36,7 +36,7 @@ function waitForSettingsSave() {
 }
 
 export function SettingsDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const { tripSettings, setTripSettings, trips, activeTripId, createTrip, switchTrip, archiveTrip, restoreTrip } = useTrip();
+  const { tripSettings, setTripSettings, trips, activeTripId, createTrip, switchTrip, archiveTrip, restoreTrip, helpOpen, setHelpOpen } = useTrip();
   const [draft, setDraft] = useState(tripSettings);
   const [status, setStatus] = useState("");
   const [installPrompt, setInstallPrompt] = useState<InstallPromptEvent | null>(null);
@@ -144,6 +144,8 @@ export function SettingsDrawer({ open, onClose }: { open: boolean; onClose: () =
           </fieldset>
           </>}
           {settingsTab === "app" && <>
+          <PageHelp open={helpOpen} onChange={setHelpOpen}>旅行の切り替えとアーカイブ、ホーム画面への追加を設定できます。</PageHelp>
+          <label className="switch-row help-toggle"><span><strong>使い方の説明を表示する</strong><small>各ページ上部の説明を開きます</small></span><input type="checkbox" role="switch" checked={helpOpen} onChange={(event) => setHelpOpen(event.target.checked)} /></label>
           <div className="app-actions">
             <button className="button button-secondary" type="button" onClick={install}><Download size={18} />ホーム画面に追加</button>
             <button className="button button-secondary" type="button" onClick={() => window.print()}>印刷する</button>

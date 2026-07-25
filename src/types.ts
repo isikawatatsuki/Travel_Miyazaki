@@ -90,7 +90,6 @@ export type SharedState = {
   reservations: ReservationsState;
   album: AlbumState;
   history: HistoryState;
-  spots: unknown[];
 };
 
 export type TravelProfile = {
@@ -109,9 +108,12 @@ export type Group = {
   name: string;
   joinCode: string;
   readToken?: string;
-  editToken: string;
+  editToken?: string;
   updatedAt?: string;
   state?: Partial<SharedState>;
 };
+
+export type AccountUser = { id: string; displayName: string; email: string };
+export type AccountGroup = Group & { role: "owner" | "editor" | "viewer" };
 
 export type PageKey = "home" | "plan" | "money" | "packing" | "share" | "details" | "album";

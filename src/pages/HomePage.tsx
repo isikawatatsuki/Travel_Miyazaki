@@ -3,11 +3,11 @@ import { useTrip } from "../TripContext";
 import { getScheduleDays } from "../data";
 import { getBudgetSummary } from "../derived";
 import { mapsSearch, yen } from "../lib";
-import { PageLink, Panel, SectionHeading } from "../components/ui";
+import { PageHelp, PageLink, Panel, SectionHeading } from "../components/ui";
 import { HeroRouteMap } from "../components/HeroRouteMap";
 
 export function HomePage() {
-  const { tripSettings, schedule, checklist, notes, settlement, adjust, reservations, album } = useTrip();
+  const { tripSettings, schedule, checklist, notes, settlement, adjust, reservations, album, helpOpen, setHelpOpen } = useTrip();
   const budget = getBudgetSummary(adjust, settlement.people.length);
   const days = getScheduleDays(tripSettings);
   const start = new Date(`${tripSettings.startDate}T00:00:00`);
@@ -32,6 +32,7 @@ export function HomePage() {
 
   return (
     <div className="page home-page">
+      <PageHelp open={helpOpen} onChange={setHelpOpen}>ここは確認専用です。編集は下のタブから。人数と1人あたりの金額は共有ページのメンバーが基準です。</PageHelp>
       <section className="hero-section" aria-labelledby="hero-title">
         <HeroRouteMap settings={tripSettings} />
         <div className="hero-route" aria-hidden="true">
