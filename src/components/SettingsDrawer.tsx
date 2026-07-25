@@ -1,4 +1,4 @@
-import { AlertCircle, Archive, CheckCircle2, Download, HardDrive, LoaderCircle, Luggage, MapPinned, Plus, RotateCcw, Save, Share2, Smartphone, Undo2, WifiOff, X } from "lucide-react";
+import { AlertCircle, Archive, CheckCircle2, Download, HardDrive, LoaderCircle, Luggage, MapPinned, Plus, RotateCcw, Save, Share2, Smartphone, Trash2, Undo2, WifiOff, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTrip } from "../TripContext";
 import { defaultTripSettings } from "../data";
@@ -37,13 +37,14 @@ function waitForSettingsSave() {
 }
 
 export function SettingsDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const { tripSettings, setTripSettings, trips, activeTripId, activeTicket, setTicketTheme, createTrip, switchTrip, archiveTrip, restoreTrip, helpOpen, setHelpOpen } = useTrip();
+  const { tripSettings, setTripSettings, trips, activeTripId, activeTicket, setTicketTheme, createTrip, switchTrip, archiveTrip, restoreTrip, deleteTrip, helpOpen, setHelpOpen } = useTrip();
   const [draft, setDraft] = useState(tripSettings);
   const [status, setStatus] = useState("");
   const [installPrompt, setInstallPrompt] = useState<InstallPromptEvent | null>(null);
   const [settingsTab, setSettingsTab] = useState<"trip" | "move" | "app">("trip");
   const [newTripName, setNewTripName] = useState("");
   const [saveProgress, setSaveProgress] = useState<SaveProgress | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState("");
 
   useEffect(() => { if (open) setDraft(tripSettings); }, [open, tripSettings]);
   useEffect(() => {
@@ -114,7 +115,18 @@ export function SettingsDrawer({ open, onClose }: { open: boolean; onClose: () =
             <div className="storage-guide-heading"><Luggage size={19} /><h3 id="trip-manager-title">旅行を切り替える</h3></div>
             <div className="trip-list">{trips.filter((trip) => !trip.archived).map((trip) => <div className={trip.id === activeTripId ? "is-active" : ""} key={trip.id}>
               <button type="button" onClick={() => switchTrip(trip.id)}><strong>{trip.name}</strong><small>{new Intl.DateTimeFormat("ja-JP", { month: "numeric", day: "numeric" }).format(new Date(trip.updatedAt))} 更新</small></button>
-              <IconButton label={`${trip.name}をアーカイブ`} disabled={trips.filter((item) => !item.archived).length <= 1} onClick={() => archiveTrip(trip.id)}><Archive size={17} /></IconButton>
+              <IconButton label={`${trip.name}をアーカイブ`} onClick={() => archiveTrip(trip.id)}><Archive size={17} /></IconButton>
+              <IconButton label={`${trip.name}を削除`} className="danger" onClick={() => setConfirmDelete(trip.id)}><Trash2 size={17} /></IconButton>
+              {confirmDelete === trip.id && (
+                <div className="trip-delete-confirm" role="alertdialog" aria-label={`${trip.name}を削除しますか`}>
+                  <p><strong>{trip.name}</strong>をこの端末から削除します。予定・お金・持ち物・写真も消え、元に戻せません。</p>
+                  {trip.groupId && <p className="trip-delete-note">共有相手の端末とサーバー上のデータは残ります。参加コード {trip.joinCode} で入り直せます。</p>}
+                  <div>
+                    <button className="button button-quiet small" type="button" onClick={() => setConfirmDelete("")}>やめる</button>
+                    <button className="button button-danger small" type="button" onClick={() => { void deleteTrip(trip.id); setConfirmDelete(""); }}><Trash2 size={16} />削除する</button>
+                  </div>
+                </div>
+              )}
             </div>)}</div>
             <form className="new-trip-form" onSubmit={(event) => { event.preventDefault(); if (!newTripName.trim()) return; createTrip(newTripName); setNewTripName(""); }}><label><span>新しい旅行名</span><input value={newTripName} placeholder="例：北海道旅行" onChange={(event) => setNewTripName(event.target.value)} /></label><button className="button button-secondary" type="submit"><Plus size={17} />作成</button></form>
             {trips.some((trip) => trip.archived) && <details className="archived-trips"><summary>アーカイブした旅行</summary>{trips.filter((trip) => trip.archived).map((trip) => <div key={trip.id}><span>{trip.name}</span><button className="button button-quiet small" type="button" onClick={() => restoreTrip(trip.id)}><Undo2 size={16} />戻す</button></div>)}</details>}

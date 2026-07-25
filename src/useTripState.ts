@@ -250,12 +250,35 @@ export function useTripState() {
       : trip));
   }, [setTrips]);
 
+  /** チケットを開いていない状態へ戻す。共有先も外さないと次の編集が別チケットへ飛ぶ。 */
+  const clearActiveTicket = useCallback(() => {
+    setActiveTripId("");
+    setActiveGroup(null);
+    groupFingerprintRef.current = "";
+    groupVersionRef.current = "";
+    localStorage.removeItem("tripShioriGroup");
+  }, [setActiveTripId]);
+
+  // 0枚を正規の状態にしたので、最後の1枚もアーカイブできる。
   const archiveTrip = useCallback(async (id: string) => {
-    const available = trips.filter((trip) => trip.id !== id && !trip.archived);
-    if (!available.length) throw new Error("最後の旅行はアーカイブできません。");
     setTrips((current) => current.map((trip) => trip.id === id ? { ...trip, archived: true, updatedAt: new Date().toISOString() } : trip));
-    if (id === activeTripId) await switchTrip(available[0].id);
-  }, [activeTripId, setTrips, switchTrip, trips]);
+    if (id !== activeTripId) return;
+    const available = trips.filter((trip) => trip.id !== id && !trip.archived);
+    if (available.length) await switchTrip(available[0].id);
+    else clearActiveTicket();
+  }, [activeTripId, clearActiveTicket, setTrips, switchTrip, trips]);
+
+  /**
+   * チケットをこの端末から削除する。共有グループのサーバー側データには触らない。
+   * 参加コードを知っていれば、あとから同じグループへ入り直せる。
+   */
+  const deleteTrip = useCallback(async (id: string) => {
+    setTrips((current) => current.filter((trip) => trip.id !== id));
+    if (id !== activeTripId) return;
+    const available = trips.filter((trip) => trip.id !== id && !trip.archived);
+    if (available.length) await switchTrip(available[0].id);
+    else clearActiveTicket();
+  }, [activeTripId, clearActiveTicket, setTrips, switchTrip, trips]);
 
   const restoreTrip = useCallback((id: string) => {
     setTrips((current) => current.map((trip) => trip.id === id ? { ...trip, archived: false, updatedAt: new Date().toISOString() } : trip));
@@ -444,7 +467,7 @@ export function useTripState() {
     helpOpen, setHelpOpen,
     accountUser, accountGroups, refreshAccount, loginWithGoogle, logout, restoreAccountGroup,
     savePhase, lastSavedAt, retrySave,
-    trips, activeTripId, activeTicket, createTrip, switchTrip, archiveTrip, restoreTrip,
+    trips, activeTripId, activeTicket, createTrip, switchTrip, archiveTrip, restoreTrip, deleteTrip,
     setTicketTheme, completeTrip,
     createGroup, joinGroup, refreshGroup, switchGroup,
   };
