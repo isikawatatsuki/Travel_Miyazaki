@@ -23,8 +23,11 @@ npm run dev
 Googleアカウント連携を使う場合は、Google Cloud Console の承認済みリダイレクトURIに `https://<本番ドメイン>/api/auth/callback`（ローカルは `http://localhost:5173/api/auth/callback`）を登録します。`GOOGLE_CLIENT_ID` は `wrangler.example.toml` の `[vars]` を参考に設定し、クライアントシークレットは平文の設定ファイルへ置かず、次のコマンドでSecretとして登録してください。
 
 ```bash
-wrangler secret put GOOGLE_CLIENT_SECRET
+# Pagesプロジェクトなので `wrangler secret put` ではなく pages 版を使う
+wrangler pages secret put GOOGLE_CLIENT_SECRET --project-name travel-miyazaki
 ```
+
+`GOOGLE_CLIENT_ID` はPagesダッシュボードの Settings → Environment variables でも設定できます。**どちらか一方でも未設定だとログインは動かず、共有ページに「Googleログインがまだ設定されていません」と表示されます。** 設定後は再デプロイが必要です。
 
 ## 主な構成
 

@@ -1,9 +1,25 @@
-import { Camera, ChevronDown, Cloud, LogIn, LogOut, Plus, RefreshCw, Trash2, UserPlus } from "lucide-react";
+import { AlertCircle, Camera, ChevronDown, Cloud, LogIn, LogOut, Plus, RefreshCw, Trash2, UserPlus } from "lucide-react";
 import { useState } from "react";
 import { useTrip } from "../TripContext";
 import { makeId } from "../lib";
 import type { Person } from "../types";
 import { EmptyState, IconButton, PageHelp, Panel, SectionHeading } from "../components/ui";
+
+const AUTH_ERRORS: Record<string, string> = {
+  not_configured: "Googleログインがまだ設定されていません。サイト管理者による設定が必要です。",
+  no_database: "アカウント情報の保存先が設定されていません。サイト管理者による設定が必要です。",
+  state: "認証の途中で情報が失われました。もう一度お試しください。",
+  exchange: "Googleとの通信に失敗しました。時間をおいてお試しください。",
+  token: "Googleアカウントを確認できませんでした。もう一度お試しください。",
+};
+
+// /api/auth/* は失敗すると ?authError=... を付けて戻ってくる。読んだらURLから消す。
+function readAuthError() {
+  const reason = new URLSearchParams(window.location.search).get("authError");
+  if (!reason) return "";
+  window.history.replaceState(null, "", `${window.location.pathname}${window.location.hash}`);
+  return AUTH_ERRORS[reason] || "ログインできませんでした。";
+}
 
 export function SharePage() {
   const { settlement, setSettlement, notes, setNotes, album, groups, activeGroup, syncStatus, createGroup, joinGroup, refreshGroup, switchGroup, helpOpen, setHelpOpen, accountUser, accountGroups, loginWithGoogle, logout, restoreAccountGroup } = useTrip();
@@ -14,6 +30,7 @@ export function SharePage() {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [showHelpAfterCreate, setShowHelpAfterCreate] = useState(true);
+  const [authError, setAuthError] = useState(() => readAuthError());
 
   const updatePerson = (id: string, patch: Partial<Person>) => setSettlement((current) => ({
     ...current,
@@ -32,6 +49,7 @@ export function SharePage() {
       <section className="section-block">
         <SectionHeading eyebrow="ACCOUNT" title="アカウントで復旧" />
         <Panel className="account-panel">
+          {authError && <p className="account-error" role="alert"><AlertCircle size={17} aria-hidden="true" />{authError}<button className="button button-quiet small" type="button" onClick={() => setAuthError("")}>閉じる</button></p>}
           {accountUser ? <><div><strong>{accountUser.displayName || accountUser.email || "Googleアカウント"}</strong><small>ログイン中</small></div><button className="button button-quiet small" type="button" onClick={() => run(logout)}><LogOut size={17} />ログアウト</button></> : <><div><strong>端末を替えても旅行を復元</strong><small>Googleログインは任意です。コード参加は今までどおり使えます。</small></div><button className="button button-secondary" type="button" onClick={loginWithGoogle}><LogIn size={17} />Googleでログイン</button></>}
           {accountUser && accountGroups.length > 0 && <label className="account-restore"><span>アカウントの旅行</span><select defaultValue="" onChange={(event) => event.target.value && run(() => restoreAccountGroup(event.target.value))}><option value="" disabled>復元する旅行を選ぶ</option>{accountGroups.map((group) => <option key={group.id} value={group.id}>{group.name}（{group.role}）</option>)}</select></label>}
         </Panel>

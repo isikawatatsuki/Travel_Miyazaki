@@ -11,7 +11,7 @@
     "build": "npm run typecheck && vite build",
     "preview": "vite preview --host 0.0.0.0",
     "typecheck": "tsc -b && tsc -p tsconfig.functions.json",
-    "test": "node --test"
+    "test": "node --experimental-strip-types --test"
   },
   "dependencies": {
     "lucide-react": "1.25.0",
