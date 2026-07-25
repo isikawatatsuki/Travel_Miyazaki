@@ -635,7 +635,8 @@ input:disabled { color: #8b9792; background: #eef0ed; }
 .color-swatch input:focus-visible + span[aria-hidden] { outline: 3px solid var(--ink); outline-offset: 2px; }
 
 /* 経路の設定（予定ページ） */
-.route-field { display: grid; gap: 8px; padding-top: 10px; border-top: 1px dashed var(--line); }
+.schedule-card .place-field { margin-bottom: 8px; }
+.schedule-card .unset-field { padding-top: 8px; border-top: 1px dashed var(--line); }
 .route-hint { display: flex; align-items: center; gap: 6px; font-size: 12px; line-height: 1.6; }
 .route-hint.is-ok { color: var(--green); }
 .route-hint.is-missing { color: #8a5a20; }
