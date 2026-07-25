@@ -95,6 +95,37 @@ export function parsePlaceName(mapUrl: string): string | null {
   }
 }
 
+/**
+ * Googleマップの `?q=` から検索語を取り出す。共有の仕方によっては
+ * `/maps/place/…` ではなく `?q=〒560-0036 大阪府… 大阪国際空港 (ITM)` の形で来る。
+ *
+ * Nominatim は住所の全体では引けず施設名なら引けることが多いので、
+ * 施設名だけを先に、駄目なら全体を、の順で候補を返す。
+ */
+export function placeQueryCandidates(mapUrl: string): string[] {
+  let raw = "";
+  try {
+    raw = new URL(mapUrl).searchParams.get("q") || "";
+  } catch {
+    return [];
+  }
+  if (!raw.trim()) return [];
+  // 座標そのものが q= に入っている場合は検索の出番ではない。
+  if (/^-?\d+\.\d+\s*,\s*-?\d+\.\d+$/.test(raw.trim())) return [];
+
+  const tokens = raw.split(/[\s\u3000]+/).filter(Boolean).filter((token) => (
+    !/^〒?\d{3}-?\d{4}$/.test(token) && !/^[（(].*[)）]$/.test(token)
+  ));
+  const candidates: string[] = [];
+  // Googleは「住所 施設名」の順に並べるので、末尾の語が施設名であることが多い。
+  const last = tokens[tokens.length - 1];
+  if (last && tokens.length > 1) candidates.push(last);
+  const whole = tokens.join(" ").trim();
+  if (whole && whole !== last) candidates.push(whole);
+  if (!candidates.length && raw.trim()) candidates.push(raw.trim());
+  return candidates;
+}
+
 export type Place = { url: string; name: string; lat: number; lng: number };
 
 /**

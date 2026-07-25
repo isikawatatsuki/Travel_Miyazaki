@@ -65,10 +65,10 @@ export function PlanPage() {
           <Panel className="trip-places">
             <h3>この旅の出発地と目的地</h3>
             <p className="place-note">ホームの背景地図と、旅の地図の基準になります。予定に場所を登録すると、そちらが優先されます。</p>
-            <PlaceField title="出発地" value={{ url: tripSettings.mapOriginUrl || "", label: tripSettings.mapOrigin || "" }}
-              onChange={(next) => setTripSettings((current) => ({ ...current, mapOriginUrl: next.url, mapOrigin: next.label }))} />
-            <PlaceField title="目的地" value={{ url: tripSettings.mapDestinationUrl || "", label: tripSettings.mapDestination || "" }}
-              onChange={(next) => setTripSettings((current) => ({ ...current, mapDestinationUrl: next.url, mapDestination: next.label }))} />
+            <PlaceField title="出発地" value={{ url: tripSettings.mapOriginUrl || "", label: tripSettings.mapOrigin || "", lat: tripSettings.mapOriginLat, lng: tripSettings.mapOriginLng }}
+              onChange={(next) => setTripSettings((current) => ({ ...current, mapOriginUrl: next.url, mapOrigin: next.label, ...(next.lat !== undefined && next.lng !== undefined ? { mapOriginLat: next.lat, mapOriginLng: next.lng } : {}) }))} />
+            <PlaceField title="目的地" value={{ url: tripSettings.mapDestinationUrl || "", label: tripSettings.mapDestination || "", lat: tripSettings.mapDestinationLat, lng: tripSettings.mapDestinationLng }}
+              onChange={(next) => setTripSettings((current) => ({ ...current, mapDestinationUrl: next.url, mapDestination: next.label, ...(next.lat !== undefined && next.lng !== undefined ? { mapDestinationLat: next.lat, mapDestinationLng: next.lng } : {}) }))} />
           </Panel>
 
           <Panel className="trip-places">
@@ -80,13 +80,13 @@ export function PlanPage() {
             </p>
             <PlaceField
               title="宿"
-              value={{ url: stay?.day === activeDay ? stay.mapUrl : "", label: stay?.day === activeDay ? stay.title : "" }}
+              value={{ url: stay?.day === activeDay ? stay.mapUrl : "", label: stay?.day === activeDay ? stay.title : "", lat: stay?.day === activeDay ? stay.lat : undefined, lng: stay?.day === activeDay ? stay.lng : undefined }}
               onChange={(next) => setSchedule((current) => {
                 const own = current.items.find((entry) => entry.isStay && entry.day === activeDay);
                 if (!next.url && own) return { ...current, items: current.items.filter((entry) => entry.id !== own.id) };
                 if (!next.url) return current;
                 const place = resolvePlace(next.url, next.label);
-                const patch = { mapUrl: next.url, title: place?.name || next.label || "宿", lat: place?.lat, lng: place?.lng };
+                const patch = { mapUrl: next.url, title: place?.name || next.label || "宿", lat: place?.lat ?? next.lat, lng: place?.lng ?? next.lng };
                 if (own) return { ...current, items: current.items.map((entry) => entry.id === own.id ? { ...entry, ...patch } : entry) };
                 return { ...current, items: [...current.items, { id: makeId("stay"), day: activeDay, time: "", memo: "", isTimeUnset: true, isStay: true, inRoute: false, ...patch } as ScheduleItem] };
               })}
@@ -106,10 +106,10 @@ export function PlanPage() {
               <PlaceField
                 title="場所"
                 showLabelField={false}
-                value={{ url: item.mapUrl, label: item.title }}
+                value={{ url: item.mapUrl, label: item.title, lat: item.lat, lng: item.lng }}
                 onChange={(next) => {
                   const place = resolvePlace(next.url, item.title);
-                  updateItem(item.id, { mapUrl: next.url, lat: place?.lat, lng: place?.lng });
+                  updateItem(item.id, { mapUrl: next.url, lat: place?.lat ?? next.lat, lng: place?.lng ?? next.lng });
                 }}
                 hint="Googleマップのリンクを貼ると、旅の地図の経路に並びます。"
               />

@@ -214,7 +214,7 @@ export function useTripState() {
     window.setTimeout(() => { applyingTrip.current = false; }, 180);
   }, [activeTripId, applySharedState, setActiveTripId, setTrips, sharedState, tripSettings.tripName, trips]);
 
-  const createTrip = useCallback(async (name: string, themeColor?: string, places?: { startDate?: string; endDate?: string; originUrl?: string; originLabel?: string; destinationUrl?: string; destinationLabel?: string }) => {
+  const createTrip = useCallback(async (name: string, themeColor?: string, places?: { startDate?: string; endDate?: string; originUrl?: string; originLabel?: string; originLat?: number; originLng?: number; destinationUrl?: string; destinationLabel?: string; destinationLat?: number; destinationLng?: number }) => {
     const now = new Date().toISOString();
     const state = createDefaultSharedState(name.trim() || "新しい旅行");
     const start = new Date();
@@ -223,7 +223,7 @@ export function useTripState() {
     const date = (value: Date) => [value.getFullYear(), String(value.getMonth() + 1).padStart(2, "0"), String(value.getDate()).padStart(2, "0")].join("-");
     const startDate = places?.startDate || date(start);
     const endDate = places?.endDate || date(end);
-    state.tripSettings = { ...state.tripSettings, startDate, endDate, dateLabel: `${startDate.replaceAll("-", ".")} - ${endDate.slice(5).replace("-", ".")}`, routeLabel: "出発地から目的地へ", outboundLabel: "未設定", returnLabel: "未設定", hotelName: "未設定", hotelAddress: "", mapOriginUrl: places?.originUrl || "", mapDestinationUrl: places?.destinationUrl || "", mapOrigin: places?.originLabel || "", mapDestination: places?.destinationLabel || "", mapNote: "", originCode: "", destinationCode: "" };
+    state.tripSettings = { ...state.tripSettings, startDate, endDate, dateLabel: `${startDate.replaceAll("-", ".")} - ${endDate.slice(5).replace("-", ".")}`, routeLabel: "出発地から目的地へ", outboundLabel: "未設定", returnLabel: "未設定", hotelName: "未設定", hotelAddress: "", mapOriginUrl: places?.originUrl || "", mapDestinationUrl: places?.destinationUrl || "", mapOrigin: places?.originLabel || "", mapDestination: places?.destinationLabel || "", mapOriginLat: places?.originLat ?? 0, mapOriginLng: places?.originLng ?? 0, mapDestinationLat: places?.destinationLat ?? 0, mapDestinationLng: places?.destinationLng ?? 0, mapNote: "", originCode: "", destinationCode: "" };
     state.schedule = { activeDay: state.tripSettings.startDate, items: [] };
     const trip: Ticket = { id: makeId("trip"), name: state.tripSettings.tripName, createdAt: now, updatedAt: now, archived: false, state, themeColor: themeColor || defaultThemeColor(trips.length) };
     applyingTrip.current = true;

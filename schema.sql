@@ -61,3 +61,16 @@ CREATE TABLE IF NOT EXISTS group_members (
 );
 
 CREATE INDEX IF NOT EXISTS idx_group_members_user ON group_members(user_id);
+
+CREATE TABLE IF NOT EXISTS geocode_cache (
+  query_hash TEXT PRIMARY KEY,
+  lat REAL,
+  lng REAL,
+  display_name TEXT,
+  created_at INTEGER NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS geocode_throttle (
+  id INTEGER PRIMARY KEY,
+  last_called_at INTEGER NOT NULL
+);

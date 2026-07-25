@@ -81,8 +81,8 @@ export function TicketsPage({ onOpenTicket }: { onOpenTicket: (id: string) => vo
         onCreate={(ticket: NewTicket) => void run(async () => {
           const id = await createTrip(ticket.name, ticket.themeColor, {
             startDate: ticket.startDate, endDate: ticket.endDate,
-            originUrl: ticket.origin.url, originLabel: ticket.origin.label,
-            destinationUrl: ticket.destination.url, destinationLabel: ticket.destination.label,
+            originUrl: ticket.origin.url, originLabel: ticket.origin.label, originLat: ticket.origin.lat, originLng: ticket.origin.lng,
+            destinationUrl: ticket.destination.url, destinationLabel: ticket.destination.label, destinationLat: ticket.destination.lat, destinationLng: ticket.destination.lng,
           });
           setNewOpen(false);
           if (id) onOpenTicket(id);
