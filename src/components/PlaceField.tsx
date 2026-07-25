@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { Check, LoaderCircle, MapPin, TriangleAlert } from "lucide-react";
-import { parsePlaceName, resolvePlace } from "../tickets";
+import { parseLatLng, parsePlaceName, placeQueryCandidates, resolvePlace } from "../tickets";
 
-export type PlaceValue = { url: string; label: string };
+export type PlaceValue = { url: string; label: string; lat?: number; lng?: number };
 
 const SHORT_LINK = /^https:\/\/(maps\.app\.goo\.gl|goo\.gl)\//;
 
@@ -21,45 +21,82 @@ export function PlaceField({ title, value, onChange, hint, showLabelField = true
   /** 予定のように呼び名を別に持っている場合は false。二重に名前を聞かない。 */
   showLabelField?: boolean;
 }) {
-  const [expanding, setExpanding] = useState(false);
-  const [expandError, setExpandError] = useState("");
+  const [busy, setBusy] = useState<"" | "expanding" | "geocoding">("");
+  const [failure, setFailure] = useState("");
   const tried = useRef(new Set<string>());
   // 呼び出し側は毎レンダーで新しい value / onChange を渡してくる。これらを依存に
   // 入れると再レンダーのたびに後片付けが走り、通信中の展開を自分で打ち切ってしまう。
   // 依存はURL文字列だけにし、最新の関数と値は ref 越しに読む。
   const latest = useRef({ value, onChange });
   latest.current = { value, onChange };
+  // 展開すると自分でURLを書き換えるため、この effect は自分の変更で再実行される。
+  // 各実行ごとに中断していると、書き換えた直後に住所検索の続きが捨てられて
+  // 「調べています…」のまま止まる。中断はアンマウント時だけにする。
+  // 同じURLの二重処理は tried が防ぐ。
+  const mounted = useRef(true);
+  useEffect(() => () => { mounted.current = false; }, []);
 
   useEffect(() => {
     const url = latest.current.value.url;
-    if (!SHORT_LINK.test(url) || tried.current.has(url)) return;
+    if (!url || tried.current.has(url)) return;
+    const isShort = SHORT_LINK.test(url);
+    const needsLookup = !isShort && !parseLatLng(url) && placeQueryCandidates(url).length > 0;
+    if (!isShort && !needsLookup) return;
     tried.current.add(url);
-    let cancelled = false;
-    setExpanding(true); setExpandError("");
+    setBusy(isShort ? "expanding" : "geocoding"); setFailure("");
+
     void (async () => {
       try {
-        const response = await fetch("/api/resolve", {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({ url }),
-          credentials: "same-origin",
-        });
-        const payload = await response.json() as { url?: string; error?: string };
-        if (cancelled) return;
-        if (!response.ok || !payload.url) throw new Error(payload.error || "展開できませんでした。");
-        latest.current.onChange({ ...latest.current.value, url: payload.url });
+        let current = url;
+
+        // 1) 短縮リンクなら展開する。
+        if (SHORT_LINK.test(current)) {
+          const response = await fetch("/api/resolve", {
+            method: "POST", headers: { "content-type": "application/json" },
+            body: JSON.stringify({ url: current }), credentials: "same-origin",
+          });
+          const payload = await response.json() as { url?: string; error?: string };
+          if (!mounted.current) return;
+          if (!response.ok || !payload.url) throw new Error(payload.error || "展開できませんでした。");
+          current = payload.url;
+          tried.current.add(current);
+          latest.current.onChange({ ...latest.current.value, url: current });
+        }
+
+        // 2) 展開しても座標が無い形式がある。その場合は施設名で住所検索する。
+        if (!parseLatLng(current)) {
+          const candidates = placeQueryCandidates(current);
+          if (!candidates.length) throw new Error("このリンクからは場所を読み取れませんでした。");
+          if (mounted.current) setBusy("geocoding");
+          for (const query of candidates) {
+            const response = await fetch("/api/geocode", {
+              method: "POST", headers: { "content-type": "application/json" },
+              body: JSON.stringify({ query }), credentials: "same-origin",
+            });
+            const payload = await response.json() as { lat?: number; lng?: number; error?: string };
+            if (!mounted.current) return;
+            if (response.ok && typeof payload.lat === "number" && typeof payload.lng === "number") {
+              latest.current.onChange({ ...latest.current.value, url: current, label: latest.current.value.label || query, lat: payload.lat, lng: payload.lng });
+              return;
+            }
+            if (response.status === 429 || response.status === 503) throw new Error(payload.error || "混み合っています。");
+          }
+          throw new Error("この場所の位置が分かりませんでした。");
+        }
       } catch (error) {
-        if (!cancelled) setExpandError(error instanceof Error ? error.message : "展開できませんでした。");
+        if (mounted.current) setFailure(error instanceof Error ? error.message : "場所を調べられませんでした。");
       } finally {
-        if (!cancelled) setExpanding(false);
+        if (mounted.current) setBusy("");
       }
     })();
-    return () => { cancelled = true; };
   }, [value.url]);
 
-  const place = resolvePlace(value.url, value.label);
+  const resolved = resolvePlace(value.url, value.label);
+  const place = resolved
+    || (typeof value.lat === "number" && typeof value.lng === "number"
+      ? { url: value.url, name: parsePlaceName(value.url) || value.label || placeQueryCandidates(value.url)[0] || "指定した場所", lat: value.lat, lng: value.lng }
+      : null);
   const needsLabel = showLabelField && Boolean(place) && !parsePlaceName(value.url);
-  const isShortLink = SHORT_LINK.test(value.url);
 
   return (
     <div className="place-field">
@@ -76,24 +113,21 @@ export function PlaceField({ title, value, onChange, hint, showLabelField = true
 
       {hint && !value.url && <p className="place-hint">{hint}</p>}
 
-      {expanding && (
+      {busy && (
         <p className="place-hint">
           <LoaderCircle size={15} className="spin" aria-hidden="true" />
-          短縮リンクから場所を調べています…
+          {busy === "expanding" ? "リンクを開いています…" : "地図から位置を調べています…"}
         </p>
       )}
 
-      {!expanding && value.url && !place && (
+      {!busy && value.url && !place && (
         <p className="place-hint is-error">
           <TriangleAlert size={15} aria-hidden="true" />
-          {expandError
-            || (isShortLink
-              ? "この短縮リンクからは場所を読み取れませんでした。Googleマップで開き直してURLを貼ってください。"
-              : "このURLからは場所を読み取れません。Googleマップで場所を開いたときのURLを貼ってください。")}
+          {failure || "このURLからは場所を読み取れません。Googleマップで場所を開いたときのリンクを貼ってください。"}
         </p>
       )}
 
-      {!expanding && place && (
+      {!busy && place && (
         <p className="place-hint is-ok">
           <Check size={15} aria-hidden="true" />
           <MapPin size={15} aria-hidden="true" />

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { buildTicketRoute, migrateToTickets, parseLatLng, parsePlaceName, resolvePlace, routeLine, sortTickets, stayForDay, ticketStatus } from "../src/tickets.ts";
+import { buildTicketRoute, migrateToTickets, parseLatLng, parsePlaceName, placeQueryCandidates, resolvePlace, routeLine, sortTickets, stayForDay, ticketStatus } from "../src/tickets.ts";
 
 const settings = (extra = {}) => ({ startDate: "2026-09-21", endDate: "2026-09-23", mapOrigin: "", mapDestination: "", mapOriginLat: 0, mapOriginLng: 0, mapDestinationLat: 0, mapDestinationLng: 0, ...extra });
 const state = (extra = {}) => ({ tripSettings: settings(extra.tripSettings), schedule: { activeDay: "", items: [], ...extra.schedule }, settlement: { people: [], payments: [] } });
@@ -237,4 +237,26 @@ test("URLがあれば旧フィールドより優先され、地名と座標がUR
   } }));
   assert.equal(route.points[0].title, "大阪駅");
   assert.equal(route.points[0].lat, 34.7024);
+});
+
+// --- ?q= からの検索候補 ---------------------------------------------------
+// Nominatim は住所の全体では引けず、施設名なら引ける。切り出しを誤ると
+// 「見つからない」が量産されるので、順番まで含めて固定する。
+
+test("郵便番号と括弧を捨て、施設名を先に試す", () => {
+  const url = "https://www.google.com/maps?q=" + encodeURIComponent("〒560-0036 大阪府豊中市螢池西町３丁目５５５ 大阪国際空港 (ITM)");
+  assert.deepEqual(placeQueryCandidates(url), ["大阪国際空港", "大阪府豊中市螢池西町３丁目５５５ 大阪国際空港"]);
+});
+
+test("語が1つだけならそれをそのまま使う", () => {
+  assert.deepEqual(placeQueryCandidates("https://www.google.com/maps?q=" + encodeURIComponent("東京駅")), ["東京駅"]);
+});
+
+test("q= が座標そのものなら検索の出番はない", () => {
+  assert.deepEqual(placeQueryCandidates("https://maps.google.com/?q=35.6812,139.7671"), []);
+});
+
+test("q= が無いURLからは候補が出ない", () => {
+  assert.deepEqual(placeQueryCandidates("https://www.google.com/maps/@34.66,135.45,15z"), []);
+  assert.deepEqual(placeQueryCandidates("not a url"), []);
 });
