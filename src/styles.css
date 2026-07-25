@@ -509,22 +509,27 @@ input:disabled { color: #8b9792; background: #eef0ed; }
 .ticket-list { display: grid; gap: 16px; margin: 0 0 22px; padding: 0; list-style: none; }
 
 .ticket { --ticket: #e8735f; --notch: 11px; --perf: 58px; }
+/* ボタン自体はレイアウトを持たない。iOS Safari は button に敷いた grid/flex の
+   子を高さいっぱいに伸ばさないため、組み方は .ticket-inner 側に置く。 */
 .ticket-open {
-  position: relative; display: grid; grid-template-columns: var(--perf) 1fr; width: 100%; padding: 0;
-  text-align: left; cursor: pointer; color: var(--sky-ink, #1e3a4c);
-  background: var(--stock, #fffcf4); border: 0; border-radius: 14px;
+  display: block; width: 100%; padding: 0; text-align: left; cursor: pointer;
+  background: none; border: 0; color: var(--sky-ink, #1e3a4c);
+  filter: drop-shadow(0 3px 6px rgba(23, 62, 88, .22));
+  transition: translate .16s ease;
+}
+.ticket-inner {
+  position: relative; display: grid; grid-template-columns: var(--perf) 1fr;
+  background: var(--stock, #fffcf4); border-radius: 14px;
   /* 切り取り線の上下を実際に打ち抜く。穴から空が透ける。 */
   mask-image:
     radial-gradient(circle var(--notch) at var(--perf) 0, transparent 98%, #000 100%),
     radial-gradient(circle var(--notch) at var(--perf) 100%, transparent 98%, #000 100%);
   mask-composite: intersect;
   -webkit-mask-composite: source-in;
-  filter: drop-shadow(0 3px 6px rgba(23, 62, 88, .22));
-  transition: translate .16s ease;
 }
 .ticket-open:hover { translate: 0 -2px; }
 .ticket-open:focus-visible { outline: 3px solid var(--sky-ink, #1e3a4c); outline-offset: 3px; }
-.ticket.is-active .ticket-open { box-shadow: inset 0 0 0 2px var(--ticket); }
+.ticket.is-active .ticket-inner { box-shadow: inset 0 0 0 2px var(--ticket); }
 
 .ticket-stub {
   position: relative; display: grid; place-items: center;
@@ -543,11 +548,11 @@ input:disabled { color: #8b9792; background: #eef0ed; }
 
 .ticket-face { display: grid; gap: 11px; padding: 15px 17px 14px; min-width: 0; }
 
-.ticket-route { display: grid; grid-template-columns: 1fr auto 1fr; align-items: end; gap: 10px; min-width: 0; }
+.ticket-route { display: grid; grid-template-columns: 1fr auto 1fr; align-items: start; gap: 10px; min-width: 0; }
 .ticket-place { display: grid; gap: 2px; min-width: 0; }
 .ticket-place small { color: color-mix(in srgb, var(--ticket) 60%, #56514c); font-family: var(--data-font); font-size: 9px; font-weight: 700; letter-spacing: .16em; }
 .ticket-place strong { font-size: 14px; font-weight: 700; line-height: 1.35; overflow-wrap: anywhere; }
-.ticket-arrow { position: relative; width: 26px; height: 12px; }
+.ticket-arrow { position: relative; width: 26px; height: 12px; margin-top: 14px; }
 .ticket-arrow::before { content: ""; position: absolute; top: 5px; left: 0; right: 5px; border-top: 2px dotted color-mix(in srgb, var(--ticket) 65%, #fffcf4); }
 .ticket-arrow::after { content: ""; position: absolute; top: 2px; right: 0; width: 7px; height: 7px; border-top: 2px solid var(--ticket); border-right: 2px solid var(--ticket); rotate: 45deg; }
 
@@ -568,11 +573,11 @@ input:disabled { color: #8b9792; background: #eef0ed; }
 /* 入国スタンプ。二重罫の角丸枠に、到着ラベル・日付・発行元を刷る。
    券名の行の右へ置き、データ行とは重ならない。 */
 .ticket-stamp {
-  position: absolute; right: 16px; top: 50%; display: grid; justify-items: center; gap: 1px;
+  position: absolute; right: 16px; bottom: 11px; display: grid; justify-items: center; gap: 1px;
   padding: 5px 9px; color: color-mix(in srgb, var(--ticket) 72%, #6b3b32);
   border: 1px solid currentColor; border-radius: 7px;
   box-shadow: inset 0 0 0 3px var(--stock, #fffcf4), inset 0 0 0 4px currentColor;
-  translate: 0 -56%; rotate: -9deg; opacity: .5; pointer-events: none;
+  rotate: -9deg; opacity: .5; pointer-events: none;
 }
 .ticket-stamp b { font-family: var(--data-font); font-size: 9px; font-weight: 700; letter-spacing: .18em; }
 .ticket-stamp em { font-family: var(--data-font); font-size: 13px; font-style: normal; font-weight: 700; letter-spacing: .02em; font-variant-numeric: tabular-nums; }
