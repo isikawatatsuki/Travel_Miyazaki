@@ -457,8 +457,10 @@ input:disabled { color: #8b9792; background: #eef0ed; }
   --stock: #fffcf4;
   --sky-ink: #1e3a4c;
   --data-font: ui-monospace, SFMono-Regular, Menlo, "Courier New", monospace;
-  background: linear-gradient(#7fb9e3 0%, #a5d3ec 46%, #cfe9f5 100%);
-  background-attachment: fixed;
+  /* 空のグラデーションは .sky（position: fixed）側で描く。
+     background-attachment: fixed は iOS Safari で、文書の高さが変わったときに
+     再描画されず古い絵が residual に残る（details を閉じても余白が残って見える）。 */
+  background: #a5d3ec;
   /* 雲(z-index:-1)がこの背景より上に載るよう、ここで重ね合わせコンテキストを作る。
      isolation は transform と違い fixed の含みブロックを作らないので、雲は画面全体に広がる。 */
   position: relative;
@@ -479,7 +481,8 @@ input:disabled { color: #8b9792; background: #eef0ed; }
 .tickets-page { width: min(100%, 860px); margin-inline: auto; }
 
 /* 雲は券の背後の空気。文字の可読性を落とさないよう淡く、数を絞る。 */
-.sky { position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; }
+.sky { position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none;
+  background: linear-gradient(#7fb9e3 0%, #a5d3ec 46%, #cfe9f5 100%); }
 .cloud { position: absolute; width: 150px; height: 42px; background: rgba(255, 255, 255, .42); border-radius: 999px; will-change: transform; }
 .cloud::before, .cloud::after { content: ""; position: absolute; background: inherit; border-radius: 50%; }
 .cloud::before { width: 66px; height: 66px; top: -28px; left: 22px; }
