@@ -29,3 +29,7 @@ export function PageLink({ href, children }: PropsWithChildren<{ href: string }>
 export function EmptyState({ children }: PropsWithChildren) {
   return <p className="empty-state">{children}</p>;
 }
+
+export function PageHelp({ open, onChange, children }: PropsWithChildren<{ open: boolean; onChange: (open: boolean) => void }>) {
+  return <details className="page-help" open={open} onToggle={(event) => onChange(event.currentTarget.open)}><summary>このページの使い方</summary><p>{children}</p></details>;
+}

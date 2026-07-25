@@ -14,6 +14,8 @@ import {
 import { makeId, readStorage, usePersistentState } from "./lib";
 import type {
   AdjustState,
+  AccountGroup,
+  AccountUser,
   AlbumState,
   ChecklistState,
   Group,
@@ -43,6 +45,9 @@ export function useTripState() {
   const [album, setAlbum] = usePersistentState<AlbumState>("tripShioriAlbum", initialObject("tripShioriAlbum", defaultAlbum));
   const [history, setHistory] = usePersistentState<HistoryState>("tripShioriHistory", initialObject("tripShioriHistory", defaultHistory));
   const [groups, setGroups] = usePersistentState<Group[]>("tripShioriGroups", readStorage<Group[]>("tripShioriGroups", []));
+  const [helpOpen, setHelpOpen] = usePersistentState<boolean>("tripShioriHelpOpen", readStorage("tripShioriHelpOpen", true));
+  const [accountUser, setAccountUser] = useState<AccountUser | null>(null);
+  const [accountGroups, setAccountGroups] = useState<AccountGroup[]>([]);
   const [activeGroup, setActiveGroup] = useState<Group | null>(() => readStorage<Group | null>("tripShioriGroup", null));
   const [trips, setTrips] = usePersistentState<TravelProfile[]>("tripShioriTrips", readStorage<TravelProfile[]>("tripShioriTrips", []));
   const [activeTripId, setActiveTripId] = usePersistentState<string>("tripShioriActiveTrip", readStorage("tripShioriActiveTrip", ""));
@@ -68,7 +73,6 @@ export function useTripState() {
     reservations,
     album,
     history,
-    spots: [],
   }), [adjust, album, checklist, history, notes, reservations, schedule, settlement, tripSettings]);
 
   const remoteSharedState = useMemo<SharedState>(() => ({
@@ -230,11 +234,50 @@ export function useTripState() {
   const request = useCallback(async <T,>(path: string, init?: RequestInit): Promise<T> => {
     const headers = new Headers(init?.headers);
     if (!headers.has("content-type")) headers.set("content-type", "application/json");
-    const response = await fetch(path, { ...init, headers });
+    const response = await fetch(path, { ...init, headers, credentials: "same-origin" });
     const payload = await response.json() as T & { error?: string };
     if (!response.ok) throw new Error(payload.error || "共有データを更新できませんでした。");
     return payload;
   }, []);
+
+  const refreshAccount = useCallback(async () => {
+    try {
+      const me = await request<{ user: AccountUser }>("/api/auth/me");
+      setAccountUser(me.user);
+      for (const group of groups) {
+        if (!group.editToken) continue;
+        try {
+          await request(`/api/groups/${group.id}/claim`, { method: "POST", headers: { authorization: `Bearer ${group.editToken}` } });
+        } catch { /* A failed claim does not break device-token access. */ }
+      }
+      const result = await request<{ groups: AccountGroup[] }>("/api/groups");
+      setAccountGroups(result.groups);
+    } catch {
+      setAccountUser(null);
+      setAccountGroups([]);
+    }
+  }, [groups, request]);
+
+  useEffect(() => { void refreshAccount(); }, [refreshAccount]);
+
+  const loginWithGoogle = useCallback(() => { window.location.assign("/api/auth/google"); }, []);
+  const logout = useCallback(async () => {
+    await request("/api/auth/logout", { method: "POST" });
+    setAccountUser(null);
+    setAccountGroups([]);
+  }, [request]);
+
+  const restoreAccountGroup = useCallback(async (id: string) => {
+    const known = accountGroups.find((group) => group.id === id);
+    if (!known) return;
+    const result = await request<{ group: Group }>(`/api/groups/${id}`);
+    const restored = { ...result.group, editToken: "" };
+    groupFingerprintRef.current = JSON.stringify(restored.state || {});
+    applySharedState(restored.state);
+    rememberGroup(restored);
+    setSavePhase("synced");
+    setSyncStatus("アカウントから旅行を復元しました");
+  }, [accountGroups, applySharedState, rememberGroup, request]);
 
   const createGroup = useCallback(async (name: string) => {
     setSavePhase("syncing"); setSyncStatus("グループを作成中...");
@@ -273,7 +316,7 @@ export function useTripState() {
       try {
         const result = await request<{ group: Group }>(`/api/groups/${activeGroup.id}`, {
           method: "PUT",
-          headers: { authorization: `Bearer ${activeGroup.editToken}` },
+          headers: { authorization: `Bearer ${activeGroup.editToken || ""}` },
           body: JSON.stringify({ state: remoteSharedState, expectedUpdatedAt: groupVersionRef.current }),
         });
         if (result.group?.updatedAt) groupVersionRef.current = result.group.updatedAt;
@@ -312,6 +355,8 @@ export function useTripState() {
     history, setHistory,
     canUndo, undoLastChange,
     groups, activeGroup, syncStatus,
+    helpOpen, setHelpOpen,
+    accountUser, accountGroups, refreshAccount, loginWithGoogle, logout, restoreAccountGroup,
     savePhase, lastSavedAt, retrySave,
     trips, activeTripId, createTrip, switchTrip, archiveTrip, restoreTrip,
     createGroup, joinGroup, refreshGroup, switchGroup,

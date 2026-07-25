@@ -1,18 +1,19 @@
-import { Camera, ChevronDown, Cloud, Plus, RefreshCw, Trash2, UserPlus, UsersRound } from "lucide-react";
+import { Camera, ChevronDown, Cloud, LogIn, LogOut, Plus, RefreshCw, Trash2, UserPlus } from "lucide-react";
 import { useState } from "react";
 import { useTrip } from "../TripContext";
 import { makeId } from "../lib";
 import type { Person } from "../types";
-import { EmptyState, IconButton, Panel, SectionHeading } from "../components/ui";
+import { EmptyState, IconButton, PageHelp, Panel, SectionHeading } from "../components/ui";
 
 export function SharePage() {
-  const { settlement, setSettlement, notes, setNotes, album, groups, activeGroup, syncStatus, createGroup, joinGroup, refreshGroup, switchGroup } = useTrip();
+  const { settlement, setSettlement, notes, setNotes, album, groups, activeGroup, syncStatus, createGroup, joinGroup, refreshGroup, switchGroup, helpOpen, setHelpOpen, accountUser, accountGroups, loginWithGoogle, logout, restoreAccountGroup } = useTrip();
   const [newNote, setNewNote] = useState("");
   const [groupName, setGroupName] = useState("旅行グループ");
   const [joinCode, setJoinCode] = useState("");
   const [manageOpen, setManageOpen] = useState(!activeGroup);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
+  const [showHelpAfterCreate, setShowHelpAfterCreate] = useState(true);
 
   const updatePerson = (id: string, patch: Partial<Person>) => setSettlement((current) => ({
     ...current,
@@ -25,7 +26,16 @@ export function SharePage() {
 
   return (
     <div className="page">
+      <PageHelp open={helpOpen} onChange={setHelpOpen}>メンバー登録がすべての人数計算の基準です。6桁コードでほかの端末も参加できます。</PageHelp>
       <SectionHeading eyebrow="TOGETHER" title="みんなで共有" description="メンバー、グループ、共有メモをまとめています。" />
+
+      <section className="section-block">
+        <SectionHeading eyebrow="ACCOUNT" title="アカウントで復旧" />
+        <Panel className="account-panel">
+          {accountUser ? <><div><strong>{accountUser.displayName || accountUser.email || "Googleアカウント"}</strong><small>ログイン中</small></div><button className="button button-quiet small" type="button" onClick={() => run(logout)}><LogOut size={17} />ログアウト</button></> : <><div><strong>端末を替えても旅行を復元</strong><small>Googleログインは任意です。コード参加は今までどおり使えます。</small></div><button className="button button-secondary" type="button" onClick={loginWithGoogle}><LogIn size={17} />Googleでログイン</button></>}
+          {accountUser && accountGroups.length > 0 && <label className="account-restore"><span>アカウントの旅行</span><select defaultValue="" onChange={(event) => event.target.value && run(() => restoreAccountGroup(event.target.value))}><option value="" disabled>復元する旅行を選ぶ</option>{accountGroups.map((group) => <option key={group.id} value={group.id}>{group.name}（{group.role}）</option>)}</select></label>}
+        </Panel>
+      </section>
 
       <section className="section-block member-section">
         <SectionHeading eyebrow="MEMBERS" title="メンバー登録" action={<span className="count-badge">{settlement.people.length}人</span>} />
@@ -64,8 +74,8 @@ export function SharePage() {
           {groups.length > 0 && <label className="group-select"><span>参加中のグループ</span><select value={activeGroup?.id || ""} onChange={(event) => run(() => switchGroup(event.target.value))}>{groups.map((group) => <option value={group.id} key={group.id}>{group.name}</option>)}</select></label>}
           <button className="manage-toggle" type="button" aria-expanded={manageOpen} onClick={() => setManageOpen((open) => !open)}>グループの作成・参加<ChevronDown size={18} className={manageOpen ? "rotate" : ""} /></button>
           {manageOpen && <div className="group-manage">
-            <form onSubmit={(event) => { event.preventDefault(); run(() => createGroup(groupName)); }}>
-              <h3>新しく作る</h3><label><span>グループ名</span><input value={groupName} maxLength={40} onChange={(event) => setGroupName(event.target.value)} /></label><button className="button button-primary" disabled={busy}>グループを作成</button>
+            <form onSubmit={(event) => { event.preventDefault(); setHelpOpen(showHelpAfterCreate); run(() => createGroup(groupName)); }}>
+              <h3>新しく作る</h3><label><span>グループ名</span><input value={groupName} maxLength={40} onChange={(event) => setGroupName(event.target.value)} /></label><label className="check-option"><input type="checkbox" checked={showHelpAfterCreate} onChange={(event) => setShowHelpAfterCreate(event.target.checked)} />使い方の説明を表示する</label><button className="button button-primary" disabled={busy}>グループを作成</button>
             </form>
             <form onSubmit={(event) => { event.preventDefault(); run(() => joinGroup(joinCode)); }}>
               <h3>コードで参加</h3><label><span>6桁の参加コード</span><input value={joinCode} inputMode="numeric" pattern="[0-9]{6}" maxLength={6} onChange={(event) => setJoinCode(event.target.value.replace(/\D/g, ""))} /></label><button className="button button-secondary" disabled={busy}>グループに参加</button>

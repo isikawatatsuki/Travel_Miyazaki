@@ -4,11 +4,11 @@ import { useTrip } from "../TripContext";
 import { getScheduleDays } from "../data";
 import { makeId, mapsDirections, mapsEmbed, mapsSearch, safeExternalUrl } from "../lib";
 import type { ScheduleItem } from "../types";
-import { EmptyState, IconButton, Panel, SectionHeading } from "../components/ui";
+import { EmptyState, IconButton, PageHelp, Panel, SectionHeading } from "../components/ui";
 
 export function PlanPage() {
   const [isEditing, setIsEditing] = useState(false);
-  const { tripSettings, schedule, setSchedule } = useTrip();
+  const { tripSettings, schedule, setSchedule, helpOpen, setHelpOpen } = useTrip();
   const days = getScheduleDays(tripSettings);
   const activeDay = days.some((day) => day.id === schedule.activeDay) ? schedule.activeDay : days[0].id;
   const items = schedule.items
@@ -25,6 +25,7 @@ export function PlanPage() {
 
   return (
     <div className="page plan-page">
+      <PageHelp open={helpOpen} onChange={setHelpOpen}>日ごとにタブが分かれます。時刻未定でも登録でき、地図リンクから経路を開けます。</PageHelp>
       <SectionHeading
         eyebrow="PLAN"
         title="旅の予定"
