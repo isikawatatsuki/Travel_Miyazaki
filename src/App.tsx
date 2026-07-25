@@ -78,6 +78,12 @@ function AppShell() {
 
   const inTicket = !shellFreePages.includes(page);
 
+  // チケットが1枚も無いのに詳細画面へ来たら一覧へ戻す。ここを通すと、
+  // どのチケットにも属さない既定データが「旅のしおり」として見えてしまう。
+  useEffect(() => {
+    if (inTicket && !activeTicket) window.location.hash = "#tickets";
+  }, [activeTicket, inTicket]);
+
   return (
     <div className={`app-shell ${inTicket ? "" : "is-tickets"}`}>
       {/* .page の page-in アニメーションは transform を残すため fixed の含みブロックになる。
