@@ -68,12 +68,12 @@ export async function onRequest({ request, env, params }) {
   try {
     const method = request.method.toUpperCase();
     const path = String(params.path || "");
-    if (method === "GET" && path === "google") return googleLogin(env, request);
-    if (method === "GET" && path === "callback") return googleCallback(env, request);
+    if (method === "GET" && path === "google") return await googleLogin(env, request);
+    if (method === "GET" && path === "callback") return await googleCallback(env, request);
     if (!env.DB) return json({ error: "認証の保存先が未設定です。" }, 500);
     await ensureAuthTables(env);
-    if (method === "GET" && path === "me") return me(env, request);
-    if (method === "POST" && path === "logout") return logout(env, request);
+    if (method === "GET" && path === "me") return await me(env, request);
+    if (method === "POST" && path === "logout") return await logout(env, request);
     return json({ error: "Not found" }, 404);
   } catch { return json({ error: "サーバーで処理できませんでした。" }, 500); }
 }

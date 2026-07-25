@@ -272,18 +272,21 @@ export async function claimGroup(env, request, id) {
   return json({ ok: true, role });
 }
 
+// try の中で return するだけでは、そのPromiseの reject が catch へ届かない。
+// 各ハンドラは必ず await して返す。await を落とすと ApiError が素通りし、
+// エラー時のメッセージが Worker の未捕捉例外に化ける。
 export async function onRequest({ request, env, params }) {
   try {
     if (!env.DB) throw new ApiError("グループ共有の保存先が未設定です。", 500);
     await ensureSecurityTables(env);
     const method = request.method.toUpperCase();
     const parts = String(params.path || "").split("/").filter(Boolean);
-    if (method === "GET" && parts.length === 0) return listGroups(env, request);
-    if (method === "POST" && parts.length === 0) return createGroup(env, request);
-    if (method === "POST" && parts[0] === "join") return joinGroup(env, request);
-    if (method === "GET" && parts.length === 1) return readGroup(env, request, parts[0]);
-    if (method === "PUT" && parts.length === 1) return updateGroup(env, request, parts[0]);
-    if (method === "POST" && parts.length === 2 && parts[1] === "claim") return claimGroup(env, request, parts[0]);
+    if (method === "GET" && parts.length === 0) return await listGroups(env, request);
+    if (method === "POST" && parts.length === 0) return await createGroup(env, request);
+    if (method === "POST" && parts[0] === "join") return await joinGroup(env, request);
+    if (method === "GET" && parts.length === 1) return await readGroup(env, request, parts[0]);
+    if (method === "PUT" && parts.length === 1) return await updateGroup(env, request, parts[0]);
+    if (method === "POST" && parts.length === 2 && parts[1] === "claim") return await claimGroup(env, request, parts[0]);
     return json({ error: "Not found" }, 404);
   } catch (error) {
     if (error instanceof ApiError) {
