@@ -25,7 +25,7 @@ export function MoneyPage() {
 
   return (
     <div className="page">
-      <PageHelp open={helpOpen} onChange={setHelpOpen}>予算は見込み、立替精算は実際に払った記録です。2つは別々に管理します。</PageHelp>
+      <PageHelp open={helpOpen} onChange={setHelpOpen}><p>予算は見込み、立替精算は実際に払った記録です。2つは別々に管理します。</p></PageHelp>
       <SectionHeading eyebrow="BUDGET" title="旅のお金" description="予算と実際の支払いを分けて確認できます。" />
       <section className="money-summary" aria-label="旅費の目安">
         <Panel className="total-card"><span>1人あたり</span><strong>{yen.format(perPerson)}</strong><small>設定した項目の合計</small></Panel>

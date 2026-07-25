@@ -30,6 +30,12 @@ export function EmptyState({ children }: PropsWithChildren) {
   return <p className="empty-state">{children}</p>;
 }
 
+/** 中身は呼び出し側が組む。手順を書きたいページがあるので <p> では包まない。 */
 export function PageHelp({ open, onChange, children }: PropsWithChildren<{ open: boolean; onChange: (open: boolean) => void }>) {
-  return <details className="page-help" open={open} onToggle={(event) => onChange(event.currentTarget.open)}><summary>このページの使い方</summary><p>{children}</p></details>;
+  return (
+    <details className="page-help" open={open} onToggle={(event) => onChange(event.currentTarget.open)}>
+      <summary>このページの使い方</summary>
+      <div className="page-help-body">{children}</div>
+    </details>
+  );
 }

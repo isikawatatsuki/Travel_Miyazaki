@@ -80,6 +80,34 @@ export function parseLatLng(mapUrl: string): { lat: number; lng: number } | null
   return null;
 }
 
+/**
+ * Googleマップの URL から地名を取り出す。`/maps/place/<名前>/@lat,lng` の形なら
+ * 地名と座標が同じURLに入っているので、両者が食い違いようがない。
+ * 座標だけの URL（`/maps/@lat,lng`）には地名が無いので null を返す。
+ */
+export function parsePlaceName(mapUrl: string): string | null {
+  const found = mapUrl.match(/\/maps\/place\/([^/@?]+)/);
+  if (!found) return null;
+  try {
+    return decodeURIComponent(found[1]).replace(/\+/g, " ").trim() || null;
+  } catch {
+    return null;
+  }
+}
+
+export type Place = { url: string; name: string; lat: number; lng: number };
+
+/**
+ * URL 1本から場所を決める。地名が URL に無ければ label で補う。
+ * 座標が取れなければ場所として成立しないので null。
+ */
+export function resolvePlace(mapUrl: string, label = ""): Place | null {
+  const coordinate = parseLatLng(mapUrl);
+  if (!coordinate) return null;
+  const name = parsePlaceName(mapUrl) || label.trim() || `${coordinate.lat.toFixed(4)}, ${coordinate.lng.toFixed(4)}`;
+  return { url: mapUrl, name, lat: coordinate.lat, lng: coordinate.lng };
+}
+
 export function isValidCoordinate(lat: unknown, lng: unknown): boolean {
   return typeof lat === "number" && typeof lng === "number"
     && Number.isFinite(lat) && Number.isFinite(lng)
@@ -94,7 +122,13 @@ export function scheduleItemCoordinate(item: ScheduleItem): { lat: number; lng: 
 }
 
 export type RoutePoint = { id: string; title: string; lat: number; lng: number; day: string; time: string };
-export type TicketRoute = { points: RoutePoint[]; skipped: string[] };
+/**
+ * source は経路の出どころ。"schedule" なら地点名と座標が同じ予定から来ているので
+ * 必ず一致する。"settings" は旅行設定の地名と緯度経度を組み合わせた代替で、
+ * 両者は個別に編集できるため一致する保証がない。表示側はこれを見て、
+ * 地名と地図が食い違わないほうを選ぶ必要がある。
+ */
+export type TicketRoute = { points: RoutePoint[]; skipped: string[]; source: "schedule" | "settings" };
 
 /**
  * 予定を日付・時刻順に並べて経路にする。
@@ -131,16 +165,24 @@ export function buildTicketRoute(state: SharedState): TicketRoute {
   if (points.length < 2) {
     const settings = state.tripSettings;
     const anchors: RoutePoint[] = [];
-    if (isValidCoordinate(settings.mapOriginLat, settings.mapOriginLng)) {
+    // URL があればそこから地名も座標も取る。URL 側が常に優先で、名前と位置が
+    // 別々に古くなることがない。URL 未設定の既存データだけ旧フィールドへ落ちる。
+    const origin = resolvePlace(settings.mapOriginUrl || "", settings.mapOrigin);
+    const destination = resolvePlace(settings.mapDestinationUrl || "", settings.mapDestination);
+    if (origin) {
+      anchors.push({ id: "origin", title: origin.name, lat: origin.lat, lng: origin.lng, day: settings.startDate, time: "" });
+    } else if (isValidCoordinate(settings.mapOriginLat, settings.mapOriginLng)) {
       anchors.push({ id: "origin", title: settings.mapOrigin || "出発地", lat: settings.mapOriginLat, lng: settings.mapOriginLng, day: settings.startDate, time: "" });
     }
-    if (isValidCoordinate(settings.mapDestinationLat, settings.mapDestinationLng)) {
+    if (destination) {
+      anchors.push({ id: "destination", title: destination.name, lat: destination.lat, lng: destination.lng, day: settings.endDate, time: "" });
+    } else if (isValidCoordinate(settings.mapDestinationLat, settings.mapDestinationLng)) {
       anchors.push({ id: "destination", title: settings.mapDestination || "目的地", lat: settings.mapDestinationLat, lng: settings.mapDestinationLng, day: settings.endDate, time: "" });
     }
-    if (anchors.length > points.length) return { points: anchors, skipped };
+    if (anchors.length > points.length) return { points: anchors, skipped, source: "settings" };
   }
 
-  return { points, skipped };
+  return { points, skipped, source: "schedule" };
 }
 
 // ---------------------------------------------------------------------------
@@ -230,4 +272,49 @@ export function sortTickets(tickets: Ticket[], now = today()): Ticket[] {
     if (byStatus !== 0) return byStatus;
     return (b.state.tripSettings?.startDate || "").localeCompare(a.state.tripSettings?.startDate || "");
   });
+}
+
+// ---------------------------------------------------------------------------
+// 経路の描画に使う座標列
+// ---------------------------------------------------------------------------
+
+export type Coordinates = [number, number];
+
+/** 直線だと重なった経路を見分けられないので、地点間を緩い曲線で結ぶ。 */
+export function curveBetween(origin: Coordinates, destination: Coordinates, steps = 24): Coordinates[] {
+  const [startLng, startLat] = origin;
+  const [endLng, endLat] = destination;
+  const dx = endLng - startLng;
+  const dy = endLat - startLat;
+  const control: Coordinates = [(startLng + endLng) / 2 - dy * 0.16, (startLat + endLat) / 2 + dx * 0.1];
+  return Array.from({ length: steps + 1 }, (_, index) => {
+    const t = index / steps;
+    const inverse = 1 - t;
+    return [
+      inverse * inverse * startLng + 2 * inverse * t * control[0] + t * t * endLng,
+      inverse * inverse * startLat + 2 * inverse * t * control[1] + t * t * endLat,
+    ] as Coordinates;
+  });
+}
+
+/** 経路の地点を順につないだ座標列。地点が1つ以下なら線は引けないので空を返す。 */
+export function routeLine(points: RoutePoint[]): Coordinates[] {
+  const line: Coordinates[] = [];
+  for (let index = 0; index < points.length - 1; index += 1) {
+    line.push(...curveBetween([points[index].lng, points[index].lat], [points[index + 1].lng, points[index + 1].lat]));
+  }
+  return line;
+}
+
+// ---------------------------------------------------------------------------
+// 宿
+// ---------------------------------------------------------------------------
+
+/** その日の宿。無ければ直前の日の宿を引き継ぐ（連泊のたびに入れ直さないため）。 */
+export function stayForDay(items: ScheduleItem[], day: string): ScheduleItem | null {
+  const stays = items.filter((item) => item.isStay).sort((a, b) => a.day.localeCompare(b.day));
+  const own = stays.find((item) => item.day === day);
+  if (own) return own;
+  const earlier = stays.filter((item) => item.day < day);
+  return earlier[earlier.length - 1] || null;
 }

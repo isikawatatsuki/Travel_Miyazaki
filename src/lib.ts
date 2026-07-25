@@ -19,8 +19,13 @@ export function readStorage<T>(key: string, fallback: T): T {
   }
 }
 
+/**
+ * 初期値は呼び出し側が決める。ここで readStorage を呼び直すと、呼び出し側が
+ * 組み立てた初期値（既定値とのマージや移行結果）が捨てられ、後から型に足した
+ * フィールドが既存ユーザーに永久に届かなくなる。
+ */
 export function usePersistentState<T>(key: string, fallback: T) {
-  const [state, setState] = useState<T>(() => readStorage(key, fallback));
+  const [state, setState] = useState<T>(fallback);
   useEffect(() => {
     window.dispatchEvent(new CustomEvent("trip-storage", { detail: { phase: "saving", key } }));
     try {

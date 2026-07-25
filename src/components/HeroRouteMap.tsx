@@ -1,39 +1,23 @@
 import { useEffect, useRef, useState } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import type { TripSettings } from "../types";
+import { routeLine } from "../tickets";
+import type { RoutePoint } from "../tickets";
 
-type Coordinates = [number, number];
-
-function curveBetween(origin: Coordinates, destination: Coordinates): Coordinates[] {
-  const [startLng, startLat] = origin;
-  const [endLng, endLat] = destination;
-  const dx = endLng - startLng;
-  const dy = endLat - startLat;
-  const control: Coordinates = [
-    (startLng + endLng) / 2 - dy * 0.34,
-    (startLat + endLat) / 2 + dx * 0.2,
-  ];
-
-  return Array.from({ length: 33 }, (_, index) => {
-    const t = index / 32;
-    const inverse = 1 - t;
-    return [
-      inverse * inverse * startLng + 2 * inverse * t * control[0] + t * t * endLng,
-      inverse * inverse * startLat + 2 * inverse * t * control[1] + t * t * endLat,
-    ];
-  });
-}
-
-export function HeroRouteMap({ settings }: { settings: TripSettings }) {
+/**
+ * ホームの背景地図。予定から作った経路をそのまま描く。
+ * 予定に座標が無いチケットでは buildTicketRoute が旅行設定の出発地・目的地へ
+ * 落ちるので、ここでは points をそのまま信じてよい。
+ */
+export function HeroRouteMap({ points }: { points: RoutePoint[] }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    if (!containerRef.current) return;
-    const origin: Coordinates = [settings.mapOriginLng, settings.mapOriginLat];
-    const destination: Coordinates = [settings.mapDestinationLng, settings.mapDestinationLat];
-    if (![...origin, ...destination].every(Number.isFinite)) return;
+    if (!containerRef.current || points.length < 1) return;
+    const line = routeLine(points);
+    const first: [number, number] = [points[0].lng, points[0].lat];
+    const last: [number, number] = [points[points.length - 1].lng, points[points.length - 1].lat];
 
     let disposed = false;
     let map: maplibregl.Map;
@@ -41,7 +25,7 @@ export function HeroRouteMap({ settings }: { settings: TripSettings }) {
       map = new maplibregl.Map({
         container: containerRef.current,
         style: "https://tiles.openfreemap.org/styles/positron",
-        center: [(origin[0] + destination[0]) / 2, (origin[1] + destination[1]) / 2],
+        center: [(first[0] + last[0]) / 2, (first[1] + last[1]) / 2],
         zoom: 8,
         interactive: false,
         attributionControl: false,
@@ -53,12 +37,11 @@ export function HeroRouteMap({ settings }: { settings: TripSettings }) {
 
     map.on("load", () => {
       if (disposed) return;
-      const route = curveBetween(origin, destination);
       map.addSource("hero-route", {
         type: "geojson",
         data: {
           type: "FeatureCollection",
-          features: [{ type: "Feature", properties: {}, geometry: { type: "LineString", coordinates: route } }],
+          features: [{ type: "Feature", properties: {}, geometry: { type: "LineString", coordinates: line } }],
         },
       });
       map.addLayer({
@@ -79,10 +62,11 @@ export function HeroRouteMap({ settings }: { settings: TripSettings }) {
         type: "geojson",
         data: {
           type: "FeatureCollection",
-          features: [
-            { type: "Feature", properties: { kind: "start" }, geometry: { type: "Point", coordinates: origin } },
-            { type: "Feature", properties: { kind: "end" }, geometry: { type: "Point", coordinates: destination } },
-          ],
+          features: points.map((point, index) => ({
+            type: "Feature",
+            properties: { kind: index === 0 ? "start" : index === points.length - 1 ? "end" : "stop" },
+            geometry: { type: "Point", coordinates: [point.lng, point.lat] },
+          })),
         },
       });
       map.addLayer({
@@ -90,13 +74,14 @@ export function HeroRouteMap({ settings }: { settings: TripSettings }) {
         type: "circle",
         source: "hero-route-points",
         paint: {
-          "circle-radius": 7,
-          "circle-color": ["match", ["get", "kind"], "end", "#d97687", "#23745b"],
+          "circle-radius": ["match", ["get", "kind"], "stop", 4.5, 7],
+          "circle-color": ["match", ["get", "kind"], "end", "#d97687", "stop", "#4a97b5", "#23745b"],
           "circle-stroke-color": "#fffef9",
           "circle-stroke-width": 3,
         },
       });
-      map.fitBounds(new maplibregl.LngLatBounds(origin, origin).extend(destination), {
+      const bounds = points.reduce((box, point) => box.extend([point.lng, point.lat] as maplibregl.LngLatLike), new maplibregl.LngLatBounds(first, first));
+      map.fitBounds(bounds, {
         padding: { top: 76, right: 88, bottom: 84, left: 88 },
         duration: 0,
         maxZoom: 10,
@@ -108,7 +93,7 @@ export function HeroRouteMap({ settings }: { settings: TripSettings }) {
       disposed = true;
       map.remove();
     };
-  }, [settings.mapDestinationLat, settings.mapDestinationLng, settings.mapOriginLat, settings.mapOriginLng]);
+  }, [points]);
 
   return (
     <>

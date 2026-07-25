@@ -257,6 +257,17 @@ input:disabled { color: #8b9792; background: #eef0ed; }
 .page-help { margin: 0 0 20px; padding: 12px 14px; color: var(--green-dark); background: var(--green-soft); border: 1px solid #c9d9d1; border-radius: 8px; }
 .page-help summary { min-height: 28px; display: flex; align-items: center; font-size: 13px; font-weight: 900; cursor: pointer; }
 .page-help p { margin: 8px 0 0; color: var(--muted); font-size: 13px; line-height: 1.65; }
+.page-help-body b { color: var(--green-dark); font-weight: 700; }
+.page-help-body code { padding: 1px 5px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; word-break: break-all; background: rgba(255, 255, 255, .7); border-radius: 4px; }
+/* 手順の見出し。本文より一段強くして、読み飛ばしても場所が分かるようにする。 */
+.page-help-lead { margin-top: 14px !important; color: var(--green-dark) !important; font-weight: 900; }
+.page-help-body ol { margin: 6px 0 0; padding-left: 0; list-style: none; counter-reset: help; }
+.page-help-body ol li { position: relative; margin-top: 6px; padding-left: 26px; color: var(--muted); font-size: 13px; line-height: 1.65; counter-increment: help; }
+.page-help-body ol li::before {
+  content: counter(help); position: absolute; top: .18em; left: 0; display: grid; place-items: center;
+  width: 18px; height: 18px; color: #ffffff; font-size: 11px; font-weight: 900;
+  background: var(--green); border-radius: 50%;
+}
 .account-panel { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 12px; padding: 18px; }
 .account-panel > div { display: grid; gap: 4px; }
 .account-panel small { color: var(--muted); line-height: 1.5; }
@@ -506,7 +517,9 @@ input:disabled { color: #8b9792; background: #eef0ed; }
 
 /* 券の上に置く操作列。見出しを置かず、券そのものを主役にする。 */
 .tickets-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 4px 0 16px; }
-.tickets-actions .button { background: rgba(255, 255, 255, .92); border-color: rgba(255, 255, 255, .9); }
+.tickets-actions .button-secondary,
+.tickets-actions .button-quiet { background: rgba(255, 255, 255, .92); border-color: rgba(255, 255, 255, .9); }
+.tickets-actions .button-primary { box-shadow: 0 2px 8px rgba(23, 62, 88, .22); }
 .tickets-error { margin-bottom: 12px; padding: 10px 12px; color: #7d2222; font-size: 13px; background: #fdecec; border: 1px solid #f0c4c4; border-radius: 10px; }
 
 .ticket-list { display: grid; gap: 16px; margin: 0 0 22px; padding: 0; list-style: none; }
@@ -740,3 +753,57 @@ input:disabled { color: #8b9792; background: #eef0ed; }
 }
 .about-dev-links a:hover { background: #eaf3f8; }
 .about-dev-links a:focus-visible { outline: 3px solid var(--sky-ink, #1e3a4c); outline-offset: 2px; }
+
+.route-source { color: var(--muted); font-size: 12px; line-height: 1.6; }
+
+/* 場所の入力（GoogleマップURL） */
+.place-field { display: grid; gap: 7px; margin-bottom: 14px; }
+.place-hint { display: flex; align-items: center; gap: 5px; font-size: 12px; line-height: 1.6; }
+.place-hint.is-ok { color: var(--green); font-weight: 700; }
+.place-hint.is-error { color: #8a5a20; }
+.place-label-field { margin-top: 2px; }
+
+.trip-places { display: grid; gap: 4px; padding: 18px; margin-bottom: 14px; }
+.trip-places h3 { font-size: 15px; }
+.place-note { margin-bottom: 10px; color: var(--muted); font-size: 12px; line-height: 1.65; }
+
+/* チケット発行ダイアログ */
+.dialog-layer { position: fixed; inset: 0; z-index: 110; display: grid; place-items: center; padding: 16px; }
+.dialog-scrim { position: absolute; inset: 0; background: rgba(15, 40, 56, .5); border: 0; animation: dialog-scrim-in 200ms ease-out both; }
+.dialog {
+  position: relative; width: min(100%, 520px); max-height: 88vh; overflow-y: auto;
+  padding: 20px; background: var(--paper); border-radius: 16px; box-shadow: 0 18px 46px rgba(15, 40, 56, .3);
+  /* プリンターから書類が出てくる動き。位置は中央のまま。
+     紙送りは等速（機械の動き）、持ち上がりだけ減速させる。1本のアニメーションだと
+     イージングを共有してしまい、送りが前寄りに潰れて紙に見えない。 */
+  animation:
+    dialog-feed 520ms linear both,
+    dialog-rise 520ms cubic-bezier(.16, .84, .3, 1) both,
+    dialog-fade 160ms ease-out both;
+}
+
+/* 上端から順に姿を現す。終端の inset が負なのは、静止時に影を切らないため。 */
+@keyframes dialog-feed {
+  from { clip-path: inset(0 0 100% 0); }
+  to   { clip-path: inset(0 -12% -14% -12%); }
+}
+@keyframes dialog-rise {
+  from { translate: 0 34px; }
+  to   { translate: 0 0; }
+}
+@keyframes dialog-fade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes dialog-scrim-in { from { opacity: 0; } to { opacity: 1; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .dialog, .dialog-scrim { animation: none; clip-path: none; }
+}
+.dialog header { display: flex; align-items: start; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+.dialog h2 { font-family: "Kiwi Maru", serif; font-size: 20px; }
+.dialog form { display: grid; gap: 14px; }
+.dialog-places { display: grid; gap: 4px; padding: 14px; background: var(--green-soft); border-radius: 10px; }
+.dialog-places-lead { font-size: 14px; font-weight: 700; }
+.dialog-places-note { margin-bottom: 10px; color: var(--muted); font-size: 12px; line-height: 1.65; }
+.dialog-actions { display: flex; justify-content: flex-end; gap: 8px; }

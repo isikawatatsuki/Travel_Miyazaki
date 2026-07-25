@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { buildTicketRoute, migrateToTickets, parseLatLng, sortTickets, ticketStatus } from "../src/tickets.ts";
+import { buildTicketRoute, migrateToTickets, parseLatLng, parsePlaceName, resolvePlace, routeLine, sortTickets, stayForDay, ticketStatus } from "../src/tickets.ts";
 
 const settings = (extra = {}) => ({ startDate: "2026-09-21", endDate: "2026-09-23", mapOrigin: "", mapDestination: "", mapOriginLat: 0, mapOriginLng: 0, mapDestinationLat: 0, mapDestinationLng: 0, ...extra });
 const state = (extra = {}) => ({ tripSettings: settings(extra.tripSettings), schedule: { activeDay: "", items: [], ...extra.schedule }, settlement: { people: [], payments: [] } });
@@ -143,4 +143,98 @@ test("並び順は 旅行中 → 計画中 → 完了 → アーカイブ", () =
     ticket({ id: "planning", state: state({ tripSettings: { startDate: "2026-12-01", endDate: "2026-12-03" } }) }),
   ], "2026-09-22");
   assert.deepEqual(sorted.map((entry) => entry.id), ["traveling", "planning", "done", "archived"]);
+});
+
+// --- 描画用の座標列 -------------------------------------------------------
+
+const pt = (id, lat, lng) => ({ id, title: id, lat, lng, day: "", time: "" });
+
+test("経路の線は地点を順につなぎ、両端が最初と最後の地点に一致する", () => {
+  const line = routeLine([pt("a", 31.8, 130.7), pt("b", 31.7, 131.0), pt("c", 33.6, 130.4)]);
+  assert.ok(line.length > 2);
+  assert.deepEqual(line[0].map((v) => Math.round(v * 10) / 10), [130.7, 31.8]);
+  assert.deepEqual(line[line.length - 1].map((v) => Math.round(v * 10) / 10), [130.4, 33.6]);
+});
+
+test("地点が1つ以下なら線は引けない", () => {
+  assert.deepEqual(routeLine([]), []);
+  assert.deepEqual(routeLine([pt("a", 31.8, 130.7)]), []);
+});
+
+// --- 経路の出どころ -------------------------------------------------------
+
+test("予定から作れた経路は source が schedule になる", () => {
+  const route = buildTicketRoute(state({ schedule: { items: [
+    item({ id: "a", title: "駅", lat: 34.66, lng: 135.42 }),
+    item({ id: "b", title: "空港", lat: 34.78, lng: 135.43 }),
+  ] } }));
+  assert.equal(route.source, "schedule");
+});
+
+test("旅行設定へ落ちた経路は source が settings になる", () => {
+  const route = buildTicketRoute(state({ tripSettings: { mapOrigin: "空港", mapDestination: "ホテル", mapOriginLat: 31.8, mapOriginLng: 130.7, mapDestinationLat: 31.7, mapDestinationLng: 131.0 } }));
+  assert.equal(route.source, "settings");
+});
+
+// 設定側は地名と緯度経度を別々に編集できるため、両者が食い違いうる。
+// 表示側が source を見ずに「名前はA、地図はBの座標」と混ぜないための番人。
+test("設定由来の経路では、地点名が設定の地名と一致する", () => {
+  const route = buildTicketRoute(state({ tripSettings: { mapOrigin: "弁天町", mapDestination: "北海道大学", mapOriginLat: 31.8, mapOriginLng: 130.7, mapDestinationLat: 31.7, mapDestinationLng: 131.0 } }));
+  assert.equal(route.source, "settings");
+  assert.deepEqual(route.points.map((p) => p.title), ["弁天町", "北海道大学"]);
+});
+
+// --- URL 1本から場所を決める ----------------------------------------------
+
+test("place 形式のURLから地名を取り出す", () => {
+  assert.equal(parsePlaceName("https://www.google.com/maps/place/%E5%A4%A7%E9%98%AA%E9%A7%85/@34.7024,135.4959,17z"), "大阪駅");
+  assert.equal(parsePlaceName("https://www.google.com/maps/place/Kagoshima+Airport/@31.8034,130.7194,15z"), "Kagoshima Airport");
+  assert.equal(parsePlaceName("https://www.google.com/maps/@34.6659,135.4297,15z"), null);
+  assert.equal(parsePlaceName(""), null);
+});
+
+test("地名と座標は同じURLから来るので食い違わない", () => {
+  const place = resolvePlace("https://www.google.com/maps/place/%E5%A4%A7%E9%98%AA%E9%A7%85/@34.7024,135.4959,17z");
+  assert.equal(place.name, "大阪駅");
+  assert.equal(place.lat, 34.7024);
+  assert.equal(place.lng, 135.4959);
+});
+
+test("地名の無いURLは label で補い、label も無ければ座標を名前にする", () => {
+  assert.equal(resolvePlace("https://www.google.com/maps/@34.6659,135.4297,15z", "弁天町").name, "弁天町");
+  assert.equal(resolvePlace("https://www.google.com/maps/@34.6659,135.4297,15z").name, "34.6659, 135.4297");
+});
+
+test("座標が取れないURLは場所として成立しない", () => {
+  assert.equal(resolvePlace("https://maps.app.goo.gl/AbCdEfG", "どこか"), null);
+  assert.equal(resolvePlace(""), null);
+});
+
+// --- 宿の引き継ぎ ---------------------------------------------------------
+
+const stay = (day, title) => item({ id: `s-${day}`, day, title, isStay: true, lat: 1, lng: 1 });
+
+test("その日の宿があればそれを使う", () => {
+  const items = [stay("2026-09-21", "宿A"), stay("2026-09-22", "宿B")];
+  assert.equal(stayForDay(items, "2026-09-22").title, "宿B");
+});
+
+test("その日の宿が無ければ直前の日の宿を引き継ぐ", () => {
+  const items = [stay("2026-09-21", "宿A")];
+  assert.equal(stayForDay(items, "2026-09-23").title, "宿A");
+});
+
+test("最初の日より前には引き継ぐ宿が無い", () => {
+  assert.equal(stayForDay([stay("2026-09-22", "宿B")], "2026-09-21"), null);
+  assert.equal(stayForDay([], "2026-09-21"), null);
+});
+
+test("URLがあれば旧フィールドより優先され、地名と座標がURLから揃う", () => {
+  const route = buildTicketRoute(state({ tripSettings: {
+    mapOriginUrl: "https://www.google.com/maps/place/%E5%A4%A7%E9%98%AA%E9%A7%85/@34.7024,135.4959,17z",
+    mapOrigin: "古い名前", mapOriginLat: 31.8, mapOriginLng: 130.7,
+    mapDestinationUrl: "", mapDestination: "ホテル", mapDestinationLat: 31.7, mapDestinationLng: 131.0,
+  } }));
+  assert.equal(route.points[0].title, "大阪駅");
+  assert.equal(route.points[0].lat, 34.7024);
 });
