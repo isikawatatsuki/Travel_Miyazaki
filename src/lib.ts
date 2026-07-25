@@ -46,6 +46,14 @@ export function mapsSearch(query: string) {
   return `https://www.google.com/maps/search/?${params}`;
 }
 
+// maps.google.com/maps?output=embed は www.google.com/maps/embed へ301し、その301応答が
+// x-frame-options: SAMEORIGIN を返すためiframeが拒否される。リダイレクト後のURLを直接指す。
+// ponytail: pb はGoogleの非公開形式。壊れたら Maps Embed API（要APIキー）へ切り替える
+export function mapsEmbed(origin: string, destination: string) {
+  const place = (value: string) => `!4m1!2s${encodeURIComponent(value)}`;
+  return `https://www.google.com/maps/embed?origin=mfe&pb=!1m6!4m4${place(origin)}${place(destination)}!6i10!3m1!1sja!5m1!1sja`;
+}
+
 export function safeExternalUrl(value: string) {
   try {
     const url = new URL(value);

@@ -9,8 +9,14 @@ function redirect(location, cookies = []) {
   return new Response(null, { status: 302, headers });
 }
 
+// /api/auth/google と /callback はブラウザの全画面遷移で開かれる。ここでJSONを返すと
+// 生のJSONがそのまま画面に出るので、アプリへ戻して共有ページで理由を表示させる。
+function failToApp(request, reason) {
+  return redirect(`${new URL(request.url).origin}/?authError=${reason}#share`, [cookie("oauth_state", "", 0), cookie("oauth_verifier", "", 0)]);
+}
+
 async function googleLogin(env, request) {
-  if (!env.GOOGLE_CLIENT_ID) return json({ error: "Google認証が設定されていません。" }, 503);
+  if (!env.GOOGLE_CLIENT_ID) return failToApp(request, "not_configured");
   const verifier = makeToken("pkce", 32);
   const state = makeToken("state", 24);
   const challengeBytes = new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(verifier)));
@@ -25,9 +31,9 @@ async function googleCallback(env, request) {
   const cookies = parseCookies(request);
   const state = url.searchParams.get("state") || "";
   const code = url.searchParams.get("code") || "";
-  if (!state || !code || state !== cookies.oauth_state || !cookies.oauth_verifier) return json({ error: "認証状態を確認できませんでした。もう一度お試しください。" }, 400);
-  if (!env.GOOGLE_CLIENT_ID || !env.GOOGLE_CLIENT_SECRET) return json({ error: "Google認証が設定されていません。" }, 503);
-  if (!env.DB) return json({ error: "認証の保存先が未設定です。" }, 500);
+  if (!state || !code || state !== cookies.oauth_state || !cookies.oauth_verifier) return failToApp(request, "state");
+  if (!env.GOOGLE_CLIENT_ID || !env.GOOGLE_CLIENT_SECRET) return failToApp(request, "not_configured");
+  if (!env.DB) return failToApp(request, "no_database");
   await ensureAuthTables(env);
   const redirectUri = `${url.origin}/api/auth/callback`;
   const response = await fetch("https://oauth2.googleapis.com/token", {
@@ -35,11 +41,11 @@ async function googleCallback(env, request) {
     headers: { "content-type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({ code, client_id: env.GOOGLE_CLIENT_ID, client_secret: env.GOOGLE_CLIENT_SECRET, code_verifier: cookies.oauth_verifier, redirect_uri: redirectUri, grant_type: "authorization_code" }),
   });
-  if (!response.ok) return json({ error: "Google認証を完了できませんでした。" }, 401);
+  if (!response.ok) return failToApp(request, "exchange");
   const tokenResponse = await response.json() as { id_token?: string };
   let profile;
   try { profile = decodeAndValidateIdToken(tokenResponse.id_token, env.GOOGLE_CLIENT_ID); }
-  catch (error) { return json({ error: error instanceof Error ? error.message : "Google認証を確認できませんでした。" }, 401); }
+  catch { return failToApp(request, "token"); }
   const existing = await env.DB.prepare("SELECT id FROM users WHERE provider = 'google' AND provider_sub = ?").bind(String(profile.sub)).first();
   const userId = existing?.id || makeToken("usr", 12);
   await env.DB.prepare("INSERT INTO users (id, provider, provider_sub, email, display_name, created_at) VALUES (?, 'google', ?, ?, ?, ?) ON CONFLICT(provider, provider_sub) DO UPDATE SET email = excluded.email, display_name = excluded.display_name").bind(userId, String(profile.sub), String(profile.email || ""), String(profile.name || ""), Date.now()).run();

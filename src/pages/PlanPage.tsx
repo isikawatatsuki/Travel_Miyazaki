@@ -2,10 +2,9 @@ import { useState } from "react";
 import { Check, ExternalLink, MapPin, Plus, Settings2, Trash2 } from "lucide-react";
 import { useTrip } from "../TripContext";
 import { getScheduleDays } from "../data";
-import { makeId, mapsDirections, mapsSearch, safeExternalUrl } from "../lib";
+import { makeId, mapsDirections, mapsEmbed, mapsSearch, safeExternalUrl } from "../lib";
 import type { ScheduleItem } from "../types";
 import { EmptyState, IconButton, PageHelp, Panel, SectionHeading } from "../components/ui";
-import { HeroRouteMap } from "../components/HeroRouteMap";
 
 export function PlanPage() {
   const [isEditing, setIsEditing] = useState(false);
@@ -87,7 +86,7 @@ export function PlanPage() {
       <section className="section-block route-block">
         <SectionHeading eyebrow="ROUTE & STAY" title="移動とホテル" description={tripSettings.mapNote} />
         <div className="route-layout">
-          <div className="map-frame route-map-frame" role="img" aria-label={`${tripSettings.mapOrigin}から${tripSettings.mapDestination}までの地図`}><HeroRouteMap settings={tripSettings} /></div>
+          <div className="map-frame"><iframe title={`${tripSettings.mapOrigin}から${tripSettings.mapDestination}までの地図`} loading="lazy" referrerPolicy="no-referrer-when-downgrade" src={mapsEmbed(tripSettings.mapOrigin, tripSettings.mapDestination)} /></div>
           <Panel className="route-details">
             <div><span>START</span><strong>{tripSettings.mapOrigin}</strong></div>
             <i aria-hidden="true" />
