@@ -443,3 +443,139 @@ input:disabled { color: #8b9792; background: #eef0ed; }
   .hero-section { min-height: 0; margin: 0 0 20px; padding: 30px; }
   .panel { break-inside: avoid; box-shadow: none; }
 }
+
+/* --------------------------------------------------------------------------
+   トラベルチケット
+   -------------------------------------------------------------------------- */
+
+.app-shell.is-tickets .main-content { padding-bottom: 32px; }
+
+.brand-back { display: flex; align-items: center; gap: 10px; text-decoration: none; color: inherit; min-width: 0; }
+.brand-back span { display: grid; min-width: 0; }
+.brand-back small { color: var(--muted); font-size: 11px; font-weight: 700; }
+.brand-back strong { font-size: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.brand img { border-radius: 8px; }
+
+.tickets-hero { display: grid; grid-template-columns: auto 1fr; gap: 14px; align-items: start; margin-bottom: 22px; }
+.tickets-logo { border-radius: 14px; }
+.tickets-hero h1 { margin: 2px 0 6px; font-family: "Kiwi Maru", serif; font-size: 26px; }
+.tickets-lead { color: var(--muted); font-size: 13px; line-height: 1.7; }
+.tickets-account { grid-column: 1 / -1; }
+.tickets-actions { margin-bottom: 24px; }
+.tickets-error { padding: 10px 12px; color: #8a2b2b; font-size: 13px; background: #fdecec; border: 1px solid #f3c9c9; border-radius: 8px; }
+
+.ticket-list { display: grid; gap: 14px; margin: 0; padding: 0; list-style: none; }
+
+.ticket { --ticket: #e8735f; border-radius: 16px; }
+.ticket-open {
+  display: grid; grid-template-columns: 46px 1fr; width: 100%; padding: 0; overflow: hidden;
+  text-align: left; background: var(--paper); border: 2px solid color-mix(in srgb, var(--ticket) 45%, #ffffff);
+  border-radius: 16px; box-shadow: 0 3px 0 color-mix(in srgb, var(--ticket) 22%, #ffffff); cursor: pointer;
+}
+.ticket-open:hover { box-shadow: 0 5px 0 color-mix(in srgb, var(--ticket) 30%, #ffffff); }
+.ticket-open:focus-visible { outline: 3px solid var(--ticket); outline-offset: 2px; }
+.ticket.is-active .ticket-open { border-color: var(--ticket); }
+
+/* 半券。右端の破線と上下のくぼみで切り取り線を表現する。 */
+.ticket-stub {
+  position: relative; display: grid; place-items: center;
+  background: color-mix(in srgb, var(--ticket) 16%, #ffffff);
+  border-right: 2px dashed color-mix(in srgb, var(--ticket) 50%, #ffffff);
+}
+.ticket-stub::before, .ticket-stub::after {
+  content: ""; position: absolute; right: -9px; width: 16px; height: 16px;
+  background: var(--paper); border: 2px solid color-mix(in srgb, var(--ticket) 45%, #ffffff); border-radius: 50%;
+}
+.ticket-stub::before { top: -10px; }
+.ticket-stub::after { bottom: -10px; }
+.ticket-stub-mark {
+  color: color-mix(in srgb, var(--ticket) 80%, #3a2b28); font-size: 9px; font-weight: 900; line-height: 1.3;
+  letter-spacing: .08em; text-align: center; writing-mode: vertical-rl; text-orientation: sideways;
+}
+
+.ticket-body { display: grid; gap: 7px; padding: 14px 16px; min-width: 0; }
+.ticket-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.ticket-status {
+  display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px;
+  color: color-mix(in srgb, var(--ticket) 72%, #241a18); font-size: 11px; font-weight: 900;
+  background: color-mix(in srgb, var(--ticket) 18%, #ffffff); border-radius: 999px;
+}
+.ticket-countdown { color: var(--muted); font-size: 11px; font-weight: 700; }
+.ticket-name { font-family: "Kiwi Maru", serif; font-size: 18px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ticket-route { display: flex; align-items: center; gap: 5px; color: var(--ink); font-size: 12px; min-width: 0; }
+.ticket-route i { color: var(--ticket); font-style: normal; font-weight: 900; }
+.ticket-meta { display: flex; flex-wrap: wrap; gap: 4px 12px; color: var(--muted); font-size: 11px; }
+.ticket-meta span { display: inline-flex; align-items: center; gap: 4px; }
+.ticket-shared { color: var(--green); font-weight: 800; }
+.ticket.is-done .ticket-open, .ticket.is-archived .ticket-open { opacity: .72; }
+
+.tickets-empty { display: grid; justify-items: center; gap: 8px; padding: 30px 22px; text-align: center; color: var(--muted); }
+.tickets-empty svg { color: var(--pink); }
+
+.ticket-form form { display: grid; gap: 14px; padding: 18px; }
+.color-picker { display: flex; flex-wrap: wrap; gap: 10px; padding: 0; border: 0; }
+.color-picker legend { margin-bottom: 8px; color: var(--muted); font-size: 12px; font-weight: 700; }
+.color-swatch { position: relative; cursor: pointer; }
+.color-swatch input { position: absolute; opacity: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }
+.color-swatch > span[aria-hidden] { display: block; width: 32px; height: 32px; background: var(--swatch); border: 2px solid #ffffff; border-radius: 50%; box-shadow: 0 0 0 1px var(--line); }
+.color-swatch input:checked + span[aria-hidden] { box-shadow: 0 0 0 3px var(--swatch); }
+.color-swatch input:focus-visible + span[aria-hidden] { outline: 3px solid var(--ink); outline-offset: 2px; }
+
+/* 経路の設定（予定ページ） */
+.route-field { display: grid; gap: 8px; padding-top: 10px; border-top: 1px dashed var(--line); }
+.route-hint { display: flex; align-items: center; gap: 6px; font-size: 12px; line-height: 1.6; }
+.route-hint.is-ok { color: var(--green); }
+.route-hint.is-missing { color: #8a5a20; }
+
+/* --------------------------------------------------------------------------
+   旅の地図
+   -------------------------------------------------------------------------- */
+
+.map-page-head { display: grid; gap: 10px; margin-bottom: 16px; }
+.map-page-head h1 { font-family: "Kiwi Maru", serif; font-size: 24px; }
+.map-page-head .button { justify-self: start; }
+
+.map-layout { display: grid; gap: 14px; }
+.map-canvas { position: relative; }
+.route-map { height: 46vh; min-height: 280px; background: #e8eef2; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+.map-attribution { margin-top: 5px; color: var(--muted); font-size: 10px; }
+
+.route-pin { display: block; width: 12px; height: 12px; background: var(--pin); border: 2px solid #ffffff; border-radius: 50%; box-shadow: 0 1px 3px rgba(0, 0, 0, .3); }
+.route-pin.is-end { width: 17px; height: 17px; border-width: 3px; }
+
+.map-side { display: grid; gap: 12px; }
+.map-side-head { display: grid; gap: 6px; }
+.map-side-head .button { justify-self: start; }
+.map-side-head p { color: var(--muted); font-size: 12px; line-height: 1.6; }
+
+.map-ticket-list { display: flex; gap: 10px; margin: 0; padding: 4px 2px; overflow-x: auto; list-style: none; }
+.map-ticket {
+  --ticket: #e8735f;
+  display: flex; align-items: center; gap: 9px; min-width: 172px; padding: 10px 12px; text-align: left;
+  background: var(--paper); border: 2px solid var(--line); border-radius: 12px; cursor: pointer;
+}
+.map-ticket.is-selected { border-color: var(--ticket); background: color-mix(in srgb, var(--ticket) 8%, #ffffff); }
+.map-ticket:focus-visible { outline: 3px solid var(--ticket); outline-offset: 2px; }
+.map-ticket-color { flex-shrink: 0; width: 12px; height: 30px; background: var(--ticket); border-radius: 4px; }
+.map-ticket strong { display: block; font-size: 13px; }
+.map-ticket small { color: var(--muted); font-size: 11px; }
+
+.map-detail { display: grid; gap: 9px; padding: 16px; background: var(--paper); border: 1px solid var(--line); border-radius: 12px; }
+.map-detail h2 { font-family: "Kiwi Maru", serif; font-size: 18px; }
+.map-detail-dates { color: var(--muted); font-size: 12px; }
+.map-detail-members { display: flex; align-items: center; gap: 6px; font-size: 12px; }
+.map-detail-points { display: grid; gap: 5px; margin: 0; padding: 0; list-style: none; }
+.map-detail-points li { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+.map-detail-points span { display: grid; place-items: center; flex-shrink: 0; width: 20px; height: 20px; color: #ffffff; font-size: 10px; font-weight: 900; background: var(--ink); border-radius: 50%; }
+.map-detail-skipped { padding: 8px 10px; color: #8a5a20; font-size: 12px; line-height: 1.6; background: #fdf3e2; border-radius: 8px; }
+.map-detail-links { display: flex; flex-wrap: wrap; gap: 8px; }
+
+@media (min-width: 760px) {
+  .ticket-list { grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); }
+  .tickets-hero { grid-template-columns: auto 1fr auto; align-items: center; }
+  .tickets-account { grid-column: auto; justify-self: end; }
+  .map-layout { grid-template-columns: 1fr 320px; align-items: start; }
+  .route-map { height: 62vh; }
+  .map-ticket-list { flex-direction: column; max-height: 34vh; overflow-x: visible; overflow-y: auto; }
+  .map-ticket { min-width: 0; }
+}

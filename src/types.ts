@@ -29,6 +29,10 @@ export type ScheduleItem = {
   memo: string;
   mapUrl: string;
   isTimeUnset: boolean;
+  /** 未設定は経路に含める。既存データに欠けていても既定でONになるよう任意にしている。 */
+  inRoute?: boolean;
+  lat?: number;
+  lng?: number;
 };
 export type ScheduleState = { activeDay: string; items: ScheduleItem[] };
 
@@ -101,6 +105,23 @@ export type TravelProfile = {
   state: SharedState;
 };
 
+export type TicketStatus = "planning" | "traveling" | "done" | "archived";
+
+/**
+ * 画面上の「トラベルチケット」。TravelProfile を拡張したもので、
+ * 共有グループは任意の紐付け（groupId）として持つ。グループ未作成でも
+ * チケットとして成立するため、端末内だけの旅行が一覧から消えない。
+ */
+export type Ticket = TravelProfile & {
+  themeColor: string;
+  /** 手動で「完了」にした時刻。未設定なら日付から自動判定する。 */
+  completedAt?: string;
+  groupId?: string;
+  joinCode?: string;
+  readToken?: string;
+  editToken?: string;
+};
+
 export type SavePhase = "saving" | "saved" | "syncing" | "synced" | "error";
 
 export type Group = {
@@ -116,4 +137,4 @@ export type Group = {
 export type AccountUser = { id: string; displayName: string; email: string };
 export type AccountGroup = Group & { role: "owner" | "editor" | "viewer" };
 
-export type PageKey = "home" | "plan" | "money" | "packing" | "share" | "details" | "album";
+export type PageKey = "tickets" | "map" | "home" | "plan" | "money" | "packing" | "share" | "details" | "album";
