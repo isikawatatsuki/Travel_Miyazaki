@@ -1,15 +1,17 @@
 import { useMemo, useState } from "react";
-import { Check, ExternalLink, MapPin, Plus, Settings2, Trash2 } from "lucide-react";
+import { Check, ExternalLink, LocateFixed, MapPin, Plus, Settings2, Trash2 } from "lucide-react";
 import { useTrip } from "../TripContext";
 import { getScheduleDays } from "../data";
-import { buildTicketRoute, resolvePlace, stayForDay } from "../tickets";
+import { buildTicketRoute, resolvePlace, scheduleItemCoordinate, stayForDay } from "../tickets";
 import { makeId, mapsDirections, mapsEmbed, mapsSearch, safeExternalUrl } from "../lib";
 import type { ScheduleItem } from "../types";
 import { EmptyState, IconButton, PageHelp, Panel, SectionHeading } from "../components/ui";
 import { PlaceField } from "../components/PlaceField";
+import { LocationPicker } from "../components/LocationPicker";
 
 export function PlanPage() {
   const [isEditing, setIsEditing] = useState(false);
+  const [locationItemId, setLocationItemId] = useState<string | null>(null);
   const { tripSettings, setTripSettings, schedule, setSchedule, helpOpen, setHelpOpen } = useTrip();
   // 地図は予定から作った経路に合わせる。予定に場所が無ければ旅行設定へ落ちる。
   const route = useMemo(() => buildTicketRoute({ tripSettings, schedule } as Parameters<typeof buildTicketRoute>[0]), [schedule, tripSettings]);
@@ -115,6 +117,10 @@ export function PlanPage() {
               />
               {safeExternalUrl(item.mapUrl) && <a className="inline-map-link" href={safeExternalUrl(item.mapUrl)} target="_blank" rel="noreferrer"><MapPin size={17} />地図を開く</a>}
 
+              <button className="button button-secondary location-picker-open" type="button" onClick={() => setLocationItemId(item.id)}>
+                <LocateFixed size={18} aria-hidden="true" />地図から場所を選ぶ
+              </button>
+
               <label className="unset-field">
                 <input type="checkbox" checked={item.inRoute !== false} onChange={(event) => updateItem(item.id, { inRoute: event.target.checked })} />
                 旅の経路に含める
@@ -165,6 +171,22 @@ export function PlanPage() {
           </Panel>
         </div>
       </section>
+
+      {locationItemId && (() => {
+        const locationItem = schedule.items.find((item) => item.id === locationItemId);
+        if (!locationItem) return null;
+        const current = scheduleItemCoordinate(locationItem);
+        return (
+          <LocationPicker
+            initial={current || undefined}
+            onClose={() => setLocationItemId(null)}
+            onConfirm={(coordinate) => {
+              updateItem(locationItem.id, coordinate);
+              setLocationItemId(null);
+            }}
+          />
+        );
+      })()}
     </div>
   );
 }
