@@ -3,7 +3,7 @@ import { MapPinned, Navigation, PartyPopper, Ticket, X } from "lucide-react";
 import { createPortal } from "react-dom";
 import { IconButton } from "./ui";
 
-const RELEASE_VERSION = "v0.1.0";
+const RELEASE_VERSION = "v0.1.1";
 const STORAGE_KEY = "tabilog-release-notice";
 
 function hasSeenCurrentRelease() {
@@ -47,16 +47,16 @@ export function ReleaseNotice() {
           <span className="release-notice-icon" aria-hidden="true"><PartyPopper size={28} /></span>
           <div>
             <p className="eyebrow">WHAT'S NEW ・ {RELEASE_VERSION}</p>
-            <h2 id="release-notice-title">Tabilogをリリースしました</h2>
+            <h2 id="release-notice-title">場所選択が使いやすくなりました</h2>
           </div>
           <IconButton label="アップデートのお知らせを閉じる" onClick={dismiss}><X size={20} /></IconButton>
         </header>
 
-        <p className="release-notice-lead">旅の計画から思い出まで、ひとつのチケットにまとめられるようになりました。</p>
+        <p className="release-notice-lead">予定の場所を、Tabilogの地図から直感的に登録できるようになりました。</p>
         <ul className="release-notice-list">
-          <li><Ticket size={21} aria-hidden="true" /><span><strong>旅をチケットで管理</strong><small>計画中・旅行中・完了した旅を見やすく整理できます。</small></span></li>
-          <li><MapPinned size={21} aria-hidden="true" /><span><strong>旅の地図を追加</strong><small>チケットごとの経路や、これまでの旅を地図で振り返れます。</small></span></li>
-          <li><Navigation size={21} aria-hidden="true" /><span><strong>地図から予定場所を選択</strong><small>地図のタップ、ピンの移動、現在地から場所を登録できます。</small></span></li>
+          <li><MapPinned size={21} aria-hidden="true" /><span><strong>アプリ内の地図で選択</strong><small>Google MapsのURLを貼らず、地図のタップやピン移動で場所を設定できます。</small></span></li>
+          <li><Ticket size={21} aria-hidden="true" /><span><strong>場所名を別に設定</strong><small>「観光」などの予定名とは別に、「青島神社」などの場所名を付けられます。</small></span></li>
+          <li><Navigation size={21} aria-hidden="true" /><span><strong>旅の地図にも反映</strong><small>設定した場所名と位置が、予定一覧と旅の経路に表示されます。</small></span></li>
         </ul>
 
         <button className="button button-primary release-notice-confirm" type="button" autoFocus onClick={dismiss}>新しいTabilogを使う</button>
