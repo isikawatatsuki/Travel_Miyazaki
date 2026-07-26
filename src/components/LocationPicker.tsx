@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Crosshair, MapPin, X } from "lucide-react";
+import { Crosshair, LoaderCircle, MapPin, Search, X } from "lucide-react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { isValidCoordinate } from "../tickets";
@@ -32,6 +32,8 @@ export function LocationPicker({
   );
   const [locationStatus, setLocationStatus] = useState("");
   const [name, setName] = useState(initialName);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searching, setSearching] = useState(false);
 
   useEffect(() => {
     const previousOverflow = document.body.style.overflow;
@@ -104,6 +106,35 @@ export function LocationPicker({
     );
   };
 
+  const searchLocation = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const query = searchQuery.trim();
+    if (!query || searching) return;
+    setSearching(true);
+    setLocationStatus("場所を検索しています…");
+    try {
+      const response = await fetch("/api/geocode", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ query }),
+        credentials: "same-origin",
+      });
+      const payload = await response.json() as { lat?: number; lng?: number; displayName?: string; error?: string };
+      if (!response.ok || !isValidCoordinate(payload.lat, payload.lng)) {
+        throw new Error(payload.error || "その場所は見つかりませんでした。");
+      }
+      const coordinate = roundedCoordinate(payload.lat as number, payload.lng as number);
+      setPicked(coordinate);
+      setName(query);
+      setLocationStatus(payload.displayName ? `${payload.displayName} に移動しました。` : `${query} に移動しました。`);
+      mapRef.current?.easeTo({ center: [coordinate.lng, coordinate.lat], zoom: 16, duration: 600 });
+    } catch (error) {
+      setLocationStatus(error instanceof Error ? error.message : "場所を検索できませんでした。");
+    } finally {
+      setSearching(false);
+    }
+  };
+
   return createPortal(
     <div className="location-picker-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
       <section className="location-picker-dialog" role="dialog" aria-modal="true" aria-labelledby="location-picker-title">
@@ -115,7 +146,24 @@ export function LocationPicker({
           <IconButton label="場所の選択を閉じる" onClick={onClose}><X size={20} /></IconButton>
         </header>
 
-        <p className="location-picker-guide">地図をタップするか、ピンをドラッグして場所を合わせてください。</p>
+        <p className="location-picker-guide">場所名や住所で検索するか、地図をタップしてピンを合わせてください。</p>
+        <form className="location-search" role="search" onSubmit={searchLocation}>
+          <span id="location-search-label">場所名・住所を検索</span>
+          <div>
+            <input
+              aria-labelledby="location-search-label"
+              value={searchQuery}
+              maxLength={100}
+              placeholder="例：宮崎駅、青島神社"
+              autoComplete="off"
+              onChange={(event) => setSearchQuery(event.target.value)}
+            />
+            <button className="button button-primary" type="submit" disabled={!searchQuery.trim() || searching}>
+              {searching ? <LoaderCircle className="spin" size={18} aria-hidden="true" /> : <Search size={18} aria-hidden="true" />}
+              検索
+            </button>
+          </div>
+        </form>
         <button className="button button-secondary location-current" type="button" onClick={useCurrentLocation}>
           <Crosshair size={18} aria-hidden="true" />現在地を使う
         </button>
