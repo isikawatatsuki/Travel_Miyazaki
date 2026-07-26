@@ -48,7 +48,7 @@ export function TravelMapPage({ onOpenTicket }: { onOpenTicket: (id: string, tar
         <Panel className="tickets-empty">
           <MapPin size={34} aria-hidden="true" />
           <strong>まだ経路がありません</strong>
-          <EmptyState>予定に地図リンクを貼るか緯度経度を入れると、その場所が地図に並びます。予定ごとに「旅の経路に含める」で調整できます。</EmptyState>
+          <EmptyState>予定の「地図から場所を選ぶ」でピンを置くと、その場所が地図に並びます。予定ごとに「旅の経路に含める」で調整できます。</EmptyState>
         </Panel>
       ) : (
         <div className="map-layout">
