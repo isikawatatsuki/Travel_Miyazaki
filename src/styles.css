@@ -639,16 +639,16 @@ input:disabled { color: #8b9792; background: #eef0ed; }
 .schedule-card .unset-field { padding-top: 8px; border-top: 1px dashed var(--line); }
 .route-field { display: grid; gap: 8px; padding-top: 10px; border-top: 1px dashed var(--line); }
 .location-picker-open { width: fit-content; margin-top: 10px; }
-.schedule-location-field { display: grid; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--line); }
-.schedule-location-field > span { color: #52655d; font-size: 12px; font-weight: 700; }
-.schedule-location-field > p { color: var(--muted); font-size: 13px; }
-.schedule-location-selected { display: flex; align-items: center; gap: 10px; padding: 11px 12px; color: var(--green-dark); background: var(--green-soft); border-radius: 10px; }
-.schedule-location-selected div { display: grid; gap: 2px; }
-.schedule-location-selected strong { font-size: 14px; }
-.schedule-location-selected small { color: var(--muted); font-size: 11px; }
-.schedule-location-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
-.schedule-location-actions .location-picker-open,
-.schedule-location-actions .inline-map-link { margin-top: 0; }
+.map-location-field { display: grid; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--line); }
+.map-location-field > span { color: #52655d; font-size: 12px; font-weight: 700; }
+.map-location-field > p { color: var(--muted); font-size: 13px; }
+.map-location-selected { display: flex; align-items: center; gap: 10px; padding: 11px 12px; color: var(--green-dark); background: var(--green-soft); border-radius: 10px; }
+.map-location-selected div { display: grid; gap: 2px; }
+.map-location-selected strong { font-size: 14px; }
+.map-location-selected small { color: var(--muted); font-size: 11px; }
+.map-location-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.map-location-actions .location-picker-open,
+.map-location-actions .inline-map-link { margin-top: 0; }
 .location-picker-backdrop {
   position: fixed; z-index: 120; inset: 0; display: grid; place-items: center; padding: 16px;
   background: rgba(13, 38, 28, .58); backdrop-filter: blur(4px);

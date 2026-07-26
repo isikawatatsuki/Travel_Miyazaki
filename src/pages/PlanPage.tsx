@@ -1,17 +1,19 @@
 import { useMemo, useState } from "react";
-import { Check, ExternalLink, LocateFixed, MapPin, Plus, Settings2, Trash2 } from "lucide-react";
+import { Check, ExternalLink, MapPin, Plus, Settings2, Trash2 } from "lucide-react";
 import { useTrip } from "../TripContext";
 import { getScheduleDays } from "../data";
-import { buildTicketRoute, resolvePlace, scheduleItemCoordinate, stayForDay } from "../tickets";
+import { buildTicketRoute, isValidCoordinate, resolvePlace, scheduleItemCoordinate, stayForDay } from "../tickets";
 import { makeId, mapsDirections, mapsEmbed, mapsSearch, safeExternalUrl } from "../lib";
 import type { ScheduleItem } from "../types";
 import { EmptyState, IconButton, PageHelp, Panel, SectionHeading } from "../components/ui";
-import { PlaceField } from "../components/PlaceField";
 import { LocationPicker } from "../components/LocationPicker";
+import { MapLocationField } from "../components/MapLocationField";
+
+type LocationTarget = { kind: "origin" | "destination" | "stay" } | { kind: "item"; id: string };
 
 export function PlanPage() {
   const [isEditing, setIsEditing] = useState(false);
-  const [locationItemId, setLocationItemId] = useState<string | null>(null);
+  const [locationTarget, setLocationTarget] = useState<LocationTarget | null>(null);
   const { tripSettings, setTripSettings, schedule, setSchedule, helpOpen, setHelpOpen } = useTrip();
   // 地図は予定から作った経路に合わせる。予定に場所が無ければ旅行設定へ落ちる。
   const route = useMemo(() => buildTicketRoute({ tripSettings, schedule } as Parameters<typeof buildTicketRoute>[0]), [schedule, tripSettings]);
@@ -40,6 +42,8 @@ export function PlanPage() {
     setSchedule((current) => ({ ...current, items: [...current.items, { id: makeId("schedule"), day: activeDay, time: "", title: "", memo: "", mapUrl: "", isTimeUnset: true }] }));
   };
   const deleteItem = (id: string) => setSchedule((current) => ({ ...current, items: current.items.filter((item) => item.id !== id) }));
+  const originSelected = isValidCoordinate(tripSettings.mapOriginLat, tripSettings.mapOriginLng);
+  const destinationSelected = isValidCoordinate(tripSettings.mapDestinationLat, tripSettings.mapDestinationLng);
 
   return (
     <div className="page plan-page">
@@ -67,32 +71,18 @@ export function PlanPage() {
           <Panel className="trip-places">
             <h3>この旅の出発地と目的地</h3>
             <p className="place-note">ホームの背景地図と、旅の地図の基準になります。予定に場所を登録すると、そちらが優先されます。</p>
-            <PlaceField title="出発地" value={{ url: tripSettings.mapOriginUrl || "", label: tripSettings.mapOrigin || "", lat: tripSettings.mapOriginLat, lng: tripSettings.mapOriginLng }}
-              onChange={(next) => setTripSettings((current) => ({ ...current, mapOriginUrl: next.url, mapOrigin: next.label, ...(next.lat !== undefined && next.lng !== undefined ? { mapOriginLat: next.lat, mapOriginLng: next.lng } : {}) }))} />
-            <PlaceField title="目的地" value={{ url: tripSettings.mapDestinationUrl || "", label: tripSettings.mapDestination || "", lat: tripSettings.mapDestinationLat, lng: tripSettings.mapDestinationLng }}
-              onChange={(next) => setTripSettings((current) => ({ ...current, mapDestinationUrl: next.url, mapDestination: next.label, ...(next.lat !== undefined && next.lng !== undefined ? { mapDestinationLat: next.lat, mapDestinationLng: next.lng } : {}) }))} />
+            <MapLocationField title="出発地" name={tripSettings.mapOrigin} selected={originSelected} mapUrl={tripSettings.mapOriginUrl} onOpen={() => setLocationTarget({ kind: "origin" })} />
+            <MapLocationField title="目的地" name={tripSettings.mapDestination} selected={destinationSelected} mapUrl={tripSettings.mapDestinationUrl} onOpen={() => setLocationTarget({ kind: "destination" })} />
           </Panel>
 
           <Panel className="trip-places">
             <h3>{days.find((day) => day.id === activeDay)?.shortLabel}の宿</h3>
             <p className="place-note">
               {stay && stay.day !== activeDay
-                ? `${stay.day.slice(5).replace("-", "/")}の宿を引き継いでいます。この日だけ変えるならURLを入れてください。`
+                ? `${stay.day.slice(5).replace("-", "/")}の宿を引き継いでいます。この日だけ変えるなら地図から選び直してください。`
                 : "この日以降の宿として引き継がれます。"}
             </p>
-            <PlaceField
-              title="宿"
-              value={{ url: stay?.day === activeDay ? stay.mapUrl : "", label: stay?.day === activeDay ? stay.title : "", lat: stay?.day === activeDay ? stay.lat : undefined, lng: stay?.day === activeDay ? stay.lng : undefined }}
-              onChange={(next) => setSchedule((current) => {
-                const own = current.items.find((entry) => entry.isStay && entry.day === activeDay);
-                if (!next.url && own) return { ...current, items: current.items.filter((entry) => entry.id !== own.id) };
-                if (!next.url) return current;
-                const place = resolvePlace(next.url, next.label);
-                const patch = { mapUrl: next.url, title: place?.name || next.label || "宿", lat: place?.lat ?? next.lat, lng: place?.lng ?? next.lng };
-                if (own) return { ...current, items: current.items.map((entry) => entry.id === own.id ? { ...entry, ...patch } : entry) };
-                return { ...current, items: [...current.items, { id: makeId("stay"), day: activeDay, time: "", memo: "", isTimeUnset: true, isStay: true, inRoute: false, ...patch } as ScheduleItem] };
-              })}
-            />
+            <MapLocationField title="宿" name={stay?.locationName || stay?.title || ""} selected={Boolean(stay && scheduleItemCoordinate(stay))} mapUrl={stay?.mapUrl} onOpen={() => setLocationTarget({ kind: "stay" })} />
           </Panel>
 
           {items.length ? items.map((item, index) => (
@@ -105,24 +95,7 @@ export function PlanPage() {
               </div>
               <label><span>予定</span><input value={item.title} maxLength={40} placeholder="例：ホテルにチェックイン" onChange={(event) => updateItem(item.id, { title: event.target.value })} /></label>
               <label><span>メモ</span><textarea value={item.memo} maxLength={120} rows={2} placeholder="待ち合わせや予約番号など" onChange={(event) => updateItem(item.id, { memo: event.target.value })} /></label>
-              <div className="schedule-location-field">
-                <span>場所</span>
-                {scheduleItemCoordinate(item) ? (
-                  <div className="schedule-location-selected">
-                    <MapPin size={19} aria-hidden="true" />
-                    <div>
-                      <strong>{item.locationName?.trim() || "名前未設定"}</strong>
-                      <small>地図上に場所を設定済み</small>
-                    </div>
-                  </div>
-                ) : <p>まだ場所が選択されていません。</p>}
-                <div className="schedule-location-actions">
-                  <button className="button button-secondary location-picker-open" type="button" onClick={() => setLocationItemId(item.id)}>
-                    <LocateFixed size={18} aria-hidden="true" />{scheduleItemCoordinate(item) ? "場所を変更" : "地図から場所を選ぶ"}
-                  </button>
-                  {safeExternalUrl(item.mapUrl) && <a className="inline-map-link" href={safeExternalUrl(item.mapUrl)} target="_blank" rel="noreferrer"><MapPin size={17} />地図を開く</a>}
-                </div>
-              </div>
+              <MapLocationField title="場所" name={item.locationName || ""} selected={Boolean(scheduleItemCoordinate(item))} mapUrl={item.mapUrl} onOpen={() => setLocationTarget({ kind: "item", id: item.id })} />
 
               <label className="unset-field">
                 <input type="checkbox" checked={item.inRoute !== false} onChange={(event) => updateItem(item.id, { inRoute: event.target.checked })} />
@@ -176,24 +149,42 @@ export function PlanPage() {
         </div>
       </section>
 
-      {locationItemId && (() => {
-        const locationItem = schedule.items.find((item) => item.id === locationItemId);
-        if (!locationItem) return null;
-        const current = scheduleItemCoordinate(locationItem);
+      {locationTarget && (() => {
+        const locationItem = locationTarget.kind === "item" ? schedule.items.find((item) => item.id === locationTarget.id) : null;
+        const current = locationTarget.kind === "origin"
+          ? (originSelected ? { lat: tripSettings.mapOriginLat, lng: tripSettings.mapOriginLng } : null)
+          : locationTarget.kind === "destination"
+            ? (destinationSelected ? { lat: tripSettings.mapDestinationLat, lng: tripSettings.mapDestinationLng } : null)
+            : locationTarget.kind === "stay"
+              ? (stay ? scheduleItemCoordinate(stay) : null)
+              : (locationItem ? scheduleItemCoordinate(locationItem) : null);
+        const initialName = locationTarget.kind === "origin" ? tripSettings.mapOrigin
+          : locationTarget.kind === "destination" ? tripSettings.mapDestination
+            : locationTarget.kind === "stay" ? (stay?.locationName || stay?.title || "")
+              : (locationItem?.locationName || "");
         return (
           <LocationPicker
             initial={current || undefined}
-            initialName={locationItem.locationName || ""}
-            onClose={() => setLocationItemId(null)}
+            initialName={initialName}
+            onClose={() => setLocationTarget(null)}
             onConfirm={(location) => {
               const query = `${location.lat},${location.lng}`;
-              updateItem(locationItem.id, {
-                lat: location.lat,
-                lng: location.lng,
-                locationName: location.name,
-                mapUrl: mapsSearch(query),
-              });
-              setLocationItemId(null);
+              const mapUrl = mapsSearch(query);
+              if (locationTarget.kind === "origin") {
+                setTripSettings((currentSettings) => ({ ...currentSettings, mapOrigin: location.name, mapOriginLat: location.lat, mapOriginLng: location.lng, mapOriginUrl: mapUrl }));
+              } else if (locationTarget.kind === "destination") {
+                setTripSettings((currentSettings) => ({ ...currentSettings, mapDestination: location.name, mapDestinationLat: location.lat, mapDestinationLng: location.lng, mapDestinationUrl: mapUrl }));
+              } else if (locationTarget.kind === "stay") {
+                setSchedule((currentSchedule) => {
+                  const own = currentSchedule.items.find((entry) => entry.isStay && entry.day === activeDay);
+                  const patch = { mapUrl, title: location.name || "宿", locationName: location.name, lat: location.lat, lng: location.lng };
+                  if (own) return { ...currentSchedule, items: currentSchedule.items.map((entry) => entry.id === own.id ? { ...entry, ...patch } : entry) };
+                  return { ...currentSchedule, items: [...currentSchedule.items, { id: makeId("stay"), day: activeDay, time: "", memo: "", isTimeUnset: true, isStay: true, inRoute: false, ...patch } as ScheduleItem] };
+                });
+              } else if (locationItem) {
+                updateItem(locationItem.id, { lat: location.lat, lng: location.lng, locationName: location.name, mapUrl });
+              }
+              setLocationTarget(null);
             }}
           />
         );

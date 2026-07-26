@@ -161,7 +161,7 @@ export function SettingsDrawer({ open, onClose }: { open: boolean; onClose: () =
             <label><span>行きの便・交通</span><input value={draft.outboundLabel} onChange={(event) => field("outboundLabel", event.target.value)} /></label>
             <label><span>帰りの便・交通</span><input value={draft.returnLabel} onChange={(event) => field("returnLabel", event.target.value)} /></label>
             <div className="field-grid two"><label><span>家を出る時間</span><input type="time" value={draft.departureTime} onChange={(event) => field("departureTime", event.target.value)} /></label><label><span>到着目標</span><input type="time" value={draft.arrivalTargetTime} onChange={(event) => field("arrivalTargetTime", event.target.value)} /></label></div>
-            <p className="field-note">出発地・目的地・宿は「予定」ページで設定します（Googleマップの URL で指定）。</p>
+            <p className="field-note">出発地・目的地・宿は「予定」ページのアプリ内地図から設定します。</p>
             <label><span>移動メモ</span><textarea rows={2} value={draft.mapNote} onChange={(event) => field("mapNote", event.target.value)} /></label>
           </fieldset>
           </>}

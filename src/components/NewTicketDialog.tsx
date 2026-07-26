@@ -1,7 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { Plus, X } from "lucide-react";
-import { TICKET_COLORS } from "../tickets";
-import { PlaceField, type PlaceValue } from "./PlaceField";
+import { mapsSearch } from "../lib";
+import { isValidCoordinate, TICKET_COLORS } from "../tickets";
+import type { PlaceValue } from "./PlaceField";
+import { LocationPicker } from "./LocationPicker";
+import { MapLocationField } from "./MapLocationField";
 
 export type NewTicket = {
   name: string;
@@ -37,14 +40,17 @@ export function NewTicketDialog({ open, onClose, onCreate, busy }: {
   const [endDate, setEndDate] = useState(isoDate(2));
   const [origin, setOrigin] = useState<PlaceValue>(empty);
   const [destination, setDestination] = useState<PlaceValue>(empty);
+  const [locationTarget, setLocationTarget] = useState<"origin" | "destination" | null>(null);
+  const locationTargetRef = useRef(locationTarget);
+  locationTargetRef.current = locationTarget;
   const nameRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!open) return;
-    setName(""); setThemeColor(TICKET_COLORS[0]); setOrigin(empty); setDestination(empty);
+    setName(""); setThemeColor(TICKET_COLORS[0]); setOrigin(empty); setDestination(empty); setLocationTarget(null);
     setStartDate(isoDate(0)); setEndDate(isoDate(2));
     const focus = window.setTimeout(() => nameRef.current?.focus(), 60);
-    const onKeyDown = (event: KeyboardEvent) => { if (event.key === "Escape" && !busy) onClose(); };
+    const onKeyDown = (event: KeyboardEvent) => { if (event.key === "Escape" && !busy && !locationTargetRef.current) onClose(); };
     window.addEventListener("keydown", onKeyDown);
     return () => { window.clearTimeout(focus); window.removeEventListener("keydown", onKeyDown); };
   }, [busy, onClose, open]);
@@ -88,11 +94,10 @@ export function NewTicketDialog({ open, onClose, onCreate, busy }: {
           <div className="dialog-places">
             <p className="dialog-places-lead">どこからどこへ行きますか</p>
             <p className="dialog-places-note">
-              Googleマップで場所を開き、アドレスバーのURLを貼ってください。地名と位置がまとめて決まります。
-              あとから予定ページで変更できます。
+              アプリ内の地図でピンを置き、場所の名前を付けてください。あとから予定ページで変更できます。
             </p>
-            <PlaceField title="出発地" value={origin} onChange={setOrigin} />
-            <PlaceField title="目的地" value={destination} onChange={setDestination} />
+            <MapLocationField title="出発地" name={origin.label} selected={isValidCoordinate(origin.lat, origin.lng)} mapUrl={origin.url} onOpen={() => setLocationTarget("origin")} />
+            <MapLocationField title="目的地" name={destination.label} selected={isValidCoordinate(destination.lat, destination.lng)} mapUrl={destination.url} onOpen={() => setLocationTarget("destination")} />
           </div>
 
           <div className="dialog-actions">
@@ -101,6 +106,15 @@ export function NewTicketDialog({ open, onClose, onCreate, busy }: {
           </div>
         </form>
       </section>
+      {locationTarget && (() => {
+        const value = locationTarget === "origin" ? origin : destination;
+        const initial = isValidCoordinate(value.lat, value.lng) ? { lat: value.lat as number, lng: value.lng as number } : undefined;
+        return <LocationPicker initial={initial} initialName={value.label} onClose={() => setLocationTarget(null)} onConfirm={(location) => {
+          const next = { url: mapsSearch(`${location.lat},${location.lng}`), label: location.name, lat: location.lat, lng: location.lng };
+          if (locationTarget === "origin") setOrigin(next); else setDestination(next);
+          setLocationTarget(null);
+        }} />;
+      })()}
     </div>
   );
 }
