@@ -1,10 +1,17 @@
 import { useMemo, useState } from "react";
-import { ArrowLeft, Images, MapPin, NotebookPen, Users } from "lucide-react";
+import { Archive, ArrowLeft, CalendarDays, CheckCircle2, Images, MapPin, NotebookPen, Plane, Users } from "lucide-react";
 import { useTrip } from "../TripContext";
-import { buildTicketRoute, sortTickets, ticketStatus } from "../tickets";
+import { buildTicketRoute, sortTickets, STATUS_LABELS, ticketStatus } from "../tickets";
 import { RouteMap, type MapRoute } from "../components/RouteMap";
 import { EmptyState, Panel } from "../components/ui";
 import type { PageKey } from "../types";
+
+const STATUS_ICONS = {
+  planning: CalendarDays,
+  traveling: Plane,
+  done: CheckCircle2,
+  archived: Archive,
+};
 
 export function TravelMapPage({ onOpenTicket }: { onOpenTicket: (id: string, target?: PageKey) => void }) {
   const { trips, switchTrip } = useTrip();
@@ -29,7 +36,7 @@ export function TravelMapPage({ onOpenTicket }: { onOpenTicket: (id: string, tar
 
   return (
     <div className="page travel-map-page">
-      <header className="map-page-head">
+      <header className="map-page-head ticket-page-head">
         <a className="button button-quiet small" href="#tickets"><ArrowLeft size={17} aria-hidden="true" />チケット一覧</a>
         <div>
           <p className="eyebrow">TRAVEL MAP</p>
@@ -59,27 +66,30 @@ export function TravelMapPage({ onOpenTicket }: { onOpenTicket: (id: string, tar
             </div>
 
             <ul className="map-ticket-list">
-              {withRoutes.map(({ ticket, route, status }) => (
-                <li key={ticket.id}>
-                  <button
-                    type="button"
-                    className={`map-ticket ${selectedId === ticket.id ? "is-selected" : ""}`}
-                    style={{ ["--ticket" as string]: ticket.themeColor }}
-                    aria-pressed={selectedId === ticket.id}
-                    onClick={() => setSelectedId((current) => current === ticket.id ? null : ticket.id)}
-                  >
-                    <span className="map-ticket-color" aria-hidden="true" />
-                    <span>
-                      <strong>{ticket.name || "名称未設定の旅"}</strong>
-                      <small>{route.points.length}地点・{status === "done" ? "完了" : status === "traveling" ? "旅行中" : "計画中"}</small>
-                    </span>
-                  </button>
-                </li>
-              ))}
+              {withRoutes.map(({ ticket, route, status }) => {
+                const StatusIcon = STATUS_ICONS[status];
+                return (
+                  <li key={ticket.id}>
+                    <button
+                      type="button"
+                      className={`map-ticket ${selectedId === ticket.id ? "is-selected" : ""}`}
+                      style={{ ["--ticket" as string]: ticket.themeColor }}
+                      aria-pressed={selectedId === ticket.id}
+                      onClick={() => setSelectedId((current) => current === ticket.id ? null : ticket.id)}
+                    >
+                      <span className="map-ticket-color" aria-hidden="true" />
+                      <span>
+                        <strong>{ticket.name || "名称未設定の旅"}</strong>
+                        <small><StatusIcon size={13} aria-hidden="true" />{route.points.length}地点・{STATUS_LABELS[status]}</small>
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
             </ul>
 
             {selected && (
-              <div className="map-detail">
+              <div className="map-detail" style={{ ["--ticket" as string]: selected.ticket.themeColor }}>
                 <h2>{selected.ticket.name || "名称未設定の旅"}</h2>
                 <p className="map-detail-dates">
                   {selected.ticket.state.tripSettings?.startDate?.replaceAll("-", ".") || "日程未設定"}

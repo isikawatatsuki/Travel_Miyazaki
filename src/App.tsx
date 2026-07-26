@@ -13,6 +13,7 @@ import { TicketsPage } from "./pages/TicketsPage";
 import { TravelMapPage } from "./pages/TravelMapPage";
 import { SettingsDrawer } from "./components/SettingsDrawer";
 import { Sky } from "./components/Sky";
+import { ReleaseNotice } from "./components/ReleaseNotice";
 
 const pages: Array<{ id: PageKey; label: string; icon: typeof Home }> = [
   { id: "home", label: "ホーム", icon: Home },
@@ -85,7 +86,10 @@ function AppShell() {
   }, [activeTicket, inTicket]);
 
   return (
-    <div className={`app-shell ${inTicket ? "" : "is-tickets"}`}>
+    <div
+      className={`app-shell ${inTicket ? "is-ticket-detail" : "is-tickets"}`}
+      style={inTicket ? { ["--ticket-theme" as string]: activeTicket?.themeColor || "#2f9e8f" } : undefined}
+    >
       {/* .page の page-in アニメーションは transform を残すため fixed の含みブロックになる。
           空を画面全体へ広げるには、その外側に置く必要がある。 */}
       {!inTicket && <Sky />}
@@ -150,5 +154,5 @@ export default function App() {
   useEffect(() => {
     if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(() => undefined);
   }, []);
-  return <TripProvider><AppShell /></TripProvider>;
+  return <TripProvider><AppShell /><ReleaseNotice /></TripProvider>;
 }
