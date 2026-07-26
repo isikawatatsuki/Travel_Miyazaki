@@ -661,6 +661,10 @@ input:disabled { color: #8b9792; background: #eef0ed; }
 .location-picker-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
 .location-picker-head h2 { margin-top: 2px; font-family: "Kiwi Maru", serif; font-size: 23px; }
 .location-picker-guide { margin: 12px 0 10px; color: var(--muted); font-size: 14px; line-height: 1.6; }
+.location-search { display: grid; gap: 6px; margin-bottom: 10px; }
+.location-search > span { color: #52655d; font-size: 12px; font-weight: 700; }
+.location-search > div { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
+.location-search .button { min-width: 92px; }
 .location-current { width: fit-content; margin-bottom: 10px; }
 .location-picker-status { margin: 0 0 10px; color: var(--muted); font-size: 13px; }
 .location-picker-map { width: 100%; height: min(48vh, 420px); min-height: 280px; overflow: hidden; background: #dce8e1; border: 1px solid var(--line); border-radius: 12px; }
