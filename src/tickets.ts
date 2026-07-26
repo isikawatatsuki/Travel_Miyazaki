@@ -189,7 +189,7 @@ export function buildTicketRoute(state: SharedState): TicketRoute {
     const previous = points[points.length - 1];
     // 連続する同一地点は1点に畳む。往復で再訪した場合は間に別地点が入るので残る。
     if (previous && previous.lat === coordinate.lat && previous.lng === coordinate.lng) continue;
-    points.push({ id: item.id, title: item.title.trim() || "名称未設定", lat: coordinate.lat, lng: coordinate.lng, day: item.day, time: item.time });
+    points.push({ id: item.id, title: item.locationName?.trim() || item.title.trim() || "名称未設定", lat: coordinate.lat, lng: coordinate.lng, day: item.day, time: item.time });
   }
 
   // 予定に座標が1つも無いチケットは、旅行設定の出発地・目的地で最低限の線を引く。

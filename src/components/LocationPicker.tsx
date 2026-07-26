@@ -6,7 +6,8 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import { isValidCoordinate } from "../tickets";
 import { IconButton } from "./ui";
 
-type Coordinate = { lat: number; lng: number };
+type LocationSelection = { lat: number; lng: number; name: string };
+type Coordinate = Pick<LocationSelection, "lat" | "lng">;
 
 function roundedCoordinate(lat: number, lng: number): Coordinate {
   return { lat: Number(lat.toFixed(6)), lng: Number(lng.toFixed(6)) };
@@ -14,11 +15,13 @@ function roundedCoordinate(lat: number, lng: number): Coordinate {
 
 export function LocationPicker({
   initial,
+  initialName = "",
   onConfirm,
   onClose,
 }: {
   initial?: Coordinate;
-  onConfirm: (coordinate: Coordinate) => void;
+  initialName?: string;
+  onConfirm: (location: LocationSelection) => void;
   onClose: () => void;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -28,6 +31,7 @@ export function LocationPicker({
     initial && isValidCoordinate(initial.lat, initial.lng) ? initial : null,
   );
   const [locationStatus, setLocationStatus] = useState("");
+  const [name, setName] = useState(initialName);
 
   useEffect(() => {
     const previousOverflow = document.body.style.overflow;
@@ -126,9 +130,20 @@ export function LocationPicker({
             ? <span>緯度 {picked.lat} ・ 経度 {picked.lng}</span>
             : <span>地図上で場所を選んでください</span>}
         </div>
+        <label className="location-picker-name">
+          <span>場所の名前</span>
+          <input
+            value={name}
+            maxLength={40}
+            placeholder="例：宮崎駅、青島神社"
+            autoComplete="off"
+            onChange={(event) => setName(event.target.value)}
+          />
+          <small>予定名とは別に、地図上で表示する名前を付けられます。</small>
+        </label>
         <footer className="location-picker-actions">
           <button className="button button-quiet" type="button" onClick={onClose}>キャンセル</button>
-          <button className="button button-primary" type="button" disabled={!picked} onClick={() => picked && onConfirm(picked)}>この場所を設定</button>
+          <button className="button button-primary" type="button" disabled={!picked} onClick={() => picked && onConfirm({ ...picked, name: name.trim() })}>この場所を設定</button>
         </footer>
       </section>
     </div>,

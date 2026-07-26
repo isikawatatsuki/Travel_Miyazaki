@@ -34,6 +34,8 @@ export type ScheduleItem = {
   title: string;
   memo: string;
   mapUrl: string;
+  /** 予定名とは別に表示する、地図上の場所の呼び名。 */
+  locationName?: string;
   isTimeUnset: boolean;
   /** 未設定は経路に含める。既存データに欠けていても既定でONになるよう任意にしている。 */
   inRoute?: boolean;
