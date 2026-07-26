@@ -45,7 +45,7 @@ export function PlanPage() {
     <div className="page plan-page">
       <PageHelp open={helpOpen} onChange={setHelpOpen}>
         <p>日ごとにタブが分かれます。時刻未定でも登録でき、地図リンクから経路を開けます。</p>
-        <p>「予定を設定」でGoogleマップのリンクを貼ると、その場所が<b>旅の地図</b>の経路に並びます。スマホの共有ボタンで出る短縮リンクもそのまま貼れます。</p>
+        <p>「予定を設定」からアプリ内の地図を開き、ピンを置いて場所名を付けると、その場所が<b>旅の地図</b>の経路に並びます。</p>
       </PageHelp>
       <SectionHeading
         eyebrow="PLAN"
@@ -105,21 +105,24 @@ export function PlanPage() {
               </div>
               <label><span>予定</span><input value={item.title} maxLength={40} placeholder="例：ホテルにチェックイン" onChange={(event) => updateItem(item.id, { title: event.target.value })} /></label>
               <label><span>メモ</span><textarea value={item.memo} maxLength={120} rows={2} placeholder="待ち合わせや予約番号など" onChange={(event) => updateItem(item.id, { memo: event.target.value })} /></label>
-              <PlaceField
-                title="場所"
-                showLabelField={false}
-                value={{ url: item.mapUrl, label: item.title, lat: item.lat, lng: item.lng }}
-                onChange={(next) => {
-                  const place = resolvePlace(next.url, item.title);
-                  updateItem(item.id, { mapUrl: next.url, lat: place?.lat ?? next.lat, lng: place?.lng ?? next.lng });
-                }}
-                hint="Googleマップのリンクを貼ると、旅の地図の経路に並びます。"
-              />
-              {safeExternalUrl(item.mapUrl) && <a className="inline-map-link" href={safeExternalUrl(item.mapUrl)} target="_blank" rel="noreferrer"><MapPin size={17} />地図を開く</a>}
-
-              <button className="button button-secondary location-picker-open" type="button" onClick={() => setLocationItemId(item.id)}>
-                <LocateFixed size={18} aria-hidden="true" />地図から場所を選ぶ
-              </button>
+              <div className="schedule-location-field">
+                <span>場所</span>
+                {scheduleItemCoordinate(item) ? (
+                  <div className="schedule-location-selected">
+                    <MapPin size={19} aria-hidden="true" />
+                    <div>
+                      <strong>{item.locationName?.trim() || "名前未設定"}</strong>
+                      <small>地図上に場所を設定済み</small>
+                    </div>
+                  </div>
+                ) : <p>まだ場所が選択されていません。</p>}
+                <div className="schedule-location-actions">
+                  <button className="button button-secondary location-picker-open" type="button" onClick={() => setLocationItemId(item.id)}>
+                    <LocateFixed size={18} aria-hidden="true" />{scheduleItemCoordinate(item) ? "場所を変更" : "地図から場所を選ぶ"}
+                  </button>
+                  {safeExternalUrl(item.mapUrl) && <a className="inline-map-link" href={safeExternalUrl(item.mapUrl)} target="_blank" rel="noreferrer"><MapPin size={17} />地図を開く</a>}
+                </div>
+              </div>
 
               <label className="unset-field">
                 <input type="checkbox" checked={item.inRoute !== false} onChange={(event) => updateItem(item.id, { inRoute: event.target.checked })} />
@@ -140,6 +143,7 @@ export function PlanPage() {
               <div className="plan-event">
                 <small>{String(index + 1).padStart(2, "0")}</small>
                 <strong>{item.title || "予定名なし"}</strong>
+                {item.locationName && <p className="plan-location-name"><MapPin size={15} aria-hidden="true" />{item.locationName}</p>}
                 {item.memo && <p>{item.memo}</p>}
                 {safeExternalUrl(item.mapUrl) && <a className="inline-map-link" href={safeExternalUrl(item.mapUrl)} target="_blank" rel="noreferrer"><MapPin size={17} />地図を開く</a>}
               </div>
@@ -179,9 +183,16 @@ export function PlanPage() {
         return (
           <LocationPicker
             initial={current || undefined}
+            initialName={locationItem.locationName || ""}
             onClose={() => setLocationItemId(null)}
-            onConfirm={(coordinate) => {
-              updateItem(locationItem.id, coordinate);
+            onConfirm={(location) => {
+              const query = `${location.lat},${location.lng}`;
+              updateItem(locationItem.id, {
+                lat: location.lat,
+                lng: location.lng,
+                locationName: location.name,
+                mapUrl: mapsSearch(query),
+              });
               setLocationItemId(null);
             }}
           />

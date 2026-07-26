@@ -171,6 +171,14 @@ test("予定から作れた経路は source が schedule になる", () => {
   assert.equal(route.source, "schedule");
 });
 
+test("地図に付けた場所名は予定名と別に経路へ表示される", () => {
+  const route = buildTicketRoute(state({ schedule: { items: [
+    item({ id: "a", title: "待ち合わせ", locationName: "宮崎駅", lat: 31.915, lng: 131.432 }),
+    item({ id: "b", title: "観光", locationName: "青島神社", lat: 31.804, lng: 131.475 }),
+  ] } }));
+  assert.deepEqual(route.points.map((point) => point.title), ["宮崎駅", "青島神社"]);
+});
+
 test("旅行設定へ落ちた経路は source が settings になる", () => {
   const route = buildTicketRoute(state({ tripSettings: { mapOrigin: "空港", mapDestination: "ホテル", mapOriginLat: 31.8, mapOriginLng: 130.7, mapDestinationLat: 31.7, mapDestinationLng: 131.0 } }));
   assert.equal(route.source, "settings");
