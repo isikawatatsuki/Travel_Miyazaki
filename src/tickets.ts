@@ -245,8 +245,8 @@ function ticketFromTrip(trip: TravelProfile, index: number): Ticket {
 export function migrateToTickets(storage: LegacyStorage): Ticket[] {
   if (storage.tickets?.length) return storage.tickets;
 
-  const trips = storage.trips || [];
-  const groups = storage.groups || [];
+  const trips = Array.isArray(storage.trips) ? storage.trips : [];
+  const groups = Array.isArray(storage.groups) ? storage.groups : [];
   const tickets = trips.map(ticketFromTrip);
   const linkedGroupIds = new Set<string>();
 
