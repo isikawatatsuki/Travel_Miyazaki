@@ -29,6 +29,12 @@ wrangler pages secret put GOOGLE_CLIENT_SECRET --project-name travel-miyazaki
 
 `GOOGLE_CLIENT_ID` はPagesダッシュボードの Settings → Environment variables でも設定できます。**どちらか一方でも未設定だとログインは動かず、共有ページに「Googleログインがまだ設定されていません」と表示されます。** 設定後は再デプロイが必要です。
 
+## インフラ構成
+
+![Travel Miyazakiのインフラ構成図](docs/infrastructure.svg)
+
+ブラウザへ配信するReact製PWAとサーバーレスAPIをCloudflare Pages上で動かし、旅行グループ、認証セッション、住所検索キャッシュなどのデータをCloudflare D1へ保存します。地図表示にはOpenFreeMap / OpenStreetMap、住所検索にはNominatim、ログインにはGoogle OAuthを利用しています。
+
 ## 主な構成
 
 - `src/` - React画面、状態管理、型定義
