@@ -5,8 +5,10 @@ use crate::models::{NewScheduleItem, NewTrip, ScheduleItem, TripSummary};
 
 pub async fn list_trips(pool: &PgPool) -> sqlx::Result<Vec<TripSummary>> {
     sqlx::query_as::<_, TripSummary>(
-        r#"SELECT id, name, start_date, end_date, destination_name, status
-           FROM trips
+        r#"SELECT t.id, t.name, t.start_date, t.end_date, t.origin_name,
+                  t.destination_name, t.theme_color, t.status,
+                  (SELECT COUNT(*) FROM trip_members tm WHERE tm.trip_id = t.id) AS member_count
+           FROM trips t
            ORDER BY start_date NULLS LAST, created_at DESC"#,
     )
     .fetch_all(pool)
@@ -15,8 +17,10 @@ pub async fn list_trips(pool: &PgPool) -> sqlx::Result<Vec<TripSummary>> {
 
 pub async fn find_trip(pool: &PgPool, id: Uuid) -> sqlx::Result<Option<TripSummary>> {
     sqlx::query_as::<_, TripSummary>(
-        r#"SELECT id, name, start_date, end_date, destination_name, status
-           FROM trips WHERE id = $1"#,
+        r#"SELECT t.id, t.name, t.start_date, t.end_date, t.origin_name,
+                  t.destination_name, t.theme_color, t.status,
+                  (SELECT COUNT(*) FROM trip_members tm WHERE tm.trip_id = t.id) AS member_count
+           FROM trips t WHERE t.id = $1"#,
     )
     .bind(id)
     .fetch_optional(pool)
@@ -37,14 +41,18 @@ pub async fn list_schedule(pool: &PgPool, trip_id: Uuid) -> sqlx::Result<Vec<Sch
 
 pub async fn create_trip(pool: &PgPool, input: NewTrip) -> sqlx::Result<TripSummary> {
     sqlx::query_as::<_, TripSummary>(
-        r#"INSERT INTO trips (name, start_date, end_date, destination_name)
-           VALUES ($1, $2, $3, $4)
-           RETURNING id, name, start_date, end_date, destination_name, status"#,
+        r#"INSERT INTO trips
+           (name, start_date, end_date, origin_name, destination_name, theme_color)
+           VALUES ($1, $2, $3, $4, $5, $6)
+           RETURNING id, name, start_date, end_date, origin_name, destination_name,
+                     theme_color, status, 0::bigint AS member_count"#,
     )
     .bind(input.name)
     .bind(input.start_date)
     .bind(input.end_date)
+    .bind(input.origin_name)
     .bind(input.destination_name)
+    .bind(input.theme_color)
     .fetch_one(pool)
     .await
 }

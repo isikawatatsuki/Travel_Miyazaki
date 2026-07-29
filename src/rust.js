@@ -25,3 +25,22 @@ document.addEventListener("submit", async (event) => {
     button.disabled = false;
   }
 });
+
+const ticketDialog = document.querySelector("[data-ticket-dialog]");
+const openTicketDialog = () => {
+  if (!ticketDialog) return;
+  ticketDialog.hidden = false;
+  ticketDialog.querySelector("input[name=name]")?.focus();
+};
+const closeTicketDialog = () => {
+  if (ticketDialog) ticketDialog.hidden = true;
+};
+
+document.addEventListener("click", (event) => {
+  if (event.target.closest("[data-open-ticket-dialog]")) openTicketDialog();
+  if (event.target.closest("[data-close-ticket-dialog]")) closeTicketDialog();
+});
+
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") closeTicketDialog();
+});
