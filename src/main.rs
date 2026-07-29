@@ -1,4 +1,5 @@
 mod db;
+mod domain;
 mod models;
 mod repository;
 
