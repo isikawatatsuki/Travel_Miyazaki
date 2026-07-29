@@ -154,3 +154,113 @@ document.addEventListener("click", async (event) => {
   if (response.ok) window.location.reload();
   else remove.disabled = false;
 });
+
+// 行を1つ足すだけのボタン。本文は無いので、サーバー側が既定値を決める。
+document.addEventListener("click", async (event) => {
+  const add = event.target.closest("[data-post-url]");
+  if (!add) return;
+  add.disabled = true;
+  const response = await fetch(add.dataset.postUrl, { method: "POST" });
+  if (response.ok) window.location.reload();
+  else add.disabled = false;
+});
+
+const moneyAmount = (value) => Math.max(0, Number(value || 0));
+
+// 割り勘対象は「チェックした順」で持つ。端数の1円は先頭から配られるので、
+// 画面の並び順に詰め直すと誰が1円多く払うかが変わってしまう。
+const participantOrder = new WeakMap();
+const readParticipants = (row) => {
+  if (!participantOrder.has(row)) {
+    const stored = (row.dataset.participants || "").split(",").filter(Boolean);
+    const everyone = [...row.querySelectorAll("[name=participant_ids]")].map((box) => box.value);
+    participantOrder.set(row, stored.length ? stored : everyone);
+  }
+  return participantOrder.get(row);
+};
+
+const postMoney = async (url, body, message) => {
+  if (message) message.textContent = "保存しています…";
+  try {
+    const response = await fetch(url, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    if (!response.ok) throw new Error();
+    if (message) message.textContent = "保存しました";
+    return true;
+  } catch {
+    if (message) message.textContent = "保存に失敗しました";
+    return false;
+  }
+};
+
+// 合計はサーバーが計算するので、保存できたら読み直す。ただし文字入力の change は
+// 次の欄へ移った時点で飛ぶため、そのまま再読み込みすると入力中の欄が消える。
+// 金額欄から完全に離れるまで待ってから読み直す。
+const MONEY_ROW = "[data-budget-form],[data-budget-item],[data-payment-row]";
+let moneyStale = false;
+
+const refreshMoney = () => {
+  if (!moneyStale) return;
+  if (document.activeElement?.closest(MONEY_ROW)) return;
+  window.location.reload();
+};
+
+const reloadAfterSave = (saved, source) => {
+  if (!saved) return;
+  moneyStale = true;
+  // チェックやプルダウンは入力途中が無いので、その場で反映する。
+  if (source.type === "checkbox" || source.tagName === "SELECT") window.location.reload();
+  else refreshMoney();
+};
+
+document.addEventListener("focusout", () => setTimeout(refreshMoney, 0));
+
+document.addEventListener("change", async (event) => {
+  const source = event.target;
+  const budget = source.closest("[data-budget-form]");
+  if (budget && source.matches("[data-budget-field]")) {
+    const value = (name) => budget.querySelector(`[name=${name}]`);
+    reloadAfterSave(await postMoney(budget.dataset.budgetForm, {
+      transport_cost: moneyAmount(value("transport_cost").value),
+      access_cost: moneyAmount(value("access_cost").value),
+      breakfast: value("breakfast").checked,
+      hotel_without_breakfast: moneyAmount(value("hotel_without_breakfast").value),
+      hotel_with_breakfast: moneyAmount(value("hotel_with_breakfast").value),
+    }, budget.querySelector(".form-message")), source);
+    return;
+  }
+
+  const item = source.closest("[data-budget-item]");
+  if (item && source.matches("[data-budget-item-field]")) {
+    const value = (name) => item.querySelector(`[name=${name}]`)?.value ?? "";
+    reloadAfterSave(await postMoney(item.dataset.budgetItem, {
+      name: value("name"),
+      quantity: moneyAmount(value("quantity")),
+      unit_amount: moneyAmount(value("unit_amount")),
+    }, item.querySelector(".form-message")), source);
+    return;
+  }
+
+  const payment = source.closest("[data-payment-row]");
+  if (payment && source.matches("[data-payment-field]")) {
+    let participants = readParticipants(payment);
+    if (source.matches("[name=participant_ids]")) {
+      const next = source.checked
+        ? [...participants, source.value]
+        : participants.filter((id) => id !== source.value);
+      // TS版は全員外すのを許さず、最後に触れた1人だけを残す。
+      participants = next.length ? next : [source.value];
+      if (!next.length) source.checked = true;
+      participantOrder.set(payment, participants);
+    }
+    reloadAfterSave(await postMoney(payment.dataset.paymentRow, {
+      title: payment.querySelector("[name=title]").value,
+      payer_id: payment.querySelector("[name=payer_id]")?.value || null,
+      amount: moneyAmount(payment.querySelector("[name=amount]").value),
+      participant_ids: participants,
+    }, payment.querySelector(".form-message")), source);
+  }
+});

@@ -463,6 +463,32 @@ mod tests {
     }
 
     #[test]
+    fn settlement_gives_the_extra_yen_to_the_first_listed_participant() {
+        // TS版は participantIds の並び順に1円ずつ配る。並びを入れ替えると
+        // 誰が1円多く負担するかも入れ替わるので、保存時に順序を落とせない。
+        let people = vec![person("a", "葵"), person("b", "海")];
+        let split = |ids: Vec<&str>| {
+            settlement_summary(&SettlementInput {
+                people: people.clone(),
+                payments: vec![Payment {
+                    payer_id: "a".into(),
+                    amount: 101,
+                    participant_ids: Some(ids.into_iter().map(String::from).collect()),
+                }],
+            })
+            .balances
+            .iter()
+            .map(|balance| balance.share)
+            .collect::<Vec<_>>()
+        };
+
+        assert_eq!(split(vec!["a", "b"]), vec![51, 50]);
+        assert_eq!(split(vec!["b", "a"]), vec![50, 51]);
+        // 未選択は「全員」。people の並び順が使われる。
+        assert_eq!(split(vec![]), vec![51, 50]);
+    }
+
+    #[test]
     fn settlement_matches_typescript_participant_and_remainder_order() {
         let input = SettlementInput {
             people: vec![person("a", "葵"), person("b", "海"), person("c", "空")],

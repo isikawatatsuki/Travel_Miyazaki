@@ -8,9 +8,11 @@ use std::env;
 use base64::{Engine as _, engine::general_purpose::STANDARD};
 use db::Database;
 use models::{
-    ChecklistItem, ChecklistUpdate, NewLabel, NewNote, NewScheduleItem, NewTrip, Note, PersonInput,
-    PersonRecord, ScheduleItem, TripSummary, UpdateScheduleItem,
+    BudgetItem, BudgetItemInput, ChecklistItem, ChecklistUpdate, ExpenseInput, ExpenseRecord,
+    NewLabel, NewNote, NewScheduleItem, NewTrip, Note, PersonInput, PersonRecord, ScheduleItem,
+    TripBudget, TripSummary, UpdateScheduleItem,
 };
+use repository::{CUSTOM_CATEGORY, SOUVENIR_CATEGORY};
 use topcoat::{
     Result,
     context::{Cx, app_context},
@@ -227,7 +229,7 @@ async fn trip_detail(cx: &Cx) -> Result {
             <nav class="bottom-nav" aria-label="メインメニュー">
                 <a class="is-active" href=(format!("/trips/{}", trip_id)) aria-current="page">home_icon()<span>"ホーム"</span></a>
                 <a href=(format!("/trips/{}/plan", trip_id))>calendar_icon()<span>"予定"</span></a>
-                <a href=(format!("/trips/{}", trip_id))>money_icon()<span>"お金"</span></a>
+                <a href=(format!("/trips/{}/money", trip_id))>money_icon()<span>"お金"</span></a>
                 <a href=(format!("/trips/{}/packing", trip_id))>bag_icon()<span>"持ち物"</span></a>
                 <a href=(format!("/trips/{}/share", trip_id))>users_icon()<span>"共有"</span></a>
             </nav>
@@ -309,7 +311,7 @@ async fn trip_plan(cx: &Cx) -> Result {
             <nav class="bottom-nav" aria-label="メインメニュー">
                 <a href=(format!("/trips/{}", trip_id))>home_icon()<span>"ホーム"</span></a>
                 <a class="is-active" href=(format!("/trips/{}/plan", trip_id)) aria-current="page">calendar_icon()<span>"予定"</span></a>
-                <a href=(format!("/trips/{}", trip_id))>money_icon()<span>"お金"</span></a><a href=(format!("/trips/{}/packing", trip_id))>bag_icon()<span>"持ち物"</span></a><a href=(format!("/trips/{}/share", trip_id))>users_icon()<span>"共有"</span></a>
+                <a href=(format!("/trips/{}/money", trip_id))>money_icon()<span>"お金"</span></a><a href=(format!("/trips/{}/packing", trip_id))>bag_icon()<span>"持ち物"</span></a><a href=(format!("/trips/{}/share", trip_id))>users_icon()<span>"共有"</span></a>
             </nav>
         </div>
     }
@@ -350,7 +352,199 @@ async fn trip_packing(cx: &Cx) -> Result {
                     <div class="check-list">if items.is_empty() { <p class="empty-state">"持ち物はまだありません。"</p> } else { for item in items { <div class=(if item.checked { "check-row is-checked" } else { "check-row" })><label><input type="checkbox" checked=(item.checked) data-check-toggle=(format!("/api/trips/{}/checklist/{}", trip_id, item.id))><span>(item.label.clone())</span></label><button class="icon-button danger" type="button" aria-label=(format!("{}を削除", item.label)) data-delete-url=(format!("/api/trips/{}/checklist/{}/delete", trip_id, item.id))>"×"</button></div> } }</div>
                 </section>
             </div></main>
-            <nav class="bottom-nav" aria-label="メインメニュー"><a href=(format!("/trips/{}",trip_id))>home_icon()<span>"ホーム"</span></a><a href=(format!("/trips/{}/plan",trip_id))>calendar_icon()<span>"予定"</span></a><a href=(format!("/trips/{}",trip_id))>money_icon()<span>"お金"</span></a><a class="is-active" aria-current="page" href=(format!("/trips/{}/packing",trip_id))>bag_icon()<span>"持ち物"</span></a><a href=(format!("/trips/{}/share",trip_id))>users_icon()<span>"共有"</span></a></nav>
+            <nav class="bottom-nav" aria-label="メインメニュー"><a href=(format!("/trips/{}",trip_id))>home_icon()<span>"ホーム"</span></a><a href=(format!("/trips/{}/plan",trip_id))>calendar_icon()<span>"予定"</span></a><a href=(format!("/trips/{}/money",trip_id))>money_icon()<span>"お金"</span></a><a class="is-active" aria-current="page" href=(format!("/trips/{}/packing",trip_id))>bag_icon()<span>"持ち物"</span></a><a href=(format!("/trips/{}/share",trip_id))>users_icon()<span>"共有"</span></a></nav>
+        </div>
+    }
+}
+
+#[page("/trips/{trip_id}/money")]
+async fn trip_money(cx: &Cx) -> Result {
+    let trip_id = *path_param::<TripId>(cx)?;
+    let database = app_context::<Database>(cx);
+    let pool = database.pool();
+    let trip = repository::find_trip(pool, trip_id)
+        .await
+        .map_err(internal_server_error)?
+        .ok_or_not_found()?;
+    let budget = repository::load_budget(pool, trip_id)
+        .await
+        .map_err(internal_server_error)?;
+    let custom_items = repository::list_budget_items(pool, trip_id, CUSTOM_CATEGORY)
+        .await
+        .map_err(internal_server_error)?;
+    let souvenirs = repository::list_budget_items(pool, trip_id, SOUVENIR_CATEGORY)
+        .await
+        .map_err(internal_server_error)?;
+    let people = repository::list_people(pool, trip_id)
+        .await
+        .map_err(internal_server_error)?;
+    let expenses = repository::list_expenses(pool, trip_id)
+        .await
+        .map_err(internal_server_error)?;
+
+    let summary = domain::budget_summary(
+        &domain::BudgetInput {
+            transport_cost: budget.transport_cost,
+            access_cost: budget.access_cost,
+            breakfast: budget.breakfast,
+            hotel_without_breakfast: budget.hotel_without_breakfast,
+            hotel_with_breakfast: budget.hotel_with_breakfast,
+            custom_items: custom_items
+                .iter()
+                .map(|item| domain::CostItem {
+                    amount: item.unit_amount,
+                })
+                .collect(),
+            souvenirs: souvenirs
+                .iter()
+                .map(|item| domain::SouvenirItem {
+                    quantity: item.quantity as i64,
+                    price: item.unit_amount,
+                })
+                .collect(),
+        },
+        people.len(),
+    );
+    let settlement = domain::settlement_summary(&domain::SettlementInput {
+        people: people
+            .iter()
+            .map(|person| domain::Person {
+                id: person.id.to_string(),
+                name: person.name.clone(),
+                role: person.role.clone(),
+                memo: person.memo.clone(),
+            })
+            .collect(),
+        payments: expenses
+            .iter()
+            .map(|expense| domain::Payment {
+                payer_id: expense.payer_id.map(|id| id.to_string()).unwrap_or_default(),
+                amount: expense.amount,
+                participant_ids: Some(
+                    expense
+                        .participant_ids
+                        .iter()
+                        .map(|id| id.to_string())
+                        .collect(),
+                ),
+            })
+            .collect(),
+    });
+
+    view! {
+        <div class="app-shell is-ticket-detail" style=(format!("--ticket-theme: {}", trip.theme_color))>
+            <header class="app-header"><a class="brand brand-back" href="/trips" aria-label="チケット一覧へ戻る">back_icon()<span><small>"チケット一覧"</small><strong>(trip.name)</strong></span></a></header>
+            <main id="main-content" class="main-content" tabindex="-1"><div class="page">
+                <details class="page-help"><summary>"このページの使い方"</summary><div class="page-help-body"><p>"予算は見込み、立替精算は実際に払った記録です。2つは別々に管理します。"</p></div></details>
+                <div class="section-heading"><div><p class="eyebrow">"BUDGET"</p><h1>"旅のお金"</h1><p class="section-description">"予算と実際の支払いを分けて確認できます。"</p></div></div>
+
+                <section class="money-summary" aria-label="旅費の目安">
+                    <div class="panel total-card"><span>"1人あたり"</span><strong>(yen(summary.per_person))</strong><small>"設定した項目の合計"</small></div>
+                    <div class="panel total-card muted"><span>(format!("{}人の合計", summary.people_count))</span><strong>(yen(summary.trip_total))</strong><small>"目安として表示"</small></div>
+                </section>
+
+                <section class="section-block">
+                    <div class="section-heading"><div><p class="eyebrow">"ADJUST"</p><h2>"予算を調整"</h2></div></div>
+                    <div class="panel budget-panel">
+                        <div class="cost-list">
+                            <div><span>"主な交通費"</span><strong>(yen(budget.transport_cost))</strong></div>
+                            <div><span>"空港・駅までのアクセス"</span><strong>(yen(budget.access_cost))</strong></div>
+                            <div><span>"ホテル"</span><strong>(yen(summary.hotel))</strong></div>
+                            <div><span>"お土産"</span><strong>(yen(summary.souvenirs))</strong></div>
+                            for item in custom_items.iter() {
+                                <div><span>(if item.name.is_empty() { "追加項目".to_string() } else { item.name.clone() })</span><strong>(yen(item.unit_amount.max(0)))</strong></div>
+                            }
+                        </div>
+                        <div data-budget-form=(format!("/api/trips/{}/budget", trip_id))>
+                            <label class="switch-row"><span><strong>"朝食をつける"</strong><small>"ホテル料金を切り替えます"</small></span><input type="checkbox" role="switch" name="breakfast" checked=(budget.breakfast) data-budget-field="true"></label>
+                            <div class="field-grid two">
+                                <label><span>"主な交通費"</span><input type="number" inputmode="numeric" min="0" name="transport_cost" value=(budget.transport_cost) data-budget-field="true"></label>
+                                <label><span>"空港・駅までのアクセス"</span><input type="number" inputmode="numeric" min="0" name="access_cost" value=(budget.access_cost) data-budget-field="true"></label>
+                            </div>
+                            <div class="field-grid two">
+                                <label><span>"朝食なし"</span><input type="number" inputmode="numeric" min="0" name="hotel_without_breakfast" value=(budget.hotel_without_breakfast) data-budget-field="true"></label>
+                                <label><span>"朝食あり"</span><input type="number" inputmode="numeric" min="0" name="hotel_with_breakfast" value=(budget.hotel_with_breakfast) data-budget-field="true"></label>
+                            </div>
+                            <p class="form-message" aria-live="polite"></p>
+                        </div>
+
+                        <div class="subsection-head"><h3>"追加項目"</h3><button class="button button-secondary small" type="button" data-post-url=(format!("/api/trips/{}/custom-items", trip_id))>plus_icon() "追加"</button></div>
+                        if custom_items.is_empty() {
+                            <p class="empty-state">"追加項目はまだありません。"</p>
+                        } else {
+                            for item in custom_items.iter() {
+                                <div class="editable-row" data-budget-item=(format!("/api/trips/{}/budget-items/{}", trip_id, item.id))>
+                                    <label><span>"項目名"</span><input name="name" value=(item.name.clone()) placeholder="例：バス代" data-budget-item-field="true"></label>
+                                    <label><span>"金額"</span><input type="number" inputmode="numeric" min="0" name="unit_amount" value=(item.unit_amount) data-budget-item-field="true"></label>
+                                    <input type="hidden" name="quantity" value="1">
+                                    <button class="icon-button danger" type="button" aria-label="追加項目を削除" title="追加項目を削除" data-delete-url=(format!("/api/trips/{}/budget-items/{}/delete", trip_id, item.id))>"×"</button>
+                                    <p class="form-message" aria-live="polite"></p>
+                                </div>
+                            }
+                        }
+
+                        <div class="subsection-head"><h3>"お土産"</h3><button class="button button-secondary small" type="button" data-post-url=(format!("/api/trips/{}/souvenirs", trip_id))>plus_icon() "追加"</button></div>
+                        if souvenirs.is_empty() {
+                            <p class="empty-state">"お土産はまだありません。"</p>
+                        } else {
+                            for item in souvenirs.iter() {
+                                <div class="editable-row souvenir" data-budget-item=(format!("/api/trips/{}/budget-items/{}", trip_id, item.id))>
+                                    <label><span>"名前"</span><input name="name" value=(item.name.clone()) placeholder="お土産" data-budget-item-field="true"></label>
+                                    <label><span>"個数"</span><input type="number" inputmode="numeric" min="0" name="quantity" value=(item.quantity) data-budget-item-field="true"></label>
+                                    <label><span>"単価"</span><input type="number" inputmode="numeric" min="0" name="unit_amount" value=(item.unit_amount) data-budget-item-field="true"></label>
+                                    <button class="icon-button danger" type="button" aria-label="お土産を削除" title="お土産を削除" data-delete-url=(format!("/api/trips/{}/budget-items/{}/delete", trip_id, item.id))>"×"</button>
+                                    <p class="form-message" aria-live="polite"></p>
+                                </div>
+                            }
+                        }
+                    </div>
+                </section>
+
+                <section class="section-block">
+                    <div class="section-heading"><div><p class="eyebrow">"PAYMENTS"</p><h2>"立替・割り勘メモ"</h2><p class="section-description">"支払いごとに、払った人と割り勘するメンバーを選べます。"</p></div></div>
+                    <div class="panel payment-panel">
+                        <div class="settlement-metrics">
+                            <div>receipt_icon()<span>"支払い合計"</span><strong>(yen(settlement.paid_total))</strong></div>
+                            <div>users_icon()<span>"1人あたり"</span><strong>(share_label(settlement.base_share, settlement.remainder))</strong></div>
+                        </div>
+                        <div class="subsection-head"><h3>"支払いメモ"</h3><button class="button button-secondary small" type="button" data-post-url=(format!("/api/trips/{}/payments", trip_id))>plus_icon() "追加"</button></div>
+                        if expenses.is_empty() {
+                            <p class="empty-state">"支払いを追加すると精算結果が出ます。"</p>
+                        } else {
+                            for expense in expenses.iter() {
+                                <div class="payment-row" data-payment-row=(format!("/api/trips/{}/payments/{}", trip_id, expense.id)) data-participants=(id_list(&expense.participant_ids))>
+                                    <label><span>"内容"</span><input name="title" value=(expense.title.clone()) placeholder="例：夕食" data-payment-field="true"></label>
+                                    <label><span>"払った人"</span><select name="payer_id" data-payment-field="true">
+                                        for person in people.iter() {
+                                            <option value=(person.id.to_string()) selected=(expense.payer_id == Some(person.id))>(person.name.clone())</option>
+                                        }
+                                    </select></label>
+                                    <label><span>"金額"</span><input type="number" inputmode="numeric" min="0" name="amount" value=(expense.amount) data-payment-field="true"></label>
+                                    <fieldset class="payment-participants"><legend>"割り勘する人"</legend><div>
+                                        for person in people.iter() {
+                                            <label><input type="checkbox" name="participant_ids" value=(person.id.to_string()) checked=(expense.participant_ids.is_empty() || expense.participant_ids.contains(&person.id)) data-payment-field="true">(person.name.clone())</label>
+                                        }
+                                    </div></fieldset>
+                                    <button class="icon-button danger" type="button" aria-label="支払いを削除" title="支払いを削除" data-delete-url=(format!("/api/trips/{}/payments/{}/delete", trip_id, expense.id))>"×"</button>
+                                    <p class="form-message" aria-live="polite"></p>
+                                </div>
+                            }
+                        }
+
+                        <div class="subsection-head"><h3>"精算結果"</h3></div>
+                        if settlement.transfers.is_empty() {
+                            <p class="empty-state">(if settlement.paid_total != 0 { "今のところ精算は不要です。" } else { "支払いを入力すると表示されます。" })</p>
+                        } else {
+                            <div class="transfer-list">
+                                for transfer in settlement.transfers.iter() {
+                                    <div><strong>(transfer.from.clone())</strong><span>"から"</span><strong>(transfer.to.clone())</strong><em>(yen(transfer.amount))</em></div>
+                                }
+                            </div>
+                        }
+                    </div>
+                </section>
+            </div></main>
+            <nav class="bottom-nav" aria-label="メインメニュー"><a href=(format!("/trips/{}",trip_id))>home_icon()<span>"ホーム"</span></a><a href=(format!("/trips/{}/plan",trip_id))>calendar_icon()<span>"予定"</span></a><a class="is-active" aria-current="page" href=(format!("/trips/{}/money",trip_id))>money_icon()<span>"お金"</span></a><a href=(format!("/trips/{}/packing",trip_id))>bag_icon()<span>"持ち物"</span></a><a href=(format!("/trips/{}/share",trip_id))>users_icon()<span>"共有"</span></a></nav>
         </div>
     }
 }
@@ -380,7 +574,7 @@ async fn trip_share(cx: &Cx) -> Result {
                 </div></section>
                 <section class="section-block"><div class="section-heading"><div><p class="eyebrow">"MEMO"</p><h2>(format!("{}人の共有メモ",people.len()))</h2></div></div><div class="panel notes-panel"><form class="add-form" data-api-form=(format!("/api/trips/{}/notes",trip_id)) data-redirect=(format!("/trips/{}/share",trip_id))><label><span>"メモを追加"</span><input name="body" placeholder="気をつけたいこと、待ち合わせなど" required="required"></label><button class="button button-primary" type="submit">plus_icon() "追加"</button><p class="form-message" aria-live="polite"></p></form><div class="note-list">if notes.is_empty(){<p class="empty-state">"共有メモはまだありません。"</p>}else{for note in notes {<div class="note-row"><p>(note.body)</p><button class="icon-button danger" type="button" aria-label="メモを削除" data-delete-url=(format!("/api/trips/{}/notes/{}/delete",trip_id,note.id))>"×"</button></div>}}</div></div></section>
             </div></main>
-            <nav class="bottom-nav" aria-label="メインメニュー"><a href=(format!("/trips/{}",trip_id))>home_icon()<span>"ホーム"</span></a><a href=(format!("/trips/{}/plan",trip_id))>calendar_icon()<span>"予定"</span></a><a href=(format!("/trips/{}",trip_id))>money_icon()<span>"お金"</span></a><a href=(format!("/trips/{}/packing",trip_id))>bag_icon()<span>"持ち物"</span></a><a class="is-active" aria-current="page" href=(format!("/trips/{}/share",trip_id))>users_icon()<span>"共有"</span></a></nav>
+            <nav class="bottom-nav" aria-label="メインメニュー"><a href=(format!("/trips/{}",trip_id))>home_icon()<span>"ホーム"</span></a><a href=(format!("/trips/{}/plan",trip_id))>calendar_icon()<span>"予定"</span></a><a href=(format!("/trips/{}/money",trip_id))>money_icon()<span>"お金"</span></a><a href=(format!("/trips/{}/packing",trip_id))>bag_icon()<span>"持ち物"</span></a><a class="is-active" aria-current="page" href=(format!("/trips/{}/share",trip_id))>users_icon()<span>"共有"</span></a></nav>
         </div>
     }
 }
@@ -514,6 +708,134 @@ async fn delete_person(cx: &Cx) -> Result<Json<bool>> {
     ))
 }
 
+#[route(POST "/api/trips/{trip_id}/budget")]
+async fn save_budget(cx: &Cx, Json(input): Json<TripBudget>) -> Result<Json<TripBudget>> {
+    let trip_id = *path_param::<TripId>(cx)?;
+    let db = app_context::<Database>(cx);
+    Ok(Json(
+        repository::save_budget(db.pool(), trip_id, input)
+            .await
+            .map_err(internal_server_error)?,
+    ))
+}
+
+#[route(POST "/api/trips/{trip_id}/custom-items")]
+async fn create_custom_item(cx: &Cx) -> Result<Json<BudgetItem>> {
+    let trip_id = *path_param::<TripId>(cx)?;
+    let db = app_context::<Database>(cx);
+    Ok(Json(
+        repository::create_budget_item(
+            db.pool(),
+            trip_id,
+            CUSTOM_CATEGORY,
+            BudgetItemInput {
+                name: String::new(),
+                quantity: 1,
+                unit_amount: 0,
+            },
+        )
+        .await
+        .map_err(internal_server_error)?,
+    ))
+}
+
+#[route(POST "/api/trips/{trip_id}/souvenirs")]
+async fn create_souvenir(cx: &Cx) -> Result<Json<BudgetItem>> {
+    let trip_id = *path_param::<TripId>(cx)?;
+    let db = app_context::<Database>(cx);
+    Ok(Json(
+        repository::create_budget_item(
+            db.pool(),
+            trip_id,
+            SOUVENIR_CATEGORY,
+            BudgetItemInput {
+                name: String::new(),
+                quantity: 1,
+                unit_amount: 0,
+            },
+        )
+        .await
+        .map_err(internal_server_error)?,
+    ))
+}
+
+#[route(POST "/api/trips/{trip_id}/budget-items/{item_id}")]
+async fn update_budget_item(
+    cx: &Cx,
+    Json(input): Json<BudgetItemInput>,
+) -> Result<Json<BudgetItem>> {
+    let trip_id = *path_param::<TripId>(cx)?;
+    let id = *path_param::<ItemId>(cx)?;
+    let db = app_context::<Database>(cx);
+    Ok(Json(
+        repository::update_budget_item(db.pool(), trip_id, id, input)
+            .await
+            .map_err(internal_server_error)?
+            .ok_or_not_found()?,
+    ))
+}
+
+#[route(POST "/api/trips/{trip_id}/budget-items/{item_id}/delete")]
+async fn delete_budget_item(cx: &Cx) -> Result<Json<bool>> {
+    let trip_id = *path_param::<TripId>(cx)?;
+    let id = *path_param::<ItemId>(cx)?;
+    let db = app_context::<Database>(cx);
+    Ok(Json(
+        repository::delete_budget_item(db.pool(), trip_id, id)
+            .await
+            .map_err(internal_server_error)?,
+    ))
+}
+
+/// TS版の「追加」は、払った人を先頭のメンバー、割り勘対象を全員にした空行を足す。
+#[route(POST "/api/trips/{trip_id}/payments")]
+async fn create_payment(cx: &Cx) -> Result<Json<ExpenseRecord>> {
+    let trip_id = *path_param::<TripId>(cx)?;
+    let db = app_context::<Database>(cx);
+    let people = repository::list_people(db.pool(), trip_id)
+        .await
+        .map_err(internal_server_error)?;
+    Ok(Json(
+        repository::create_expense(
+            db.pool(),
+            trip_id,
+            ExpenseInput {
+                title: String::new(),
+                payer_id: people.first().map(|person| person.id),
+                amount: 0,
+                participant_ids: people.iter().map(|person| person.id).collect(),
+            },
+        )
+        .await
+        .map_err(internal_server_error)?,
+    ))
+}
+
+#[route(POST "/api/trips/{trip_id}/payments/{item_id}")]
+async fn update_payment(cx: &Cx, Json(input): Json<ExpenseInput>) -> Result<Json<ExpenseRecord>> {
+    let trip_id = *path_param::<TripId>(cx)?;
+    let id = *path_param::<ItemId>(cx)?;
+    let db = app_context::<Database>(cx);
+    Ok(Json(
+        repository::update_expense(db.pool(), trip_id, id, input)
+            .await
+            .map_err(internal_server_error)?
+            .ok_or_not_found()?,
+    ))
+}
+
+#[route(POST "/api/trips/{trip_id}/payments/{item_id}/delete")]
+async fn delete_payment(cx: &Cx) -> Result<Json<bool>> {
+    let trip_id = *path_param::<TripId>(cx)?;
+    let id = *path_param::<ItemId>(cx)?;
+    let db = app_context::<Database>(cx);
+    Ok(Json(
+        repository::delete_expense(db.pool(), trip_id, id)
+            .await
+            .map_err(internal_server_error)?,
+    ))
+}
+
 #[route(POST "/api/trips")]
 async fn create_trip(cx: &Cx, Json(input): Json<NewTrip>) -> Result<Json<TripSummary>> {
     if input.name.trim().is_empty() {
@@ -641,6 +963,46 @@ async fn bag_icon() -> Result {
 async fn users_icon() -> Result {
     view! { icon(path: "M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8M22 21v-2a4 4 0 0 0-3-3.87") }
 }
+#[component]
+async fn receipt_icon() -> Result {
+    view! { icon(path: "M4 2v20l2.5-2 2.5 2 2.5-2 2.5 2 2.5-2 2.5 2V2l-2.5 2L14 2l-2.5 2L9 2 6.5 4zM8 8h8M8 12h8M8 16h5") }
+}
+
+/// TS版の `Intl.NumberFormat("ja-JP", { style: "currency", currency: "JPY" })` と同じ表記。
+/// 通貨記号は半角ではなく全角の￥（U+FFE5）で、3桁ごとに区切る。
+fn yen(value: i64) -> String {
+    let digits = value.unsigned_abs().to_string();
+    let mut grouped = String::with_capacity(digits.len() + digits.len() / 3);
+    for (index, digit) in digits.chars().enumerate() {
+        if index > 0 && (digits.len() - index) % 3 == 0 {
+            grouped.push(',');
+        }
+        grouped.push(digit);
+    }
+    format!("{}￥{}", if value < 0 { "-" } else { "" }, grouped)
+}
+
+/// 割り勘対象を、保存されている順のままカンマ区切りで書き出す。
+/// 画面側はこの順を保って送り返す。端数の1円は先頭から配られるため。
+fn id_list(ids: &[Uuid]) -> String {
+    let mut list = String::new();
+    for id in ids {
+        if !list.is_empty() {
+            list.push(',');
+        }
+        list.push_str(&id.to_string());
+    }
+    list
+}
+
+/// 端数が出る割り勘は、TS版と同じく「￥4,333〜￥4,334」と幅で見せる。
+fn share_label(base_share: i64, remainder: i64) -> String {
+    if remainder == 0 {
+        yen(base_share)
+    } else {
+        format!("{}〜{}", yen(base_share), yen(base_share + 1))
+    }
+}
 
 fn place_or_unset(value: &str, fallback: &str) -> String {
     if value.is_empty() {
@@ -679,8 +1041,24 @@ fn date_range(start: Option<chrono::NaiveDate>, end: Option<chrono::NaiveDate>) 
 
 #[cfg(test)]
 mod tests {
-    use super::date_range;
+    use super::{date_range, share_label, yen};
     use chrono::NaiveDate;
+
+    #[test]
+    fn yen_matches_the_typescript_currency_formatter() {
+        // Intl.NumberFormat("ja-JP", { style: "currency", currency: "JPY" }) の出力。
+        assert_eq!(yen(0), "￥0");
+        assert_eq!(yen(1_180), "￥1,180");
+        assert_eq!(yen(36_200), "￥36,200");
+        assert_eq!(yen(1_234_567), "￥1,234,567");
+        assert_eq!(yen(-500), "-￥500");
+    }
+
+    #[test]
+    fn share_label_shows_a_range_only_when_there_is_a_remainder() {
+        assert_eq!(share_label(4_333, 0), "￥4,333");
+        assert_eq!(share_label(4_333, 2), "￥4,333〜￥4,334");
+    }
 
     #[test]
     fn formats_a_complete_date_range() {

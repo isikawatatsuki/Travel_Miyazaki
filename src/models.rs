@@ -130,3 +130,62 @@ pub struct PersonInput {
 fn default_member_role() -> String {
     "メンバー".into()
 }
+
+/// TS版 AdjustState のスカラー部分。項目リストは budget_items 側に持つ。
+#[derive(Debug, Clone, FromRow, Serialize, Deserialize)]
+pub struct TripBudget {
+    #[serde(default)]
+    pub transport_cost: i64,
+    #[serde(default)]
+    pub access_cost: i64,
+    #[serde(default)]
+    pub breakfast: bool,
+    #[serde(default)]
+    pub hotel_without_breakfast: i64,
+    #[serde(default)]
+    pub hotel_with_breakfast: i64,
+}
+
+/// TS版 CostItem（追加項目）と SouvenirItem（お土産）の共通表現。
+/// 追加項目は quantity を 1 に固定し、unit_amount を金額として扱う。
+#[derive(Debug, Clone, FromRow, Serialize)]
+pub struct BudgetItem {
+    pub id: Uuid,
+    pub name: String,
+    pub quantity: i32,
+    pub unit_amount: i64,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct BudgetItemInput {
+    #[serde(default)]
+    pub name: String,
+    #[serde(default = "default_quantity")]
+    pub quantity: i32,
+    #[serde(default)]
+    pub unit_amount: i64,
+}
+fn default_quantity() -> i32 {
+    1
+}
+
+/// TS版 Payment。参加者未選択は「全員で割り勘」を意味する。
+#[derive(Debug, Clone, Serialize)]
+pub struct ExpenseRecord {
+    pub id: Uuid,
+    pub title: String,
+    pub payer_id: Option<Uuid>,
+    pub amount: i64,
+    pub participant_ids: Vec<Uuid>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct ExpenseInput {
+    #[serde(default)]
+    pub title: String,
+    pub payer_id: Option<Uuid>,
+    #[serde(default)]
+    pub amount: i64,
+    #[serde(default)]
+    pub participant_ids: Vec<Uuid>,
+}
