@@ -1,7 +1,7 @@
 use sqlx::PgPool;
 use uuid::Uuid;
 
-use crate::models::{ScheduleItem, TripSummary};
+use crate::models::{NewScheduleItem, NewTrip, ScheduleItem, TripSummary};
 
 pub async fn list_trips(pool: &PgPool) -> sqlx::Result<Vec<TripSummary>> {
     sqlx::query_as::<_, TripSummary>(
@@ -32,5 +32,40 @@ pub async fn list_schedule(pool: &PgPool, trip_id: Uuid) -> sqlx::Result<Vec<Sch
     )
     .bind(trip_id)
     .fetch_all(pool)
+    .await
+}
+
+pub async fn create_trip(pool: &PgPool, input: NewTrip) -> sqlx::Result<TripSummary> {
+    sqlx::query_as::<_, TripSummary>(
+        r#"INSERT INTO trips (name, start_date, end_date, destination_name)
+           VALUES ($1, $2, $3, $4)
+           RETURNING id, name, start_date, end_date, destination_name, status"#,
+    )
+    .bind(input.name)
+    .bind(input.start_date)
+    .bind(input.end_date)
+    .bind(input.destination_name)
+    .fetch_one(pool)
+    .await
+}
+
+pub async fn create_schedule_item(
+    pool: &PgPool,
+    trip_id: Uuid,
+    input: NewScheduleItem,
+) -> sqlx::Result<ScheduleItem> {
+    sqlx::query_as::<_, ScheduleItem>(
+        r#"INSERT INTO schedule_items
+           (trip_id, day, starts_at, title, memo, location_name)
+           VALUES ($1, $2, $3, $4, $5, $6)
+           RETURNING id, day, starts_at, title, memo, location_name"#,
+    )
+    .bind(trip_id)
+    .bind(input.day)
+    .bind(input.starts_at)
+    .bind(input.title)
+    .bind(input.memo)
+    .bind(input.location_name)
+    .fetch_one(pool)
     .await
 }

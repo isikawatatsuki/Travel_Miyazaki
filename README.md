@@ -20,8 +20,9 @@
 - [x] Rust / Topcoat サーバーと共通レイアウト
 - [x] PostgreSQL 接続、ヘルスチェック、自動マイグレーション
 - [x] 旅行一覧・旅行詳細・スケジュール表示
+- [x] 旅行作成・予定追加フォームとJSON API
 - [x] 旅行、メンバー、招待、日程、精算、予算、持ち物、メモ、予約、写真のDBスキーマ
-- [ ] 各機能の作成・編集・削除画面
+- [ ] 旅行・日程の編集・削除と、その他機能のCRUD画面
 - [ ] Google OAuth、セッション、グループ共有
 - [ ] 地図・住所検索
 - [ ] PostgreSQL 対応の本番デプロイ
@@ -111,4 +112,4 @@ Open <http://localhost:3000>. The server runs PostgreSQL migrations at startup. 
 
 ### Migration status
 
-The Rust server, database schema, trip list, trip details, and itinerary display are implemented. CRUD screens, authentication, group sharing, maps, and production deployment are the next migration stages. The existing React/Cloudflare source remains temporarily in this branch as a behavior reference and will be removed after feature parity is reached.
+The Rust server, database schema, trip list, trip details, trip creation, and itinerary creation/display are implemented. Editing, deletion, the remaining CRUD screens, authentication, group sharing, maps, and production deployment are the next migration stages. The existing React/Cloudflare source remains temporarily in this branch as a behavior reference and will be removed after feature parity is reached.
