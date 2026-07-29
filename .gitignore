@@ -5,5 +5,3 @@ dist/
 *.log
 *.tsbuildinfo
 .wrangler/
-target/
-.env
