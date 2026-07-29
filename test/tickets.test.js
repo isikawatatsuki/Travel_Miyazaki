@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { buildTicketRoute, migrateToTickets, parseLatLng, parsePlaceName, placeQueryCandidates, resolvePlace, routeLine, sortTickets, stayForDay, ticketStatus } from "../src/tickets.ts";
+import { normalizeStoredTickets } from "../src/storage.ts";
 
 const settings = (extra = {}) => ({ startDate: "2026-09-21", endDate: "2026-09-23", mapOrigin: "", mapDestination: "", mapOriginLat: 0, mapOriginLng: 0, mapDestinationLat: 0, mapDestinationLng: 0, ...extra });
 const state = (extra = {}) => ({ tripSettings: settings(extra.tripSettings), schedule: { activeDay: "", items: [], ...extra.schedule }, settlement: { people: [], payments: [] } });
@@ -133,6 +134,24 @@ test("移行済みならそのまま返し、二度目の移行で作り直さ�
   const existing = [ticket({ id: "kept", groupId: "g1" })];
   const tickets = migrateToTickets({ tickets: existing, trips: [{ id: "a", name: "無視される", createdAt: "", updatedAt: "", archived: false, state: state() }] });
   assert.deepEqual(tickets, existing);
+});
+
+test("保存値が配列でなくても起動を妨げない", () => {
+  assert.deepEqual(normalizeStoredTickets({ broken: true }, () => state(), () => "#000"), []);
+  assert.deepEqual(migrateToTickets({ tickets: { broken: true }, trips: "broken", groups: 42 }), []);
+});
+
+test("旧チケットに不足する状態を既定値で補う", () => {
+  const [recovered] = normalizeStoredTickets(
+    [{ id: "old", name: "旧旅行", state: { tripSettings: { tripName: "旧旅行" } } }],
+    (name) => state({ tripSettings: { tripName: name } }),
+    () => "#000",
+  );
+  assert.equal(recovered.id, "old");
+  assert.equal(recovered.state.tripSettings.tripName, "旧旅行");
+  assert.ok(Array.isArray(recovered.state.schedule.items));
+  assert.ok(Array.isArray(recovered.state.settlement.people));
+  assert.doesNotThrow(() => ticketStatus(recovered));
 });
 
 test("並び順は 旅行中 → 計画中 → 完了 → アーカイブ", () => {

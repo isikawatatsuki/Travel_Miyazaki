@@ -13,6 +13,7 @@ import {
 } from "./data";
 import { makeId, readStorage, usePersistentState } from "./lib";
 import { defaultThemeColor, migrateToTickets } from "./tickets";
+import { normalizeStoredTickets } from "./storage";
 import type {
   AdjustState,
   AccountGroup,
@@ -33,7 +34,15 @@ import type {
 } from "./types";
 
 function initialObject<T extends object>(key: string, fallback: T): T {
-  return { ...fallback, ...readStorage<Partial<T>>(key, {}) } as T;
+  const stored = readStorage<unknown>(key, {});
+  return stored && typeof stored === "object" && !Array.isArray(stored)
+    ? { ...fallback, ...stored } as T
+    : fallback;
+}
+
+function initialArray<T>(key: string): T[] {
+  const stored = readStorage<unknown>(key, []);
+  return Array.isArray(stored) ? stored as T[] : [];
 }
 
 export function useTripState() {
@@ -46,7 +55,7 @@ export function useTripState() {
   const [reservations, setReservations] = usePersistentState<ReservationsState>("tripShioriReservations", initialObject("tripShioriReservations", defaultReservations));
   const [album, setAlbum] = usePersistentState<AlbumState>("tripShioriAlbum", initialObject("tripShioriAlbum", defaultAlbum));
   const [history, setHistory] = usePersistentState<HistoryState>("tripShioriHistory", initialObject("tripShioriHistory", defaultHistory));
-  const [groups, setGroups] = usePersistentState<Group[]>("tripShioriGroups", readStorage<Group[]>("tripShioriGroups", []));
+  const [groups, setGroups] = usePersistentState<Group[]>("tripShioriGroups", initialArray<Group>("tripShioriGroups"));
   const [helpOpen, setHelpOpen] = usePersistentState<boolean>("tripShioriHelpOpen", readStorage("tripShioriHelpOpen", true));
   const [accountUser, setAccountUser] = useState<AccountUser | null>(null);
   const [accountGroups, setAccountGroups] = useState<AccountGroup[]>([]);
@@ -54,9 +63,13 @@ export function useTripState() {
   // 旧 tripShioriTrips は消さずに残す。移行結果だけ tripShioriTickets へ書くので、
   // 何かあっても旧キーからやり直せる。
   const [trips, setTrips] = usePersistentState<Ticket[]>("tripShioriTickets", migrateToTickets({
-    tickets: readStorage<Ticket[] | null>("tripShioriTickets", null),
-    trips: readStorage<TravelProfile[]>("tripShioriTrips", []),
-    groups: readStorage<Group[]>("tripShioriGroups", []),
+    tickets: normalizeStoredTickets(
+      readStorage<unknown>("tripShioriTickets", null),
+      createDefaultSharedState,
+      defaultThemeColor,
+    ),
+    trips: initialArray<TravelProfile>("tripShioriTrips"),
+    groups: initialArray<Group>("tripShioriGroups"),
     activeGroup: readStorage<Group | null>("tripShioriGroup", null),
     activeTripId: readStorage("tripShioriActiveTrip", ""),
   }));
