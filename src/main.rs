@@ -5,12 +5,13 @@ mod repository;
 use std::env;
 
 use db::Database;
+use models::{NewScheduleItem, NewTrip, ScheduleItem, TripSummary};
 use topcoat::{
     Result,
     context::{Cx, app_context},
     router::{
-        Router, RouterBuilderDiscoverExt, RouterErrorExt, Slot, internal_server_error, layout,
-        page, path_param, route,
+        Json, Router, RouterBuilderDiscoverExt, RouterErrorExt, Slot, bad_request,
+        internal_server_error, layout, page, path_param, route,
     },
     view::view,
 };
@@ -54,6 +55,7 @@ async fn app_layout(slot: Slot<'_>) -> Result {
                     </nav>
                 </header>
                 (slot.await?)
+                <script>(include_str!("rust.js"))</script>
             </body>
         </html>
     }
@@ -89,6 +91,17 @@ async fn trips(cx: &Cx) -> Result {
                 </div>
                 <span class="badge">(format!("{} 件", trips.len()))</span>
             </div>
+            <details class="panel create-panel">
+                <summary>"新しい旅行を作る"</summary>
+                <form data-api-form="/api/trips" data-redirect="/trips">
+                    <label>"旅行名" <input name="name" required="required"></label>
+                    <label>"目的地" <input name="destination_name"></label>
+                    <label>"開始日" <input name="start_date" type="date"></label>
+                    <label>"終了日" <input name="end_date" type="date"></label>
+                    <button type="submit">"旅行を作成"</button>
+                    <p class="form-message" aria-live="polite"></p>
+                </form>
+            </details>
             if trips.is_empty() {
                 <section class="empty-state">
                     <h2>"旅行はまだありません"</h2>
@@ -135,6 +148,18 @@ async fn trip_detail(cx: &Cx) -> Result {
             </section>
             <section class="panel">
                 <h2>"スケジュール"</h2>
+                <details class="create-panel">
+                    <summary>"予定を追加"</summary>
+                    <form data-api-form=(format!("/api/trips/{}/schedule", trip_id)) data-redirect=(format!("/trips/{}", trip_id))>
+                        <label>"日付" <input name="day" type="date" required="required"></label>
+                        <label>"時刻" <input name="starts_at" type="time"></label>
+                        <label>"予定" <input name="title" required="required"></label>
+                        <label>"場所" <input name="location_name"></label>
+                        <label>"メモ" <textarea name="memo"></textarea></label>
+                        <button type="submit">"予定を追加"</button>
+                        <p class="form-message" aria-live="polite"></p>
+                    </form>
+                </details>
                 if schedule.is_empty() {
                     <p class="muted">"予定はまだ登録されていません。"</p>
                 } else {
@@ -155,6 +180,47 @@ async fn trip_detail(cx: &Cx) -> Result {
             </section>
         </main>
     }
+}
+
+#[route(POST "/api/trips")]
+async fn create_trip(cx: &Cx, Json(input): Json<NewTrip>) -> Result<Json<TripSummary>> {
+    if input.name.trim().is_empty() {
+        return Err(bad_request("旅行名を入力してください").into());
+    }
+    if input
+        .start_date
+        .zip(input.end_date)
+        .is_some_and(|(start, end)| start > end)
+    {
+        return Err(bad_request("終了日は開始日以降にしてください").into());
+    }
+
+    let database = app_context::<Database>(cx);
+    let trip = repository::create_trip(database.pool(), input)
+        .await
+        .map_err(internal_server_error)?;
+    Ok(Json(trip))
+}
+
+#[route(POST "/api/trips/{trip_id}/schedule")]
+async fn create_schedule_item(
+    cx: &Cx,
+    Json(input): Json<NewScheduleItem>,
+) -> Result<Json<ScheduleItem>> {
+    let trip_id = *path_param::<TripId>(cx)?;
+    if input.title.trim().is_empty() {
+        return Err(bad_request("予定名を入力してください").into());
+    }
+
+    let database = app_context::<Database>(cx);
+    repository::find_trip(database.pool(), trip_id)
+        .await
+        .map_err(internal_server_error)?
+        .ok_or_not_found()?;
+    let item = repository::create_schedule_item(database.pool(), trip_id, input)
+        .await
+        .map_err(internal_server_error)?;
+    Ok(Json(item))
 }
 
 #[route(GET "/health")]
