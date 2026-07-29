@@ -133,3 +133,24 @@ if (planPage) {
     checkbox.closest("[data-schedule-item]").querySelector("[name=starts_at]").disabled = checkbox.checked;
   });
 }
+
+document.addEventListener("change", async (event) => {
+  const toggle = event.target.closest("[data-check-toggle]");
+  if (!toggle) return;
+  toggle.disabled = true;
+  const response = await fetch(toggle.dataset.checkToggle, {
+    method: "POST", headers: { "content-type": "application/json" },
+    body: JSON.stringify({ checked: toggle.checked }),
+  });
+  if (response.ok) window.location.reload();
+  else toggle.disabled = false;
+});
+
+document.addEventListener("click", async (event) => {
+  const remove = event.target.closest("[data-delete-url]");
+  if (!remove) return;
+  remove.disabled = true;
+  const response = await fetch(remove.dataset.deleteUrl, { method: "POST" });
+  if (response.ok) window.location.reload();
+  else remove.disabled = false;
+});

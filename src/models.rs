@@ -87,3 +87,46 @@ pub struct UpdateScheduleItem {
 fn default_true() -> bool {
     true
 }
+
+#[derive(Debug, Clone, FromRow, Serialize)]
+pub struct ChecklistItem {
+    pub id: Uuid,
+    pub label: String,
+    pub checked: bool,
+}
+#[derive(Debug, Clone, FromRow, Serialize)]
+pub struct Note {
+    pub id: Uuid,
+    pub body: String,
+}
+#[derive(Debug, Clone, FromRow, Serialize)]
+pub struct PersonRecord {
+    pub id: Uuid,
+    pub name: String,
+    pub role: String,
+    pub memo: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct NewLabel {
+    pub label: String,
+}
+#[derive(Debug, Deserialize)]
+pub struct ChecklistUpdate {
+    pub checked: bool,
+}
+#[derive(Debug, Deserialize)]
+pub struct NewNote {
+    pub body: String,
+}
+#[derive(Debug, Deserialize)]
+pub struct PersonInput {
+    pub name: String,
+    #[serde(default = "default_member_role")]
+    pub role: String,
+    #[serde(default)]
+    pub memo: String,
+}
+fn default_member_role() -> String {
+    "メンバー".into()
+}

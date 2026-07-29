@@ -1,7 +1,10 @@
 use sqlx::PgPool;
 use uuid::Uuid;
 
-use crate::models::{NewScheduleItem, NewTrip, ScheduleItem, TripSummary, UpdateScheduleItem};
+use crate::models::{
+    ChecklistItem, NewLabel, NewNote, NewScheduleItem, NewTrip, Note, PersonInput, PersonRecord,
+    ScheduleItem, TripSummary, UpdateScheduleItem,
+};
 
 pub async fn list_trips(pool: &PgPool) -> sqlx::Result<Vec<TripSummary>> {
     sqlx::query_as::<_, TripSummary>(
@@ -123,4 +126,92 @@ pub async fn delete_schedule_item(pool: &PgPool, trip_id: Uuid, id: Uuid) -> sql
             .rows_affected()
             > 0,
     )
+}
+
+pub async fn list_checklist(pool: &PgPool, trip_id: Uuid) -> sqlx::Result<Vec<ChecklistItem>> {
+    sqlx::query_as("SELECT id,label,checked FROM checklist_items WHERE trip_id=$1 ORDER BY sort_order,updated_at").bind(trip_id).fetch_all(pool).await
+}
+pub async fn create_checklist_item(
+    pool: &PgPool,
+    trip_id: Uuid,
+    input: NewLabel,
+) -> sqlx::Result<ChecklistItem> {
+    sqlx::query_as(
+        "INSERT INTO checklist_items (trip_id,label) VALUES ($1,$2) RETURNING id,label,checked",
+    )
+    .bind(trip_id)
+    .bind(input.label)
+    .fetch_one(pool)
+    .await
+}
+pub async fn update_checklist_item(
+    pool: &PgPool,
+    trip_id: Uuid,
+    id: Uuid,
+    checked: bool,
+) -> sqlx::Result<Option<ChecklistItem>> {
+    sqlx::query_as("UPDATE checklist_items SET checked=$3,updated_at=now() WHERE trip_id=$1 AND id=$2 RETURNING id,label,checked").bind(trip_id).bind(id).bind(checked).fetch_optional(pool).await
+}
+pub async fn delete_checklist_item(pool: &PgPool, trip_id: Uuid, id: Uuid) -> sqlx::Result<bool> {
+    Ok(
+        sqlx::query("DELETE FROM checklist_items WHERE trip_id=$1 AND id=$2")
+            .bind(trip_id)
+            .bind(id)
+            .execute(pool)
+            .await?
+            .rows_affected()
+            > 0,
+    )
+}
+pub async fn list_notes(pool: &PgPool, trip_id: Uuid) -> sqlx::Result<Vec<Note>> {
+    sqlx::query_as("SELECT id,body FROM notes WHERE trip_id=$1 ORDER BY created_at")
+        .bind(trip_id)
+        .fetch_all(pool)
+        .await
+}
+pub async fn create_note(pool: &PgPool, trip_id: Uuid, input: NewNote) -> sqlx::Result<Note> {
+    sqlx::query_as("INSERT INTO notes (trip_id,body) VALUES ($1,$2) RETURNING id,body")
+        .bind(trip_id)
+        .bind(input.body)
+        .fetch_one(pool)
+        .await
+}
+pub async fn delete_note(pool: &PgPool, trip_id: Uuid, id: Uuid) -> sqlx::Result<bool> {
+    Ok(sqlx::query("DELETE FROM notes WHERE trip_id=$1 AND id=$2")
+        .bind(trip_id)
+        .bind(id)
+        .execute(pool)
+        .await?
+        .rows_affected()
+        > 0)
+}
+pub async fn list_people(pool: &PgPool, trip_id: Uuid) -> sqlx::Result<Vec<PersonRecord>> {
+    sqlx::query_as("SELECT id,name,role,memo FROM people WHERE trip_id=$1 ORDER BY sort_order,id")
+        .bind(trip_id)
+        .fetch_all(pool)
+        .await
+}
+pub async fn create_person(
+    pool: &PgPool,
+    trip_id: Uuid,
+    input: PersonInput,
+) -> sqlx::Result<PersonRecord> {
+    sqlx::query_as("INSERT INTO people (trip_id,name,role,memo) VALUES ($1,$2,$3,$4) RETURNING id,name,role,memo").bind(trip_id).bind(input.name).bind(input.role).bind(input.memo).fetch_one(pool).await
+}
+pub async fn update_person(
+    pool: &PgPool,
+    trip_id: Uuid,
+    id: Uuid,
+    input: PersonInput,
+) -> sqlx::Result<Option<PersonRecord>> {
+    sqlx::query_as("UPDATE people SET name=$3,role=$4,memo=$5 WHERE trip_id=$1 AND id=$2 RETURNING id,name,role,memo").bind(trip_id).bind(id).bind(input.name).bind(input.role).bind(input.memo).fetch_optional(pool).await
+}
+pub async fn delete_person(pool: &PgPool, trip_id: Uuid, id: Uuid) -> sqlx::Result<bool> {
+    Ok(sqlx::query("DELETE FROM people WHERE trip_id=$1 AND id=$2")
+        .bind(trip_id)
+        .bind(id)
+        .execute(pool)
+        .await?
+        .rows_affected()
+        > 0)
 }

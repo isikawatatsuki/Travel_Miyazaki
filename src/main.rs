@@ -7,7 +7,10 @@ use std::env;
 
 use base64::{Engine as _, engine::general_purpose::STANDARD};
 use db::Database;
-use models::{NewScheduleItem, NewTrip, ScheduleItem, TripSummary, UpdateScheduleItem};
+use models::{
+    ChecklistItem, ChecklistUpdate, NewLabel, NewNote, NewScheduleItem, NewTrip, Note, PersonInput,
+    PersonRecord, ScheduleItem, TripSummary, UpdateScheduleItem,
+};
 use topcoat::{
     Result,
     context::{Cx, app_context},
@@ -225,8 +228,8 @@ async fn trip_detail(cx: &Cx) -> Result {
                 <a class="is-active" href=(format!("/trips/{}", trip_id)) aria-current="page">home_icon()<span>"ホーム"</span></a>
                 <a href=(format!("/trips/{}/plan", trip_id))>calendar_icon()<span>"予定"</span></a>
                 <a href=(format!("/trips/{}", trip_id))>money_icon()<span>"お金"</span></a>
-                <a href=(format!("/trips/{}", trip_id))>bag_icon()<span>"持ち物"</span></a>
-                <a href=(format!("/trips/{}", trip_id))>users_icon()<span>"共有"</span></a>
+                <a href=(format!("/trips/{}/packing", trip_id))>bag_icon()<span>"持ち物"</span></a>
+                <a href=(format!("/trips/{}/share", trip_id))>users_icon()<span>"共有"</span></a>
             </nav>
         </div>
     }
@@ -306,7 +309,7 @@ async fn trip_plan(cx: &Cx) -> Result {
             <nav class="bottom-nav" aria-label="メインメニュー">
                 <a href=(format!("/trips/{}", trip_id))>home_icon()<span>"ホーム"</span></a>
                 <a class="is-active" href=(format!("/trips/{}/plan", trip_id)) aria-current="page">calendar_icon()<span>"予定"</span></a>
-                <a href=(format!("/trips/{}", trip_id))>money_icon()<span>"お金"</span></a><a href=(format!("/trips/{}", trip_id))>bag_icon()<span>"持ち物"</span></a><a href=(format!("/trips/{}", trip_id))>users_icon()<span>"共有"</span></a>
+                <a href=(format!("/trips/{}", trip_id))>money_icon()<span>"お金"</span></a><a href=(format!("/trips/{}/packing", trip_id))>bag_icon()<span>"持ち物"</span></a><a href=(format!("/trips/{}/share", trip_id))>users_icon()<span>"共有"</span></a>
             </nav>
         </div>
     }
@@ -314,6 +317,73 @@ async fn trip_plan(cx: &Cx) -> Result {
 
 #[path_param(error = not_found)]
 struct ScheduleId(Uuid);
+
+#[path_param(error = not_found)]
+struct ItemId(Uuid);
+
+#[page("/trips/{trip_id}/packing")]
+async fn trip_packing(cx: &Cx) -> Result {
+    let trip_id = *path_param::<TripId>(cx)?;
+    let database = app_context::<Database>(cx);
+    let trip = repository::find_trip(database.pool(), trip_id)
+        .await
+        .map_err(internal_server_error)?
+        .ok_or_not_found()?;
+    let items = repository::list_checklist(database.pool(), trip_id)
+        .await
+        .map_err(internal_server_error)?;
+    let done = items.iter().filter(|item| item.checked).count();
+    let progress = if items.is_empty() {
+        0
+    } else {
+        done * 100 / items.len()
+    };
+    view! {
+        <div class="app-shell is-ticket-detail" style=(format!("--ticket-theme: {}", trip.theme_color))>
+            <header class="app-header"><a class="brand brand-back" href="/trips" aria-label="チケット一覧へ戻る">back_icon()<span><small>"チケット一覧"</small><strong>(trip.name)</strong></span></a></header>
+            <main id="main-content" class="main-content" tabindex="-1"><div class="page">
+                <details class="page-help"><summary>"このページの使い方"</summary><p>"持ち物はグループ全員で共有される1つのリストです。"</p></details>
+                <div class="section-heading"><div><p class="eyebrow">"PACKING"</p><h1>"持っていくもの"</h1><p>"チェックも追加・削除も、グループで同じ状態になります。"</p></div></div>
+                <section class="panel progress-panel"><div><span>"準備できたもの"</span><strong>(format!("{} / {}", done, items.len()))</strong></div><div class="progress-track" aria-label=(format!("準備 {}%", progress))><i style=(format!("width:{}%", progress))></i></div></section>
+                <section class="panel checklist-panel">
+                    <form class="add-form" data-api-form=(format!("/api/trips/{}/checklist", trip_id)) data-redirect=(format!("/trips/{}/packing", trip_id))><label><span>"持ち物を追加"</span><input name="label" placeholder="例：イヤホン" required="required"></label><button class="button button-primary" type="submit">plus_icon() "追加"</button><p class="form-message" aria-live="polite"></p></form>
+                    <div class="check-list">if items.is_empty() { <p class="empty-state">"持ち物はまだありません。"</p> } else { for item in items { <div class=(if item.checked { "check-row is-checked" } else { "check-row" })><label><input type="checkbox" checked=(item.checked) data-check-toggle=(format!("/api/trips/{}/checklist/{}", trip_id, item.id))><span>(item.label.clone())</span></label><button class="icon-button danger" type="button" aria-label=(format!("{}を削除", item.label)) data-delete-url=(format!("/api/trips/{}/checklist/{}/delete", trip_id, item.id))>"×"</button></div> } }</div>
+                </section>
+            </div></main>
+            <nav class="bottom-nav" aria-label="メインメニュー"><a href=(format!("/trips/{}",trip_id))>home_icon()<span>"ホーム"</span></a><a href=(format!("/trips/{}/plan",trip_id))>calendar_icon()<span>"予定"</span></a><a href=(format!("/trips/{}",trip_id))>money_icon()<span>"お金"</span></a><a class="is-active" aria-current="page" href=(format!("/trips/{}/packing",trip_id))>bag_icon()<span>"持ち物"</span></a><a href=(format!("/trips/{}/share",trip_id))>users_icon()<span>"共有"</span></a></nav>
+        </div>
+    }
+}
+
+#[page("/trips/{trip_id}/share")]
+async fn trip_share(cx: &Cx) -> Result {
+    let trip_id = *path_param::<TripId>(cx)?;
+    let database = app_context::<Database>(cx);
+    let trip = repository::find_trip(database.pool(), trip_id)
+        .await
+        .map_err(internal_server_error)?
+        .ok_or_not_found()?;
+    let people = repository::list_people(database.pool(), trip_id)
+        .await
+        .map_err(internal_server_error)?;
+    let notes = repository::list_notes(database.pool(), trip_id)
+        .await
+        .map_err(internal_server_error)?;
+    view! {
+        <div class="app-shell is-ticket-detail" style=(format!("--ticket-theme: {}", trip.theme_color))>
+            <header class="app-header"><a class="brand brand-back" href="/trips" aria-label="チケット一覧へ戻る">back_icon()<span><small>"チケット一覧"</small><strong>(trip.name)</strong></span></a></header>
+            <main id="main-content" class="main-content" tabindex="-1"><div class="page">
+                <div class="section-heading"><div><p class="eyebrow">"TOGETHER"</p><h1>"みんなで共有"</h1><p>"メンバー、グループ、共有メモをまとめています。"</p></div></div>
+                <section class="section-block member-section"><div class="section-heading"><div><p class="eyebrow">"MEMBERS"</p><h2>"メンバー登録"</h2></div><span class="count-badge">(format!("{}人",people.len()))</span></div><div class="panel member-panel">
+                    for (index, person) in people.iter().enumerate() { <form class="member-row" data-api-form=(format!("/api/trips/{}/people/{}",trip_id,person.id)) data-redirect=(format!("/trips/{}/share",trip_id))><span class="avatar" aria-hidden="true">(format!("{:02}",index+1))</span><label><span>"名前"</span><input name="name" value=(person.name.clone())></label><label><span>"役割"</span><input name="role" value=(person.role.clone())></label><label class="member-memo"><span>"メモ"</span><input name="memo" value=(person.memo.clone()) placeholder="連絡先やひとこと"></label><button class="button button-secondary small" type="submit">"保存"</button><button class="icon-button danger" type="button" aria-label=(format!("{}を削除",person.name)) disabled=(people.len()<=1) data-delete-url=(format!("/api/trips/{}/people/{}/delete",trip_id,person.id))>"×"</button><p class="form-message" aria-live="polite"></p></form> }
+                    <form class="add-form" data-api-form=(format!("/api/trips/{}/people",trip_id)) data-redirect=(format!("/trips/{}/share",trip_id))><label><span>"メンバーを追加"</span><input name="name" value=(format!("参加者{}",people.len()+1))></label><input type="hidden" name="role" value="メンバー"><input type="hidden" name="memo" value=""><button class="button button-secondary" type="submit">plus_icon() "メンバーを追加"</button><p class="form-message" aria-live="polite"></p></form>
+                </div></section>
+                <section class="section-block"><div class="section-heading"><div><p class="eyebrow">"MEMO"</p><h2>(format!("{}人の共有メモ",people.len()))</h2></div></div><div class="panel notes-panel"><form class="add-form" data-api-form=(format!("/api/trips/{}/notes",trip_id)) data-redirect=(format!("/trips/{}/share",trip_id))><label><span>"メモを追加"</span><input name="body" placeholder="気をつけたいこと、待ち合わせなど" required="required"></label><button class="button button-primary" type="submit">plus_icon() "追加"</button><p class="form-message" aria-live="polite"></p></form><div class="note-list">if notes.is_empty(){<p class="empty-state">"共有メモはまだありません。"</p>}else{for note in notes {<div class="note-row"><p>(note.body)</p><button class="icon-button danger" type="button" aria-label="メモを削除" data-delete-url=(format!("/api/trips/{}/notes/{}/delete",trip_id,note.id))>"×"</button></div>}}</div></div></section>
+            </div></main>
+            <nav class="bottom-nav" aria-label="メインメニュー"><a href=(format!("/trips/{}",trip_id))>home_icon()<span>"ホーム"</span></a><a href=(format!("/trips/{}/plan",trip_id))>calendar_icon()<span>"予定"</span></a><a href=(format!("/trips/{}",trip_id))>money_icon()<span>"お金"</span></a><a href=(format!("/trips/{}/packing",trip_id))>bag_icon()<span>"持ち物"</span></a><a class="is-active" aria-current="page" href=(format!("/trips/{}/share",trip_id))>users_icon()<span>"共有"</span></a></nav>
+        </div>
+    }
+}
 
 #[route(POST "/api/trips/{trip_id}/schedule/{schedule_id}")]
 async fn update_schedule_item(
@@ -337,6 +407,108 @@ async fn delete_schedule_item(cx: &Cx) -> Result<Json<bool>> {
     let database = app_context::<Database>(cx);
     Ok(Json(
         repository::delete_schedule_item(database.pool(), trip_id, id)
+            .await
+            .map_err(internal_server_error)?,
+    ))
+}
+
+#[route(POST "/api/trips/{trip_id}/checklist")]
+async fn create_checklist(cx: &Cx, Json(input): Json<NewLabel>) -> Result<Json<ChecklistItem>> {
+    let trip_id = *path_param::<TripId>(cx)?;
+    if input.label.trim().is_empty() {
+        return Err(bad_request("持ち物を入力してください").into());
+    }
+    let db = app_context::<Database>(cx);
+    Ok(Json(
+        repository::create_checklist_item(db.pool(), trip_id, input)
+            .await
+            .map_err(internal_server_error)?,
+    ))
+}
+#[route(POST "/api/trips/{trip_id}/checklist/{item_id}")]
+async fn update_checklist(
+    cx: &Cx,
+    Json(input): Json<ChecklistUpdate>,
+) -> Result<Json<ChecklistItem>> {
+    let trip_id = *path_param::<TripId>(cx)?;
+    let id = *path_param::<ItemId>(cx)?;
+    let db = app_context::<Database>(cx);
+    Ok(Json(
+        repository::update_checklist_item(db.pool(), trip_id, id, input.checked)
+            .await
+            .map_err(internal_server_error)?
+            .ok_or_not_found()?,
+    ))
+}
+#[route(POST "/api/trips/{trip_id}/checklist/{item_id}/delete")]
+async fn delete_checklist(cx: &Cx) -> Result<Json<bool>> {
+    let trip_id = *path_param::<TripId>(cx)?;
+    let id = *path_param::<ItemId>(cx)?;
+    let db = app_context::<Database>(cx);
+    Ok(Json(
+        repository::delete_checklist_item(db.pool(), trip_id, id)
+            .await
+            .map_err(internal_server_error)?,
+    ))
+}
+
+#[route(POST "/api/trips/{trip_id}/notes")]
+async fn create_note(cx: &Cx, Json(input): Json<NewNote>) -> Result<Json<Note>> {
+    let trip_id = *path_param::<TripId>(cx)?;
+    if input.body.trim().is_empty() {
+        return Err(bad_request("メモを入力してください").into());
+    }
+    let db = app_context::<Database>(cx);
+    Ok(Json(
+        repository::create_note(db.pool(), trip_id, input)
+            .await
+            .map_err(internal_server_error)?,
+    ))
+}
+#[route(POST "/api/trips/{trip_id}/notes/{item_id}/delete")]
+async fn delete_note(cx: &Cx) -> Result<Json<bool>> {
+    let trip_id = *path_param::<TripId>(cx)?;
+    let id = *path_param::<ItemId>(cx)?;
+    let db = app_context::<Database>(cx);
+    Ok(Json(
+        repository::delete_note(db.pool(), trip_id, id)
+            .await
+            .map_err(internal_server_error)?,
+    ))
+}
+
+#[route(POST "/api/trips/{trip_id}/people")]
+async fn create_person(cx: &Cx, Json(input): Json<PersonInput>) -> Result<Json<PersonRecord>> {
+    let trip_id = *path_param::<TripId>(cx)?;
+    if input.name.trim().is_empty() {
+        return Err(bad_request("名前を入力してください").into());
+    }
+    let db = app_context::<Database>(cx);
+    Ok(Json(
+        repository::create_person(db.pool(), trip_id, input)
+            .await
+            .map_err(internal_server_error)?,
+    ))
+}
+#[route(POST "/api/trips/{trip_id}/people/{item_id}")]
+async fn update_person(cx: &Cx, Json(input): Json<PersonInput>) -> Result<Json<PersonRecord>> {
+    let trip_id = *path_param::<TripId>(cx)?;
+    let id = *path_param::<ItemId>(cx)?;
+    let db = app_context::<Database>(cx);
+    Ok(Json(
+        repository::update_person(db.pool(), trip_id, id, input)
+            .await
+            .map_err(internal_server_error)?
+            .ok_or_not_found()?,
+    ))
+}
+#[route(POST "/api/trips/{trip_id}/people/{item_id}/delete")]
+async fn delete_person(cx: &Cx) -> Result<Json<bool>> {
+    let trip_id = *path_param::<TripId>(cx)?;
+    let id = *path_param::<ItemId>(cx)?;
+    let db = app_context::<Database>(cx);
+    Ok(Json(
+        repository::delete_person(db.pool(), trip_id, id)
             .await
             .map_err(internal_server_error)?,
     ))
