@@ -1,6 +1,49 @@
 use std::collections::HashMap;
 
-use chrono::NaiveDate;
+use chrono::{Datelike, Duration, NaiveDate};
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ScheduleDay {
+    pub id: String,
+    pub label: String,
+    pub short_label: String,
+}
+
+pub fn schedule_days(start: Option<NaiveDate>, end: Option<NaiveDate>) -> Vec<ScheduleDay> {
+    let (Some(mut cursor), Some(end)) = (start, end) else {
+        return fallback_schedule_days();
+    };
+    if end < cursor {
+        return fallback_schedule_days();
+    }
+    let weekdays = ["月", "火", "水", "木", "金", "土", "日"];
+    let mut days = Vec::new();
+    while cursor <= end && days.len() < 14 {
+        days.push(ScheduleDay {
+            id: cursor.format("%Y-%m-%d").to_string(),
+            label: format!(
+                "{}月{}日（{}）",
+                cursor.month(),
+                cursor.day(),
+                weekdays[cursor.weekday().num_days_from_monday() as usize]
+            ),
+            short_label: format!("{}/{}", cursor.month(), cursor.day()),
+        });
+        cursor += Duration::days(1);
+    }
+    if days.is_empty() {
+        fallback_schedule_days()
+    } else {
+        days
+    }
+}
+
+fn fallback_schedule_days() -> Vec<ScheduleDay> {
+    schedule_days(
+        NaiveDate::from_ymd_opt(2026, 9, 21),
+        NaiveDate::from_ymd_opt(2026, 9, 23),
+    )
+}
 
 pub const TICKET_COLORS: [&str; 6] = [
     "#e8735f", "#2f9e8f", "#6d83c9", "#d9853b", "#b5679a", "#4f8f5b",
@@ -383,6 +426,24 @@ mod tests {
         );
         assert_eq!(days_until_start("2026-08-01", "2026-07-29"), Some(3));
         assert_eq!(days_until_start("", "2026-07-29"), None);
+    }
+
+    #[test]
+    fn schedule_days_match_typescript_limit_labels_and_fallback() {
+        let days = schedule_days(
+            NaiveDate::from_ymd_opt(2026, 9, 21),
+            NaiveDate::from_ymd_opt(2026, 10, 30),
+        );
+        assert_eq!(days.len(), 14);
+        assert_eq!(
+            days[0],
+            ScheduleDay {
+                id: "2026-09-21".into(),
+                label: "9月21日（月）".into(),
+                short_label: "9/21".into()
+            }
+        );
+        assert_eq!(schedule_days(None, None).len(), 3);
     }
 
     #[test]

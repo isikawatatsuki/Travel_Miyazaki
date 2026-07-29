@@ -1,7 +1,7 @@
 use sqlx::PgPool;
 use uuid::Uuid;
 
-use crate::models::{NewScheduleItem, NewTrip, ScheduleItem, TripSummary};
+use crate::models::{NewScheduleItem, NewTrip, ScheduleItem, TripSummary, UpdateScheduleItem};
 
 pub async fn list_trips(pool: &PgPool) -> sqlx::Result<Vec<TripSummary>> {
     sqlx::query_as::<_, TripSummary>(
@@ -29,7 +29,8 @@ pub async fn find_trip(pool: &PgPool, id: Uuid) -> sqlx::Result<Option<TripSumma
 
 pub async fn list_schedule(pool: &PgPool, trip_id: Uuid) -> sqlx::Result<Vec<ScheduleItem>> {
     sqlx::query_as::<_, ScheduleItem>(
-        r#"SELECT id, day, starts_at, title, memo, location_name
+        r#"SELECT id, day, starts_at, title, memo, location_name, map_url,
+                  latitude, longitude, include_in_route, is_stay
            FROM schedule_items
            WHERE trip_id = $1
            ORDER BY day, starts_at NULLS LAST, sort_order"#,
@@ -64,9 +65,11 @@ pub async fn create_schedule_item(
 ) -> sqlx::Result<ScheduleItem> {
     sqlx::query_as::<_, ScheduleItem>(
         r#"INSERT INTO schedule_items
-           (trip_id, day, starts_at, title, memo, location_name)
-           VALUES ($1, $2, $3, $4, $5, $6)
-           RETURNING id, day, starts_at, title, memo, location_name"#,
+           (trip_id, day, starts_at, title, memo, location_name, map_url,
+            latitude, longitude, include_in_route, is_stay)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+           RETURNING id, day, starts_at, title, memo, location_name, map_url,
+                     latitude, longitude, include_in_route, is_stay"#,
     )
     .bind(trip_id)
     .bind(input.day)
@@ -74,6 +77,50 @@ pub async fn create_schedule_item(
     .bind(input.title)
     .bind(input.memo)
     .bind(input.location_name)
+    .bind(input.map_url)
+    .bind(input.latitude)
+    .bind(input.longitude)
+    .bind(input.include_in_route)
+    .bind(input.is_stay)
     .fetch_one(pool)
     .await
+}
+
+pub async fn update_schedule_item(
+    pool: &PgPool,
+    trip_id: Uuid,
+    id: Uuid,
+    input: UpdateScheduleItem,
+) -> sqlx::Result<Option<ScheduleItem>> {
+    sqlx::query_as::<_, ScheduleItem>(
+        r#"UPDATE schedule_items SET starts_at=$3, title=$4, memo=$5, location_name=$6,
+                  map_url=$7, latitude=$8, longitude=$9, include_in_route=$10, updated_at=now()
+           WHERE trip_id=$1 AND id=$2
+           RETURNING id, day, starts_at, title, memo, location_name, map_url,
+                     latitude, longitude, include_in_route, is_stay"#,
+    )
+    .bind(trip_id)
+    .bind(id)
+    .bind(input.starts_at)
+    .bind(input.title)
+    .bind(input.memo)
+    .bind(input.location_name)
+    .bind(input.map_url)
+    .bind(input.latitude)
+    .bind(input.longitude)
+    .bind(input.include_in_route)
+    .fetch_optional(pool)
+    .await
+}
+
+pub async fn delete_schedule_item(pool: &PgPool, trip_id: Uuid, id: Uuid) -> sqlx::Result<bool> {
+    Ok(
+        sqlx::query("DELETE FROM schedule_items WHERE trip_id=$1 AND id=$2")
+            .bind(trip_id)
+            .bind(id)
+            .execute(pool)
+            .await?
+            .rows_affected()
+            > 0,
+    )
 }

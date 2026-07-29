@@ -24,6 +24,11 @@ pub struct ScheduleItem {
     pub title: String,
     pub memo: String,
     pub location_name: String,
+    pub map_url: String,
+    pub latitude: Option<f64>,
+    pub longitude: Option<f64>,
+    pub include_in_route: bool,
+    pub is_stay: bool,
 }
 
 #[derive(Debug, Deserialize)]
@@ -52,4 +57,33 @@ pub struct NewScheduleItem {
     pub memo: String,
     #[serde(default)]
     pub location_name: String,
+    #[serde(default)]
+    pub map_url: String,
+    pub latitude: Option<f64>,
+    pub longitude: Option<f64>,
+    #[serde(default = "default_true")]
+    pub include_in_route: bool,
+    #[serde(default)]
+    pub is_stay: bool,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct UpdateScheduleItem {
+    pub starts_at: Option<NaiveTime>,
+    #[serde(default)]
+    pub title: String,
+    #[serde(default)]
+    pub memo: String,
+    #[serde(default)]
+    pub location_name: String,
+    #[serde(default)]
+    pub map_url: String,
+    pub latitude: Option<f64>,
+    pub longitude: Option<f64>,
+    #[serde(default = "default_true")]
+    pub include_in_route: bool,
+}
+
+fn default_true() -> bool {
+    true
 }
