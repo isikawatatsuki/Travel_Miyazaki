@@ -1,6 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="760" viewBox="0 0 1200 760" role="img" aria-labelledby="title desc">
   <title id="title">Travel Miyazaki infrastructure architecture</title>
   <desc id="desc">Users access a React progressive web app hosted on Cloudflare Pages. The app calls Pages Functions backed by Cloudflare D1. Functions connect to Google OAuth, Nominatim, and Google Maps, while maps load tiles from OpenFreeMap and OpenStreetMap.</desc>
+  <metadata>Service artwork is sourced from Cloudflare, Google Identity, Google Maps, OpenFreeMap, and OpenStreetMap. Source URLs and usage notes are listed in infrastructure-icons/README.md.</metadata>
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#f8fafc"/><stop offset="1" stop-color="#eef2ff"/></linearGradient>
     <linearGradient id="cf" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fff7ed"/><stop offset="1" stop-color="#ffedd5"/></linearGradient>
@@ -27,16 +28,13 @@
 
   <!-- Cloudflare boundary -->
   <rect x="278" y="112" width="650" height="572" rx="24" fill="url(#cf)" stroke="#f97316" stroke-width="2.5"/>
-  <g transform="translate(304 136)">
-    <path d="M14 24c1-10 9-18 20-18 8 0 15 4 18 11 3-2 7-3 11-3 11 0 20 8 21 19H13c-7 0-13-5-13-12 0-6 5-11 11-12 0 5 1 10 3 15Z" fill="#f48120"/>
-    <text x="98" y="30" class="label">Cloudflare</text>
-  </g>
+  <image href="infrastructure-icons/cloudflare.svg" x="304" y="126" width="174" height="65" preserveAspectRatio="xMinYMid meet"/>
 
   <!-- Pages -->
   <g transform="translate(322 198)">
     <rect width="264" height="174" fill="url(#pages)" stroke="#fb923c" stroke-width="1.5" rx="16" filter="url(#shadow)"/>
     <rect x="20" y="20" width="52" height="52" rx="12" fill="#f97316"/>
-    <path d="M34 36h24v19H34zM38 31h16l4 5H34z" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round"/>
+    <image href="infrastructure-icons/cloudflare-pages.svg" x="28" y="28" width="36" height="36" style="filter:invert(1)"/>
     <text x="88" y="43" class="label">Cloudflare Pages</text>
     <text x="88" y="64" class="small">Static hosting + CDN</text>
     <line x1="20" y1="88" x2="244" y2="88" stroke="#fed7aa"/>
@@ -48,8 +46,8 @@
   <!-- Functions -->
   <g transform="translate(620 198)">
     <rect width="264" height="286" class="box" stroke="#fb923c"/>
-    <rect x="20" y="20" width="52" height="52" rx="12" fill="#7c3aed"/>
-    <path d="M34 34h24M34 46h16M34 58h20" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
+    <rect x="20" y="20" width="52" height="52" rx="12" fill="#f97316"/>
+    <image href="infrastructure-icons/cloudflare-workers.svg" x="28" y="28" width="36" height="36" style="filter:invert(1)"/>
     <text x="88" y="43" class="label">Pages Functions</text>
     <text x="88" y="64" class="small">Serverless API</text>
     <line x1="20" y1="88" x2="244" y2="88" stroke="#e2e8f0"/>
@@ -64,7 +62,8 @@
   <!-- D1 -->
   <g transform="translate(429 524)">
     <rect width="356" height="116" class="box" stroke="#38bdf8"/>
-    <g transform="translate(20 23)"><ellipse cx="34" cy="10" rx="28" ry="10" fill="#0ea5e9"/><path d="M6 10v48c0 6 13 10 28 10s28-4 28-10V10" fill="#38bdf8"/><ellipse cx="34" cy="58" rx="28" ry="10" fill="#0284c7"/><path d="M6 28c0 6 13 10 28 10s28-4 28-10M6 44c0 6 13 10 28 10s28-4 28-10" fill="none" stroke="#bae6fd"/></g>
+    <rect x="20" y="24" width="68" height="68" rx="14" fill="#f97316"/>
+    <image href="infrastructure-icons/cloudflare-d1.svg" x="30" y="34" width="48" height="48" style="filter:invert(1)"/>
     <text x="104" y="42" class="label">Cloudflare D1</text>
     <text x="104" y="66" class="small">SQLite database</text>
     <text x="104" y="88" class="tiny">groups · users · sessions · tokens</text>
@@ -72,11 +71,11 @@
   </g>
 
   <!-- External services -->
-  <text x="974" y="130" class="small">External services</text>
-  <g transform="translate(972 150)"><rect width="190" height="90" class="box"/><circle cx="43" cy="43" r="25" fill="#4285f4"/><text x="43" y="50" text-anchor="middle" class="white" style="font:700 21px system-ui">G</text><text x="80" y="38" class="service-title">Google OAuth</text><text x="80" y="60" class="micro">Login &amp; identity</text></g>
-  <g transform="translate(972 280)"><rect width="190" height="90" class="box"/><circle cx="43" cy="43" r="25" fill="#7ebc6f"/><path d="M32 51c17-2 23-10 22-23-13 0-24 8-22 23Zm0 0c5-7 10-12 17-17" fill="none" stroke="#fff" stroke-width="2.5"/><text x="80" y="38" class="service-title">Nominatim</text><text x="80" y="60" class="micro">Geocoding API</text></g>
-  <g transform="translate(972 410)"><rect width="190" height="90" class="box"/><path d="M43 18c-14 0-25 11-25 25 0 18 25 37 25 37s25-19 25-37c0-14-11-25-25-25Z" fill="#ea4335"/><circle cx="43" cy="43" r="8" fill="#fff"/><text x="80" y="38" class="service-title">Google Maps</text><text x="80" y="60" class="micro">Short URL redirect</text></g>
-  <g transform="translate(972 540)"><rect width="190" height="100" class="box"/><rect x="18" y="22" width="50" height="50" rx="10" fill="#16a34a"/><path d="M27 58l11-18 8 10 8-14 8 22Z" fill="#dcfce7"/><text x="80" y="36" class="service-title">Map tiles</text><text x="80" y="58" class="micro">OpenFreeMap</text><text x="80" y="76" class="micro">© OpenStreetMap</text></g>
+  <text x="960" y="130" class="small">External services</text>
+  <g transform="translate(958 150)"><rect width="226" height="90" class="box"/><rect x="18" y="18" width="50" height="50" rx="10" fill="#fff" stroke="#e2e8f0"/><image href="infrastructure-icons/google-g.png" x="28" y="28" width="30" height="30"/><text x="80" y="38" class="service-title">Google OAuth</text><text x="80" y="60" class="micro">Login &amp; identity</text></g>
+  <g transform="translate(958 280)"><rect width="226" height="90" class="box"/><image href="infrastructure-icons/openstreetmap.svg" x="18" y="18" width="50" height="50" preserveAspectRatio="xMidYMid meet"/><text x="80" y="38" class="service-title">Nominatim</text><text x="80" y="60" class="micro">OpenStreetMap geocoder</text></g>
+  <g transform="translate(958 410)"><rect width="226" height="90" class="box"/><image href="infrastructure-icons/google-maps.png" x="22" y="14" width="42" height="56" preserveAspectRatio="xMidYMid meet"/><text x="80" y="38" class="service-title">Google Maps</text><text x="80" y="60" class="micro">Short URL redirect</text></g>
+  <g transform="translate(958 540)"><rect width="226" height="100" class="box"/><image href="infrastructure-icons/openfreemap.jpg" x="18" y="22" width="50" height="50" preserveAspectRatio="xMidYMid slice"/><text x="80" y="36" class="service-title">Map tiles</text><text x="80" y="58" class="micro">OpenFreeMap</text><text x="80" y="76" class="micro">© OpenStreetMap</text></g>
 
   <!-- Flows -->
   <path d="M224 377H300q22 0 22-22v-70" class="line"/>
@@ -85,10 +84,10 @@
   <text x="603" y="272" text-anchor="middle" class="tiny">/api</text>
   <path d="M752 484v24q0 16-16 16H672" class="line"/>
   <text x="760" y="510" class="tiny">SQL</text>
-  <path d="M884 270h40q20 0 20-20v-55h28" class="line"/>
-  <path d="M884 330h88" class="line"/>
-  <path d="M884 395h40q20 0 20 20v40h28" class="line"/>
-  <path d="M586 335h20v306q0 20 20 20h318q20 0 20-20v-51h8" class="line"/>
+  <path d="M884 270h40q20 0 20-20v-55h14" class="line"/>
+  <path d="M884 330h74" class="line"/>
+  <path d="M884 395h40q20 0 20 20v40h14" class="line"/>
+  <path d="M586 335h20v306q0 20 20 20h298q20 0 20-20v-51h14" class="line"/>
   <text x="630" y="681" class="tiny">MapLibre GL — style &amp; tile requests</text>
   <path d="M322 430H246q-22 0-22-22" class="dash"/>
   <text x="240" y="464" class="tiny">Trip data is also stored locally</text>
