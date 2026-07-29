@@ -7,7 +7,7 @@ use std::env;
 
 use base64::{Engine as _, engine::general_purpose::STANDARD};
 use db::Database;
-use models::{NewScheduleItem, NewTrip, ScheduleItem, TripSummary};
+use models::{NewScheduleItem, NewTrip, ScheduleItem, TripSummary, UpdateScheduleItem};
 use topcoat::{
     Result,
     context::{Cx, app_context},
@@ -223,13 +223,123 @@ async fn trip_detail(cx: &Cx) -> Result {
             </main>
             <nav class="bottom-nav" aria-label="メインメニュー">
                 <a class="is-active" href=(format!("/trips/{}", trip_id)) aria-current="page">home_icon()<span>"ホーム"</span></a>
-                <a href=(format!("/trips/{}", trip_id))>calendar_icon()<span>"予定"</span></a>
+                <a href=(format!("/trips/{}/plan", trip_id))>calendar_icon()<span>"予定"</span></a>
                 <a href=(format!("/trips/{}", trip_id))>money_icon()<span>"お金"</span></a>
                 <a href=(format!("/trips/{}", trip_id))>bag_icon()<span>"持ち物"</span></a>
                 <a href=(format!("/trips/{}", trip_id))>users_icon()<span>"共有"</span></a>
             </nav>
         </div>
     }
+}
+
+#[page("/trips/{trip_id}/plan")]
+async fn trip_plan(cx: &Cx) -> Result {
+    let trip_id = *path_param::<TripId>(cx)?;
+    let database = app_context::<Database>(cx);
+    let trip = repository::find_trip(database.pool(), trip_id)
+        .await
+        .map_err(internal_server_error)?
+        .ok_or_not_found()?;
+    let schedule = repository::list_schedule(database.pool(), trip_id)
+        .await
+        .map_err(internal_server_error)?;
+    let days = domain::schedule_days(trip.start_date, trip.end_date);
+    view! {
+        <div class="app-shell is-ticket-detail" style=(format!("--ticket-theme: {}", trip.theme_color)) data-plan-page="true">
+            <header class="app-header">
+                <a class="brand brand-back" href="/trips" aria-label="チケット一覧へ戻る">
+                    back_icon()<span><small>"チケット一覧"</small><strong>(trip.name)</strong></span>
+                </a>
+            </header>
+            <main id="main-content" class="main-content" tabindex="-1">
+                <div class="page plan-page">
+                    <details class="page-help"><summary>"このページの使い方"</summary><div><p>"日ごとにタブが分かれます。時刻未定でも登録でき、地図リンクから経路を開けます。"</p><p>"「予定を設定」から場所を登録すると、その場所が旅の地図の経路に並びます。"</p></div></details>
+                    <div class="section-heading">
+                        <div><p class="eyebrow">"PLAN"</p><h1>"旅の予定"</h1><p data-plan-description="true">"日ごとの流れを、時間順にさくっと確認できます。"</p></div>
+                        <button class="button button-secondary plan-edit-toggle" type="button" aria-pressed="false" data-plan-edit-toggle="true">calendar_icon()<span>"予定を設定"</span></button>
+                    </div>
+                    <div class="day-tabs" role="tablist" aria-label="旅行日">
+                        for (index, day) in days.iter().enumerate() {
+                            <button type="button" role="tab" aria-selected=(index == 0) class=(if index == 0 { "is-active" } else { "" }) data-plan-day=(day.id.clone())>
+                                (day.short_label.clone())<small>(day.label.split('（').nth(1).unwrap_or("").trim_end_matches('）').to_string())</small>
+                            </button>
+                        }
+                    </div>
+                    <div class="schedule-editor" data-plan-editor="true" hidden="hidden">
+                        for (day_index, day) in days.iter().enumerate() {
+                            <section data-plan-day-content=(day.id.clone()) hidden=(day_index != 0)>
+                                for (index, item) in schedule.iter().filter(|item| item.day.format("%Y-%m-%d").to_string() == day.id && !item.is_stay).enumerate() {
+                                    <article class="panel schedule-card" data-schedule-item=(item.id.to_string())>
+                                        <div class="schedule-card-head">
+                                            <span class="step-number">(format!("{:02}", index + 1))</span>
+                                            <label class="time-field"><span>"時間"</span><input type="time" name="starts_at" value=(item.starts_at.map(|v| v.format("%H:%M").to_string()).unwrap_or_default()) data-schedule-field="true"></label>
+                                            <label class="unset-field"><input type="checkbox" data-time-unset="true" checked=(item.starts_at.is_none())>"未定"</label>
+                                            <button class="icon-button danger" type="button" aria-label=(format!("{}を削除", if item.title.is_empty() { "予定" } else { &item.title })) data-delete-schedule="true">"×"</button>
+                                        </div>
+                                        <label><span>"予定"</span><input name="title" value=(item.title.clone()) maxlength="40" placeholder="例：ホテルにチェックイン" data-schedule-field="true"></label>
+                                        <label><span>"メモ"</span><textarea name="memo" maxlength="120" rows="2" placeholder="待ち合わせや予約番号など" data-schedule-field="true">(item.memo.clone())</textarea></label>
+                                        <label><span>"場所"</span><input name="location_name" value=(item.location_name.clone()) data-schedule-field="true"></label>
+                                        <input type="hidden" name="map_url" value=(item.map_url.clone())>
+                                        <label class="unset-field"><input type="checkbox" name="include_in_route" checked=(item.include_in_route) data-schedule-field="true">"旅の経路に含める"</label>
+                                        <p class="form-message" aria-live="polite"></p>
+                                    </article>
+                                }
+                                <button class="button button-primary add-wide" type="button" data-add-schedule="true" data-trip-id=(trip_id.to_string()) data-day=(day.id.clone())>plus_icon() "予定を追加"</button>
+                            </section>
+                        }
+                    </div>
+                    <div data-plan-viewer="true">
+                        for (day_index, day) in days.iter().enumerate() {
+                            <section class="panel plan-timeline" aria-label="選択した日の予定" data-plan-day-content=(day.id.clone()) hidden=(day_index != 0)>
+                                if schedule.iter().all(|item| item.day.format("%Y-%m-%d").to_string() != day.id || item.is_stay) {
+                                    <div class="plan-empty"><p class="empty-state">"この日の予定はまだありません。"</p><button class="button button-secondary" type="button" data-plan-edit-toggle="true">plus_icon() "予定を追加"</button></div>
+                                } else {
+                                    for (index, item) in schedule.iter().filter(|item| item.day.format("%Y-%m-%d").to_string() == day.id && !item.is_stay).enumerate() {
+                                        <article class="plan-timeline-row"><div class="plan-time"><span>(item.starts_at.map(|v| v.format("%H:%M").to_string()).unwrap_or_else(|| "未定".into()))</span><i aria-hidden="true"></i></div><div class="plan-event"><small>(format!("{:02}", index + 1))</small><strong>(if item.title.is_empty() { "予定名なし".into() } else { item.title.clone() })</strong>if !item.location_name.is_empty() { <p class="plan-location-name">(item.location_name.clone())</p> } if !item.memo.is_empty() { <p>(item.memo.clone())</p> }</div></article>
+                                    }
+                                }
+                            </section>
+                        }
+                    </div>
+                </div>
+            </main>
+            <nav class="bottom-nav" aria-label="メインメニュー">
+                <a href=(format!("/trips/{}", trip_id))>home_icon()<span>"ホーム"</span></a>
+                <a class="is-active" href=(format!("/trips/{}/plan", trip_id)) aria-current="page">calendar_icon()<span>"予定"</span></a>
+                <a href=(format!("/trips/{}", trip_id))>money_icon()<span>"お金"</span></a><a href=(format!("/trips/{}", trip_id))>bag_icon()<span>"持ち物"</span></a><a href=(format!("/trips/{}", trip_id))>users_icon()<span>"共有"</span></a>
+            </nav>
+        </div>
+    }
+}
+
+#[path_param(error = not_found)]
+struct ScheduleId(Uuid);
+
+#[route(POST "/api/trips/{trip_id}/schedule/{schedule_id}")]
+async fn update_schedule_item(
+    cx: &Cx,
+    Json(input): Json<UpdateScheduleItem>,
+) -> Result<Json<ScheduleItem>> {
+    let trip_id = *path_param::<TripId>(cx)?;
+    let id = *path_param::<ScheduleId>(cx)?;
+    let database = app_context::<Database>(cx);
+    let item = repository::update_schedule_item(database.pool(), trip_id, id, input)
+        .await
+        .map_err(internal_server_error)?
+        .ok_or_not_found()?;
+    Ok(Json(item))
+}
+
+#[route(POST "/api/trips/{trip_id}/schedule/{schedule_id}/delete")]
+async fn delete_schedule_item(cx: &Cx) -> Result<Json<bool>> {
+    let trip_id = *path_param::<TripId>(cx)?;
+    let id = *path_param::<ScheduleId>(cx)?;
+    let database = app_context::<Database>(cx);
+    Ok(Json(
+        repository::delete_schedule_item(database.pool(), trip_id, id)
+            .await
+            .map_err(internal_server_error)?,
+    ))
 }
 
 #[route(POST "/api/trips")]
@@ -257,9 +367,6 @@ async fn create_schedule_item(
     Json(input): Json<NewScheduleItem>,
 ) -> Result<Json<ScheduleItem>> {
     let trip_id = *path_param::<TripId>(cx)?;
-    if input.title.trim().is_empty() {
-        return Err(bad_request("予定名を入力してください").into());
-    }
     let database = app_context::<Database>(cx);
     repository::find_trip(database.pool(), trip_id)
         .await
