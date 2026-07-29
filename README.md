@@ -26,7 +26,7 @@ Googleログインとグループ共有は、デプロイ先での環境設定�
 
 ## インフラ構成
 
-![Travel Miyazakiのインフラ構成図](docs/infrastructure.svg)
+[![Travel Miyazakiのインフラ構成図](docs/infrastructure.png)](docs/infrastructure.svg)
 
 React製PWAとサーバーレスAPIをCloudflare Pages上で動かし、旅行グループ、認証セッション、住所検索キャッシュなどをCloudflare D1へ保存します。地図にはOpenFreeMap / OpenStreetMap、住所検索にはNominatim、ログインにはGoogle OAuthを利用します。
 
