@@ -1,120 +1,91 @@
-# Tabilog（旅のしおり）
+# Tabilog — 旅のしおり
 
-旅行の予定、地図、予算、立替精算、持ち物、写真、共有メモを一つにまとめられる、グループ旅行向けのPWAです。ReactとTypeScriptで構築し、Cloudflare Pages / Pages Functions / D1で配信・同期します。
+旅行の日程、精算、持ち物、予約、写真、共有メモを一か所で管理するグループ旅行アプリです。
+この `rust-rewrite` ブランチでは、アプリケーションを **Rust / Topcoat / PostgreSQL** へ移行しています。
 
-[デモを見る](https://travel-miyazaki.pages.dev/) · [English](#english)
+[English](#english) · [旧版デモ](https://travel-miyazaki.pages.dev/)
 
-## 主な機能
+## 現在の構成
 
-- 複数の旅行をチケット形式で作成・管理
-- 日ごとの予定、宿泊先、訪問地点、ルートを地図で確認
-- 予算、お土産代、立替払い、メンバー別の精算額を自動計算
-- グループで使える持ち物チェックリスト、写真アルバム、共有メモ
-- 6桁の参加コードによるグループ共有とCloudflare D1への同期
-- 任意のGoogleログインによる、別端末での旅行データ復元
-- Service WorkerによるPWA対応とオフライン時の端末保存
-
-## 使い方
-
-1. [Tabilog](https://travel-miyazaki.pages.dev/)を開き、「新しい旅を作る」を選びます。
-2. 旅行名、日程、出発地、目的地などを設定します。
-3. 「予定」「お金」「持ち物」「共有」の各タブへ情報を追加します。
-4. 共同編集する場合は「共有」でグループを作り、表示された6桁コードを参加者へ伝えます。
-5. 必要に応じてGoogleでログインすると、別の端末から参加中の旅行を復元できます。
-
-Googleログインとグループ共有は、デプロイ先での環境設定が必要です。設定しなくても、データをブラウザ内に保存して基本機能を利用できます。
-
-## インフラ構成
-
-[![Travel Miyazakiのインフラ構成図](docs/infrastructure.png)](docs/infrastructure.svg)
-
-React製PWAとサーバーレスAPIをCloudflare Pages上で動かし、旅行グループ、認証セッション、住所検索キャッシュなどをCloudflare D1へ保存します。地図にはOpenFreeMap / OpenStreetMap、住所検索にはNominatim、ログインにはGoogle OAuthを利用します。
-
-## 技術スタック
-
-| 分類 | 使用技術 |
+| レイヤー | 技術 |
 | --- | --- |
-| フロントエンド | React 19、TypeScript、Vite |
-| 地図 | MapLibre GL、OpenFreeMap、OpenStreetMap |
-| API | Cloudflare Pages Functions |
-| データベース | Cloudflare D1 |
-| 認証 | Google OAuth 2.0（任意） |
-| PWA | Web App Manifest、Service Worker |
-| CI / Hosting | GitHub Actions、Cloudflare Pages |
+| Web サーバー / UI | Rust 1.97、Topcoat 0.4 |
+| 非同期ランタイム | Tokio |
+| データベース | PostgreSQL 17 |
+| DB アクセス / マイグレーション | SQLx |
+| ローカル環境 | Docker Compose |
 
-## ローカル開発
+## 実装状況
 
-### 必要な環境
+- [x] Rust / Topcoat サーバーと共通レイアウト
+- [x] PostgreSQL 接続、ヘルスチェック、自動マイグレーション
+- [x] 旅行一覧・旅行詳細・スケジュール表示
+- [x] 旅行作成・予定追加フォームとJSON API
+- [x] 旅行、メンバー、招待、日程、精算、予算、持ち物、メモ、予約、写真のDBスキーマ
+- [ ] 旅行・日程の編集・削除と、その他機能のCRUD画面
+- [ ] Google OAuth、セッション、グループ共有
+- [ ] 地図・住所検索
+- [ ] PostgreSQL 対応の本番デプロイ
 
-- Node.js 22.12以上
-- npm
+## ローカル起動
 
-### 起動
+### Docker Compose（推奨）
 
 ```bash
-git clone https://github.com/isikawatatsuki/Travel_Miyazaki.git
-cd Travel_Miyazaki
-npm ci
-npm run dev
+docker compose up --build
 ```
 
-Viteの開発サーバーが表示するURLをブラウザで開いてください。フロントエンド単体ではブラウザ内保存を利用できます。D1を使うグループ共有、住所検索API、Googleログインをローカルで検証する場合は、Cloudflare Pages Functionsを実行できる環境も設定してください。
+ブラウザで <http://localhost:3000> を開きます。PostgreSQL の準備後、SQLx がマイグレーションを自動実行します。
 
-### 利用できるコマンド
+### Rust サーバーを直接起動
 
-| コマンド | 内容 |
-| --- | --- |
-| `npm run dev` | Vite開発サーバーを起動 |
-| `npm run build` | 型チェック後に本番用ファイルを`dist`へ生成 |
-| `npm run preview` | 本番ビルドをローカルで確認 |
-| `npm run typecheck` | フロントエンドとFunctionsの型を検査 |
-| `npm test` | Node.jsのテストを実行 |
-
-## Cloudflare Pagesへのデプロイ
-
-Cloudflare Pagesプロジェクトでは、次のビルド設定を使用します。
-
-| 項目 | 値 |
-| --- | --- |
-| Framework preset | `Vite` |
-| Build command | `npm run build` |
-| Build output directory | `dist` |
-| Root directory | `/` |
-
-### D1
-
-1. Cloudflare D1データベースを作成します。
-2. [`schema.sql`](schema.sql)を初回だけ実行します。
-3. Pagesプロジェクトへ、変数名`DB`でD1データベースをバインドします。
-
-設定例は[`wrangler.example.toml`](wrangler.example.toml)を参照してください。グループ共有APIは[`functions/api/groups/[[path]].ts`](functions/api/groups/[[path]].ts)にあります。
-
-### Google OAuth（任意）
-
-1. Google Cloud ConsoleでOAuthクライアントを作成します。
-2. 承認済みリダイレクトURIへ`https://<本番ドメイン>/api/auth/callback`を登録します。ローカルでは`http://localhost:5173/api/auth/callback`を使用します。
-3. Pagesの環境変数へ`GOOGLE_CLIENT_ID`を設定します。
-4. クライアントシークレットを、平文ファイルではなくSecretとして登録します。
+Rust 1.88 以上と Docker が必要です。
 
 ```bash
-wrangler pages secret put GOOGLE_CLIENT_SECRET --project-name travel-miyazaki
+cp .env.example .env
+docker compose up -d postgres
+cargo run
 ```
 
-`GOOGLE_CLIENT_ID`または`GOOGLE_CLIENT_SECRET`が未設定の場合、Googleログインは利用できません。設定後はPagesを再デプロイしてください。
+疎通確認:
 
-## ディレクトリ構成
+```bash
+curl http://localhost:3000/health
+```
+
+正常時は `ok` が返ります。
+
+## 環境変数
+
+| 変数 | 説明 | 既定値 |
+| --- | --- | --- |
+| `HOST` | Topcoat の待受アドレス | `127.0.0.1` |
+| `PORT` | Topcoat の待受ポート | `3000` |
+| `DATABASE_URL` | PostgreSQL 接続 URL | ローカル Compose DB |
+| `RUST_LOG` | ログフィルター | `tabilog=info,topcoat=info` |
+| `GOOGLE_CLIENT_ID` | Google OAuth クライアント ID | 未設定 |
+| `GOOGLE_CLIENT_SECRET` | Google OAuth シークレット | 未設定 |
+| `SESSION_SECRET` | セッション署名用シークレット | 未設定 |
+
+## ディレクトリ
 
 ```text
-Travel_Miyazaki/
-├─ src/          # Reactの画面、コンポーネント、状態管理、型定義
-├─ functions/    # Cloudflare Pages Functions
-├─ public/       # PWAマニフェスト、Service Worker、アイコン
-├─ docs/         # 構成図、仕様、ロードマップ、セキュリティ情報
-├─ schema.sql    # Cloudflare D1のスキーマ
-└─ package.json  # 依存関係とnpm scripts
+src/
+├── main.rs          # Topcoat のルート、画面、起動処理
+├── db.rs            # PostgreSQL 接続とマイグレーション
+├── models.rs        # DBから取得するRustモデル
+├── repository.rs    # SQLクエリ
+└── rust.css         # Rust版UI
+migrations/          # PostgreSQLスキーマ
+compose.yaml         # アプリ + PostgreSQL
+Dockerfile           # Rustアプリの本番ビルド
 ```
 
-関連資料：[`docs/product-roadmap.md`](docs/product-roadmap.md) · [`docs/SECURITY.md`](docs/SECURITY.md) · [`docs/travel-tickets.md`](docs/travel-tickets.md)
+## インフラ構成図
+
+現在の `main` ブランチ（Cloudflare 版）の構成図です。Rust 版の本番基盤が決まり次第、PostgreSQL を含む図へ更新します。
+
+[![Travel Miyazaki インフラ構成図](docs/infrastructure.png)](docs/infrastructure.svg)
 
 ---
 
@@ -122,91 +93,23 @@ Travel_Miyazaki/
 
 ## English
 
-Tabilog is a progressive web app for planning group trips. It keeps itineraries, maps, budgets, shared expenses, packing lists, photos, and notes in one place. The app is built with React and TypeScript and runs on Cloudflare Pages, Pages Functions, and D1.
+Tabilog is a group travel planner for itineraries, shared expenses, packing lists, reservations, photos, and notes. The `rust-rewrite` branch is migrating the application to **Rust, Topcoat, and PostgreSQL**.
 
-[Open the live app](https://travel-miyazaki.pages.dev/) · [日本語](#tabilog旅のしおり)
+### Stack
 
-### Features
+- Rust 1.97 and Topcoat 0.4
+- Tokio async runtime
+- PostgreSQL 17 and SQLx
+- Docker Compose for local development
 
-- Create and manage multiple trips as travel tickets
-- Organize daily schedules, stays, places, and routes on a map
-- Calculate budgets, souvenir costs, shared payments, and settlements
-- Share packing lists, photo albums, and notes with the group
-- Sync a group through Cloudflare D1 using a six-digit join code
-- Optionally sign in with Google to restore trips on another device
-- Install the app as a PWA and retain local data while offline
-
-### Getting started
-
-1. Open [Tabilog](https://travel-miyazaki.pages.dev/) and select “新しい旅を作る” (Create a new trip).
-2. Enter the trip name, dates, origin, destination, and other details.
-3. Add information from the Schedule, Money, Packing, and Share tabs.
-4. To collaborate, create a group from the Share tab and send the six-digit code to the other travelers.
-5. Optionally sign in with Google to restore joined trips on another device.
-
-Group sync and Google sign-in require environment configuration on the deployment. Without them, the core features still work using browser-local storage.
-
-### Architecture
-
-The architecture diagram is shown in the [Japanese section](#インフラ構成). The React PWA and serverless API run on Cloudflare Pages. Cloudflare D1 stores groups, authentication sessions, and geocoding cache data. Maps use OpenFreeMap / OpenStreetMap, geocoding uses Nominatim, and authentication uses Google OAuth.
-
-### Tech stack
-
-| Area | Technology |
-| --- | --- |
-| Frontend | React 19, TypeScript, Vite |
-| Maps | MapLibre GL, OpenFreeMap, OpenStreetMap |
-| API | Cloudflare Pages Functions |
-| Database | Cloudflare D1 |
-| Authentication | Google OAuth 2.0 (optional) |
-| PWA | Web App Manifest, Service Worker |
-| CI / Hosting | GitHub Actions, Cloudflare Pages |
-
-### Local development
-
-Node.js 22.12 or later and npm are required.
+### Run locally
 
 ```bash
-git clone https://github.com/isikawatatsuki/Travel_Miyazaki.git
-cd Travel_Miyazaki
-npm ci
-npm run dev
+docker compose up --build
 ```
 
-Open the URL printed by Vite. The frontend can use browser-local storage by itself. Testing D1-backed group sharing, the geocoding API, or Google sign-in locally also requires an environment capable of running Cloudflare Pages Functions.
+Open <http://localhost:3000>. The server runs PostgreSQL migrations at startup. Use `GET /health` to verify both the application and database connection.
 
-| Command | Description |
-| --- | --- |
-| `npm run dev` | Start the Vite development server |
-| `npm run build` | Type-check and create a production build in `dist` |
-| `npm run preview` | Preview the production build locally |
-| `npm run typecheck` | Type-check the frontend and Pages Functions |
-| `npm test` | Run the Node.js test suite |
+### Migration status
 
-### Deploying to Cloudflare Pages
-
-Use `Vite` as the framework preset, `npm run build` as the build command, `dist` as the output directory, and `/` as the root directory.
-
-For group sharing, create a D1 database, apply [`schema.sql`](schema.sql), and bind it to the Pages project as `DB`. See [`wrangler.example.toml`](wrangler.example.toml) for an example.
-
-For optional Google sign-in, register `https://<production-domain>/api/auth/callback` as an authorized redirect URI (`http://localhost:5173/api/auth/callback` for local development), set `GOOGLE_CLIENT_ID`, and store the client secret securely:
-
-```bash
-wrangler pages secret put GOOGLE_CLIENT_SECRET --project-name travel-miyazaki
-```
-
-Redeploy the Pages project after changing environment variables or secrets.
-
-### Project structure
-
-```text
-Travel_Miyazaki/
-├─ src/          # React pages, components, state, and types
-├─ functions/    # Cloudflare Pages Functions
-├─ public/       # PWA manifest, Service Worker, and icons
-├─ docs/         # Architecture, specifications, roadmap, and security notes
-├─ schema.sql    # Cloudflare D1 schema
-└─ package.json  # Dependencies and npm scripts
-```
-
-Further reading: [`docs/product-roadmap.md`](docs/product-roadmap.md) · [`docs/SECURITY.md`](docs/SECURITY.md) · [`docs/travel-tickets.md`](docs/travel-tickets.md)
+The Rust server, database schema, trip list, trip details, trip creation, and itinerary creation/display are implemented. Editing, deletion, the remaining CRUD screens, authentication, group sharing, maps, and production deployment are the next migration stages. The existing React/Cloudflare source remains temporarily in this branch as a behavior reference and will be removed after feature parity is reached.
