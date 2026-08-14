@@ -2,7 +2,7 @@ import { BedDouble, CalendarDays, CheckCircle2, CircleDollarSign, Clock3, MapPin
 import { useTrip } from "../TripContext";
 import { getScheduleDays } from "../data";
 import { getBudgetSummary } from "../derived";
-import { mapsSearch, yen } from "../lib";
+import { yen } from "../lib";
 import { PageLink, Panel, SectionHeading } from "../components/ui";
 
 export function HomePage() {
@@ -70,7 +70,7 @@ export function HomePage() {
         <Panel className="stay-summary">
           <div className="stay-icon"><MapPin size={24} aria-hidden="true" /></div>
           <div><strong>{tripSettings.hotelName}</strong><p>{tripSettings.hotelAddress}</p></div>
-          <a className="button button-secondary" href={mapsSearch(`${tripSettings.hotelName} ${tripSettings.hotelAddress}`)} target="_blank" rel="noreferrer">地図</a>
+          <a className="button button-secondary" href="#plan">地図を見る</a>
         </Panel>
       </section>
 
