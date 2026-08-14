@@ -1,0 +1,664 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>旅のしおり — Functional Brutalism</title>
+  <link rel="icon" href="../public/icons/favicon.svg" type="image/svg+xml">
+  <style>
+    :root {
+      --paper: #f3f0e7;
+      --white: #fffdf7;
+      --ink: #10110f;
+      --muted: #5b5e57;
+      --blue: #0647d7;
+      --green: #007a51;
+      --rule: 1px solid var(--ink);
+      --heavy: 3px solid var(--ink);
+      --pad: clamp(16px, 2.4vw, 36px);
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Yu Gothic UI", "Hiragino Kaku Gothic ProN", Meiryo, sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    html { background: var(--paper); }
+
+    body {
+      margin: 0;
+      min-width: 320px;
+      min-height: 100dvh;
+      color: var(--ink);
+      background:
+        linear-gradient(90deg, transparent calc(100% - 1px), rgba(16,17,15,.08) 0) 0 0 / 32px 32px,
+        linear-gradient(transparent calc(100% - 1px), rgba(16,17,15,.08) 0) 0 0 / 32px 32px,
+        var(--paper);
+      font-size: 16px;
+      line-height: 1.5;
+      overflow-x: hidden;
+    }
+
+    button { font: inherit; }
+
+    button, [role="button"] {
+      min-height: 44px;
+      min-width: 44px;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+
+    :focus-visible {
+      outline: 4px solid var(--green);
+      outline-offset: 3px;
+    }
+
+    .skip-link {
+      position: fixed;
+      z-index: 100;
+      top: 8px;
+      left: 8px;
+      padding: 10px 14px;
+      color: white;
+      background: var(--ink);
+      transform: translateY(-160%);
+    }
+
+    .skip-link:focus { transform: translateY(0); }
+
+    .shell {
+      width: min(100% - 32px, 1360px);
+      min-height: calc(100dvh - 32px);
+      margin: 16px auto;
+      border: var(--heavy);
+      background: var(--white);
+      box-shadow: 8px 8px 0 var(--ink);
+    }
+
+    .masthead {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: stretch;
+      border-bottom: var(--heavy);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      min-width: 0;
+      padding: 14px var(--pad);
+    }
+
+    .brand img { width: 32px; height: 32px; }
+
+    .brand strong {
+      display: block;
+      font-size: clamp(18px, 2vw, 25px);
+      line-height: 1.1;
+      letter-spacing: .04em;
+    }
+
+    .brand small {
+      display: block;
+      margin-top: 3px;
+      color: var(--muted);
+      font: 700 11px/1.1 ui-monospace, SFMono-Regular, Consolas, monospace;
+      letter-spacing: .16em;
+    }
+
+    .view-switch {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(112px, 1fr));
+      border-left: var(--heavy);
+    }
+
+    .view-switch button {
+      border: 0;
+      border-left: var(--rule);
+      padding: 10px 16px;
+      color: var(--ink);
+      background: var(--white);
+      font-weight: 800;
+      letter-spacing: .04em;
+    }
+
+    .view-switch button:first-child { border-left: 0; }
+    .view-switch button:hover { background: #dfe7ff; }
+    .view-switch button:active { background: var(--ink); color: white; }
+    .view-switch button[aria-selected="true"] { background: var(--blue); color: white; }
+
+    .screen {
+      min-height: calc(100dvh - 150px);
+      opacity: 1;
+      transition: opacity 180ms ease, transform 180ms ease;
+    }
+
+    .screen[hidden] { display: none; }
+
+    .eyebrow {
+      margin: 0;
+      color: var(--blue);
+      font: 800 12px/1.2 ui-monospace, SFMono-Regular, Consolas, monospace;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+    }
+
+    h1, h2, h3, p { margin-top: 0; }
+
+    h1 {
+      margin-bottom: 0;
+      font-size: clamp(36px, 5.2vw, 78px);
+      line-height: .98;
+      letter-spacing: -.055em;
+    }
+
+    .list-head {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 24px;
+      align-items: end;
+      padding: clamp(28px, 5vw, 72px) var(--pad) 28px;
+      border-bottom: var(--rule);
+    }
+
+    .list-head .eyebrow { margin-bottom: 12px; }
+
+    .issue-button {
+      align-self: end;
+      min-height: 52px;
+      border: 2px solid var(--ink);
+      padding: 12px 22px;
+      color: white;
+      background: var(--blue);
+      box-shadow: 4px 4px 0 var(--ink);
+      font-weight: 800;
+    }
+
+    .issue-button:hover { background: #0036a8; }
+    .issue-button:active { transform: translate(4px, 4px); box-shadow: none; }
+
+    .ticket-stage {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 210px;
+      padding: var(--pad);
+    }
+
+    .ticket {
+      display: grid;
+      grid-template-columns: minmax(0, 1.6fr) minmax(170px, .65fr);
+      border: var(--heavy);
+      background: var(--white);
+      box-shadow: 10px 10px 0 #bdc9e8;
+    }
+
+    .ticket-main { min-width: 0; }
+
+    .ticket-top,
+    .ticket-bottom {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 16px;
+      font: 700 12px/1.2 ui-monospace, SFMono-Regular, Consolas, monospace;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    .ticket-top { border-bottom: var(--rule); }
+    .ticket-bottom { border-top: var(--rule); }
+
+    .status {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      color: var(--green);
+      font-weight: 900;
+    }
+
+    .status::before {
+      width: 9px;
+      height: 9px;
+      border: 2px solid currentColor;
+      background: var(--white);
+      content: "";
+    }
+
+    .route {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 64px minmax(0, 1fr);
+      align-items: center;
+      gap: 16px;
+      min-height: 210px;
+      padding: clamp(24px, 4vw, 52px);
+    }
+
+    .route-place {
+      font-size: clamp(22px, 3.6vw, 50px);
+      font-weight: 900;
+      line-height: 1.08;
+      letter-spacing: -.04em;
+      overflow-wrap: anywhere;
+    }
+
+    .route-line {
+      position: relative;
+      height: 3px;
+      background: var(--ink);
+    }
+
+    .route-line::after {
+      position: absolute;
+      right: 0;
+      top: 50%;
+      width: 12px;
+      height: 12px;
+      border-top: 3px solid var(--ink);
+      border-right: 3px solid var(--ink);
+      content: "";
+      transform: translateY(-50%) rotate(45deg);
+    }
+
+    .ticket-stub {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 22px;
+      border-left: 2px dashed var(--ink);
+      background: #e8f6ef;
+    }
+
+    .ticket-stub::before,
+    .ticket-stub::after {
+      position: absolute;
+      left: -13px;
+      width: 22px;
+      height: 22px;
+      border: var(--heavy);
+      border-radius: 50%;
+      background: var(--paper);
+      content: "";
+    }
+
+    .ticket-stub::before { top: -13px; }
+    .ticket-stub::after { bottom: -13px; }
+
+    .date {
+      font: 900 clamp(28px, 3.6vw, 48px)/1 ui-monospace, SFMono-Regular, Consolas, monospace;
+      letter-spacing: -.08em;
+    }
+
+    .stub-meta { display: grid; gap: 8px; font-weight: 800; }
+
+    .open-ticket {
+      min-height: 52px;
+      border: 2px solid var(--ink);
+      padding: 10px 16px;
+      color: white;
+      background: var(--green);
+      font-weight: 900;
+      text-align: left;
+    }
+
+    .open-ticket:hover { background: #005d3e; }
+    .open-ticket:active { color: var(--ink); background: white; }
+
+    .index-note {
+      display: flex;
+      align-items: flex-end;
+      justify-content: flex-end;
+      padding: 0 0 12px 24px;
+      color: var(--muted);
+      font: 700 12px/1.45 ui-monospace, SFMono-Regular, Consolas, monospace;
+      writing-mode: vertical-rl;
+      letter-spacing: .1em;
+    }
+
+    .trip-grid {
+      display: grid;
+      grid-template-columns: minmax(250px, .68fr) minmax(0, 1.5fr);
+      min-height: calc(100dvh - 150px);
+    }
+
+    .trip-sidebar {
+      display: flex;
+      flex-direction: column;
+      border-right: var(--heavy);
+    }
+
+    .back-button {
+      width: 100%;
+      min-height: 52px;
+      border: 0;
+      border-bottom: var(--rule);
+      padding: 10px 20px;
+      background: var(--white);
+      font-weight: 900;
+      text-align: left;
+    }
+
+    .back-button:hover { color: white; background: var(--blue); }
+    .back-button:active { color: var(--ink); background: #dfe7ff; }
+
+    .trip-title { padding: 28px 24px; border-bottom: var(--rule); }
+    .trip-title .eyebrow { margin-bottom: 18px; }
+    .trip-title h1 { font-size: clamp(36px, 4vw, 60px); }
+    .trip-title p { margin: 16px 0 0; font-weight: 800; }
+
+    .trip-nav { display: grid; }
+
+    .trip-nav button {
+      display: grid;
+      grid-template-columns: 42px 1fr;
+      align-items: center;
+      min-height: 56px;
+      border: 0;
+      border-bottom: var(--rule);
+      padding: 0 18px 0 0;
+      color: var(--ink);
+      background: var(--white);
+      font-weight: 800;
+      text-align: left;
+    }
+
+    .trip-nav button span:first-child {
+      display: grid;
+      height: 100%;
+      place-items: center;
+      border-right: var(--rule);
+      color: var(--muted);
+      font: 800 12px/1 ui-monospace, SFMono-Regular, Consolas, monospace;
+    }
+
+    .trip-nav button span:last-child { padding-left: 16px; }
+    .trip-nav button:hover { background: #e8f6ef; }
+    .trip-nav button:active { background: var(--ink); color: white; }
+    .trip-nav button[aria-current="page"] { color: white; background: var(--blue); }
+
+    .device-state {
+      margin-top: auto;
+      padding: 16px 20px;
+      border-top: var(--rule);
+      color: var(--green);
+      font-weight: 900;
+    }
+
+    .trip-content { min-width: 0; }
+
+    .trip-hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 24px;
+      align-items: end;
+      padding: clamp(28px, 5vw, 64px) var(--pad) 28px;
+      border-bottom: var(--heavy);
+    }
+
+    .trip-hero .eyebrow { margin-bottom: 10px; }
+    .trip-hero h2 { margin: 0; font-size: clamp(32px, 4.6vw, 68px); line-height: 1; letter-spacing: -.055em; }
+    .trip-date { font: 900 18px/1.3 ui-monospace, SFMono-Regular, Consolas, monospace; }
+
+    .facts {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      border-bottom: var(--heavy);
+    }
+
+    .fact {
+      min-width: 0;
+      min-height: 136px;
+      padding: 20px;
+      border-right: var(--rule);
+    }
+
+    .fact:last-child { border-right: 0; }
+    .fact small { display: block; margin-bottom: 14px; color: var(--muted); font-weight: 800; }
+    .fact strong { font-size: clamp(18px, 2.1vw, 28px); line-height: 1.15; }
+    .fact strong span { color: var(--blue); }
+
+    .itinerary { padding: 24px var(--pad) 36px; }
+    .itinerary-head { display: flex; justify-content: space-between; gap: 16px; align-items: baseline; margin-bottom: 16px; }
+    .itinerary h3 { margin: 0; font-size: clamp(20px, 2vw, 28px); }
+    .itinerary-head span { color: var(--muted); font: 700 12px/1 ui-monospace, SFMono-Regular, Consolas, monospace; }
+
+    .itinerary ol { margin: 0; padding: 0; border-top: var(--heavy); list-style: none; }
+
+    .itinerary li {
+      display: grid;
+      grid-template-columns: 90px 1fr;
+      min-height: 60px;
+      border-bottom: var(--rule);
+    }
+
+    .itinerary time {
+      display: flex;
+      align-items: center;
+      padding: 10px 14px;
+      border-right: var(--rule);
+      color: var(--blue);
+      font: 900 20px/1 ui-monospace, SFMono-Regular, Consolas, monospace;
+    }
+
+    .itinerary li span { display: flex; align-items: center; padding: 10px 18px; font-weight: 800; }
+
+    @media (max-width: 760px) {
+      .shell { width: 100%; min-height: 100dvh; margin: 0; border-width: 0; box-shadow: none; }
+      .masthead { position: sticky; z-index: 10; top: 0; grid-template-columns: 1fr; background: var(--white); }
+      .brand { padding: 12px 16px; }
+      .brand img { width: 28px; height: 28px; }
+      .view-switch { min-height: 52px; border-top: var(--rule); border-left: 0; }
+      .view-switch button { min-height: 52px; }
+      .screen { min-height: auto; }
+      .list-head { grid-template-columns: 1fr; padding: 28px 16px 20px; }
+      .list-head h1 { font-size: clamp(38px, 12vw, 52px); }
+      .issue-button { width: 100%; }
+      .ticket-stage { grid-template-columns: minmax(0, 1fr); padding: 20px 16px 34px; }
+      .ticket { grid-template-columns: minmax(0, 1fr); box-shadow: 6px 6px 0 #bdc9e8; }
+      .route { grid-template-columns: minmax(0, 1fr) 40px minmax(0, 1fr); gap: 10px; min-height: 142px; padding: 22px 16px; }
+      .route-place { font-size: clamp(19px, 6vw, 26px); }
+      .ticket-stub { min-height: 175px; border-top: 2px dashed var(--ink); border-left: 0; }
+      .ticket-stub::before, .ticket-stub::after { top: -13px; bottom: auto; }
+      .ticket-stub::before { left: -13px; }
+      .ticket-stub::after { left: auto; right: -13px; }
+      .index-note { display: none; }
+      .trip-grid { grid-template-columns: 1fr; min-height: auto; }
+      .trip-sidebar { border-right: 0; }
+      .trip-title { padding: 20px 16px; }
+      .trip-title h1 { font-size: 36px; }
+      .trip-title p { margin-top: 10px; }
+      .trip-nav { grid-template-columns: repeat(5, minmax(0, 1fr)); border-bottom: var(--heavy); }
+      .trip-nav button { display: block; min-width: 0; min-height: 54px; padding: 4px; border-right: var(--rule); border-bottom: 0; text-align: center; font-size: 14px; }
+      .trip-nav button:last-child { border-right: 0; }
+      .trip-nav button span:first-child { display: none; }
+      .trip-nav button span:last-child { padding-left: 0; }
+      .device-state { margin-top: 0; padding: 10px 16px; border-top: 0; border-bottom: var(--rule); font-size: 14px; }
+      .trip-hero { grid-template-columns: 1fr; gap: 14px; padding: 28px 16px 20px; }
+      .trip-hero h2 { font-size: clamp(38px, 11vw, 50px); }
+      .facts { grid-template-columns: 1fr; }
+      .fact { min-height: 0; padding: 16px; border-right: 0; border-bottom: var(--rule); }
+      .fact:last-child { border-bottom: 0; }
+      .fact small { margin-bottom: 6px; }
+      .itinerary { padding: 22px 16px 32px; }
+      .itinerary li { grid-template-columns: 78px 1fr; }
+      .itinerary time { padding-left: 8px; font-size: 18px; }
+      .itinerary li span { padding-inline: 12px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        scroll-behavior: auto !important;
+        transition-duration: .01ms !important;
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!--
+    ASSUMPTIONS / REASONING
+    - The brief names blue and green interaction cues but contains no numeric brand values, so accessible cobalt and green values are used as the two chromatic colors, with warm paper neutrals.
+    - Functional Brutalism is interpreted as exposed hierarchy: hard rules, system type, tabular figures, square controls, zero decorative photography, and a ticket perforation that continues as the itinerary grid.
+    - The single supplied ticket is the only collection item; no second trip or fabricated metadata is introduced. Desktop prioritizes density while mobile stacks the same information without horizontal scrolling.
+    - The ticket and back controls form a reversible two-view prototype; secondary trip navigation demonstrates state only because the brief supplies labels but no destination content.
+  -->
+  <a class="skip-link" href="#main">本文へ移動</a>
+  <div class="shell">
+    <header class="masthead">
+      <div class="brand">
+        <img src="../public/icons/favicon.svg" alt="">
+        <div>
+          <strong>旅のしおり</strong>
+          <small>TRAVEL TICKETS</small>
+        </div>
+      </div>
+      <div class="view-switch" role="tablist" aria-label="表示を切り替え">
+        <button id="tab-tickets" type="button" role="tab" aria-selected="true" aria-controls="tickets-screen">チケット一覧</button>
+        <button id="tab-trip" type="button" role="tab" aria-selected="false" aria-controls="trip-screen">旅行ホーム</button>
+      </div>
+    </header>
+
+    <main id="main">
+      <section class="screen" id="tickets-screen" role="tabpanel" aria-labelledby="tab-tickets">
+        <div class="list-head">
+          <div>
+            <p class="eyebrow">TRAVEL TICKETS</p>
+            <h1>旅のチケット</h1>
+          </div>
+          <button class="issue-button" type="button">チケットを発行</button>
+        </div>
+
+        <div class="ticket-stage">
+          <article class="ticket" aria-labelledby="ticket-name">
+            <div class="ticket-main">
+              <div class="ticket-top">
+                <span id="ticket-name">旅のしおり</span>
+                <span class="status">計画中</span>
+              </div>
+              <div class="route">
+                <div class="route-place">鹿児島空港</div>
+                <span class="route-line" aria-hidden="true"></span>
+                <div class="route-place">都城グリーンホテル</div>
+              </div>
+              <div class="ticket-bottom">
+                <span>2名</span>
+                <span>あと38日</span>
+              </div>
+            </div>
+            <div class="ticket-stub">
+              <div>
+                <p class="eyebrow">DATE / 2026</p>
+                <div class="date">09.21<br>—09.23</div>
+              </div>
+              <div class="stub-meta">
+                <span>都城旅行</span>
+                <button class="open-ticket" type="button" data-open-trip>この旅を開く →</button>
+              </div>
+            </div>
+          </article>
+          <aside class="index-note" aria-label="保存状態">端末保存 / TRAVEL TICKET</aside>
+        </div>
+      </section>
+
+      <section class="screen" id="trip-screen" role="tabpanel" aria-labelledby="tab-trip" hidden>
+        <div class="trip-grid">
+          <aside class="trip-sidebar">
+            <button class="back-button" type="button" data-open-tickets>← 旅のチケットへ戻る</button>
+            <div class="trip-title">
+              <p class="eyebrow">OPENED TRIP</p>
+              <h1>都城旅行</h1>
+              <p>2026.09.21–09.23</p>
+            </div>
+            <nav class="trip-nav" aria-label="旅行メニュー">
+              <button type="button" aria-current="page"><span>01</span><span>ホーム</span></button>
+              <button type="button"><span>02</span><span>予定</span></button>
+              <button type="button"><span>03</span><span>お金</span></button>
+              <button type="button"><span>04</span><span>持ち物</span></button>
+              <button type="button"><span>05</span><span>共有</span></button>
+            </nav>
+            <div class="device-state">■ 端末保存</div>
+          </aside>
+
+          <div class="trip-content">
+            <header class="trip-hero">
+              <div>
+                <p class="eyebrow">OSAKA → MIYAKONOJO</p>
+                <h2>大阪から<br>都城へ</h2>
+              </div>
+              <div class="trip-date">2026.09.21<br>— 09.23</div>
+            </header>
+
+            <section class="facts" aria-label="重要情報">
+              <div class="fact">
+                <small>往路 / 関西発</small>
+                <strong><span>MM193</span><br>08:30</strong>
+              </div>
+              <div class="fact">
+                <small>復路 / 鹿児島発</small>
+                <strong><span>MM198</span><br>16:30</strong>
+              </div>
+              <div class="fact">
+                <small>宿泊</small>
+                <strong>都城グリーンホテル</strong>
+              </div>
+            </section>
+
+            <section class="itinerary" aria-labelledby="next-title">
+              <div class="itinerary-head">
+                <h3 id="next-title">次の予定</h3>
+                <span>09.21 / SEQUENCE</span>
+              </div>
+              <ol>
+                <li><time datetime="05:40">05:40</time><span>市岡元町を出る</span></li>
+                <li><time datetime="05:50">05:50</time><span>弁天町駅</span></li>
+                <li><time datetime="07:00">07:00</time><span>関西空港駅</span></li>
+              </ol>
+            </section>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    (() => {
+      const tabs = [...document.querySelectorAll('[role="tab"]')];
+      const panels = [...document.querySelectorAll('[role="tabpanel"]')];
+
+      function show(target, moveFocus = false) {
+        tabs.forEach((tab) => {
+          const selected = tab.id === `tab-${target}`;
+          tab.setAttribute('aria-selected', String(selected));
+          tab.tabIndex = selected ? 0 : -1;
+          if (selected && moveFocus) tab.focus();
+        });
+        panels.forEach((panel) => {
+          panel.hidden = panel.id !== `${target}-screen`;
+        });
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+
+      tabs.forEach((tab, index) => {
+        tab.addEventListener('click', () => show(tab.id.replace('tab-', '')));
+        tab.addEventListener('keydown', (event) => {
+          if (!['ArrowLeft', 'ArrowRight'].includes(event.key)) return;
+          event.preventDefault();
+          const next = event.key === 'ArrowRight' ? (index + 1) % tabs.length : (index - 1 + tabs.length) % tabs.length;
+          show(tabs[next].id.replace('tab-', ''), true);
+        });
+      });
+
+      document.querySelector('[data-open-trip]').addEventListener('click', () => show('trip'));
+      document.querySelector('[data-open-tickets]').addEventListener('click', () => show('tickets'));
+
+      document.querySelectorAll('.trip-nav button').forEach((button) => {
+        button.addEventListener('click', () => {
+          document.querySelectorAll('.trip-nav button').forEach((item) => item.removeAttribute('aria-current'));
+          button.setAttribute('aria-current', 'page');
+        });
+      });
+    })();
+  </script>
+</body>
+</html>
