@@ -157,22 +157,33 @@ export function PmtilesMap({ markers, route = [], focusedRoute = [], focus, aria
   }, []);
 
   useEffect(() => {
-    if (!focus || !mapRef.current) return;
-    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    mapRef.current.easeTo({ center: [focus.longitude, focus.latitude], zoom: 14, duration: reducedMotion ? 0 : 500 });
+    const map = mapRef.current;
+    if (!focus || !map) return;
+    const applyFocus = () => {
+      const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      map.easeTo({ center: [focus.longitude, focus.latitude], zoom: 14, duration: reducedMotion ? 0 : 500 });
+    };
+    if (map.isStyleLoaded()) applyFocus();
+    else map.once("load", applyFocus);
+    return () => { map.off("load", applyFocus); };
   }, [focus]);
 
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !map.isStyleLoaded()) return;
-    (map.getSource("route-focus") as GeoJSONSource | undefined)?.setData(routeGeoJson(focusedRoute));
-    if (focusedRoute.length < 2) return;
-    const bounds = focusedRoute.reduce(
-      (current, point) => current.extend([point.longitude, point.latitude]),
-      new LngLatBounds([focusedRoute[0].longitude, focusedRoute[0].latitude], [focusedRoute[0].longitude, focusedRoute[0].latitude]),
-    );
-    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    map.fitBounds(bounds, { padding: 72, maxZoom: 15, duration: reducedMotion ? 0 : 500 });
+    if (!map) return;
+    const applyRouteFocus = () => {
+      (map.getSource("route-focus") as GeoJSONSource | undefined)?.setData(routeGeoJson(focusedRoute));
+      if (focusedRoute.length < 2) return;
+      const bounds = focusedRoute.reduce(
+        (current, point) => current.extend([point.longitude, point.latitude]),
+        new LngLatBounds([focusedRoute[0].longitude, focusedRoute[0].latitude], [focusedRoute[0].longitude, focusedRoute[0].latitude]),
+      );
+      const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      map.fitBounds(bounds, { padding: 72, maxZoom: 15, duration: reducedMotion ? 0 : 500 });
+    };
+    if (map.isStyleLoaded()) applyRouteFocus();
+    else map.once("load", applyRouteFocus);
+    return () => { map.off("load", applyRouteFocus); };
   }, [focusedRoute]);
 
   const submitSearch = async (event: FormEvent) => {
