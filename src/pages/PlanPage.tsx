@@ -1,11 +1,12 @@
 import { LocateFixed, MapPin, Plus, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { PmtilesMap, type MapMarker } from "../components/PmtilesMap";
+import { PlaceSearchField } from "../components/PlaceSearchField";
 import { EmptyState, IconButton, Panel, SectionHeading } from "../components/ui";
 import { defaultTripSettings, getScheduleDays } from "../data";
 import { makeId } from "../lib";
 import { useTrip } from "../TripContext";
-import type { MapLocation, ScheduleItem } from "../types";
+import type { ScheduleItem } from "../types";
 
 export function PlanPage() {
   const { tripSettings, schedule, setSchedule } = useTrip();
@@ -25,17 +26,11 @@ export function PlanPage() {
     setSchedule((current) => ({ ...current, items: [...current.items, { id: makeId("schedule"), day: activeDay, time: "", title: "", memo: "", isTimeUnset: true }] }));
   };
   const deleteItem = (id: string) => setSchedule((current) => ({ ...current, items: current.items.filter((item) => item.id !== id) }));
-  const updateLocation = (id: string, key: keyof MapLocation, value: string) => {
-    const currentLocation = schedule.items.find((item) => item.id === id)?.location;
-    const next = Number(value);
-    updateItem(id, { location: { longitude: 0, latitude: 0, ...currentLocation, [key]: Number.isFinite(next) ? next : 0 } });
-  };
-
   const routeMarkers = useMemo<MapMarker[]>(() => [
     { id: "route-origin", label: tripSettings.mapOrigin, kind: "origin", ...originLocation },
     { id: "route-destination", label: tripSettings.mapDestination, kind: "destination", ...destinationLocation },
   ], [destinationLocation, originLocation, tripSettings.mapDestination, tripSettings.mapOrigin]);
-  const scheduleMarkers = useMemo<MapMarker[]>(() => items.flatMap((item) => item.location ? [{ id: item.id, label: item.title || "予定地点", kind: "schedule" as const, ...item.location }] : []), [items]);
+  const scheduleMarkers = useMemo<MapMarker[]>(() => items.flatMap((item) => item.location ? [{ id: item.id, label: item.locationLabel || item.title || "予定地点", kind: "schedule" as const, ...item.location }] : []), [items]);
   const mapMarkers = [...routeMarkers, ...scheduleMarkers];
   const mapKey = mapMarkers.map(({ id, longitude, latitude }) => `${id}:${longitude}:${latitude}`).join("|");
 
@@ -57,11 +52,12 @@ export function PlanPage() {
             </div>
             <label><span>予定</span><input value={item.title} maxLength={40} placeholder="例：ホテルにチェックイン" onChange={(event) => updateItem(item.id, { title: event.target.value })} /></label>
             <label><span>メモ</span><textarea value={item.memo} maxLength={120} rows={2} placeholder="待ち合わせや予約番号など" onChange={(event) => updateItem(item.id, { memo: event.target.value })} /></label>
-            <div className="location-fields">
-              <label><span>経度</span><input type="number" inputMode="decimal" step="0.0001" value={item.location?.longitude ?? ""} placeholder="131.0736" onChange={(event) => updateLocation(item.id, "longitude", event.target.value)} /></label>
-              <label><span>緯度</span><input type="number" inputMode="decimal" step="0.0001" value={item.location?.latitude ?? ""} placeholder="31.7356" onChange={(event) => updateLocation(item.id, "latitude", event.target.value)} /></label>
-              <button className="button button-secondary location-button" type="button" disabled={!item.location} onClick={() => item.location && setFocusMarker({ id: item.id, label: item.title || "予定地点", kind: "schedule", ...item.location })}><LocateFixed size={17} />地図で見る</button>
-            </div>
+            <PlaceSearchField id={item.id} location={item.location} locationLabel={item.locationLabel || (item.location ? item.title : "")} onSelect={(result) => {
+              const locationLabel = result.name || result.label;
+              updateItem(item.id, { location: { longitude: result.longitude, latitude: result.latitude }, locationLabel });
+              setFocusMarker({ id: item.id, label: locationLabel, kind: "schedule", longitude: result.longitude, latitude: result.latitude });
+            }} />
+            <button className="button button-secondary location-button" type="button" disabled={!item.location} onClick={() => item.location && setFocusMarker({ id: item.id, label: item.locationLabel || item.title || "予定地点", kind: "schedule", ...item.location })}><LocateFixed size={17} />地図で見る</button>
           </Panel>
         )) : <EmptyState>この日の予定はまだありません。</EmptyState>}
         <button className="button button-primary add-wide" type="button" onClick={addItem}><Plus size={20} />予定を追加</button>

@@ -3,6 +3,7 @@ import { layers, namedFlavor } from "@protomaps/basemaps";
 import * as maplibregl from "maplibre-gl";
 import { LngLatBounds, type Map as MapLibreMap, type StyleSpecification } from "maplibre-gl";
 import { Protocol } from "pmtiles";
+import { geocodePlaces, type GeocoderResult } from "../geocoding";
 import type { MapLocation } from "../types";
 import "maplibre-gl/dist/maplibre-gl.css";
 
@@ -19,18 +20,8 @@ type Props = {
   ariaLabel: string;
 };
 
-type SearchResult = MapLocation & { id: string; label: string };
-type NominatimResult = { place_id: number; display_name: string; lat: string; lon: string };
-
 const protocol = new Protocol();
 let protocolUsers = 0;
-let lastGeocoderRequest = 0;
-const geocoderCache = new Map<string, SearchResult[]>();
-const mapCoverage = [
-  { west: 135.35, south: 34.58, east: 135.58, north: 34.75 },
-  { west: 135.15, south: 34.38, east: 135.34, north: 34.50 },
-  { west: 130.55, south: 31.60, east: 131.25, north: 31.90 },
-];
 
 function acquireProtocol() {
   if (protocolUsers === 0) maplibregl.addProtocol("pmtiles", protocol.tile);
@@ -45,39 +36,6 @@ function releaseProtocol() {
 function pmtilesUrl() {
   const configured = import.meta.env.VITE_PMTILES_URL || "/maps/travel-miyazaki.pmtiles";
   return new URL(configured, window.location.origin).href;
-}
-
-function isInMapCoverage({ longitude, latitude }: MapLocation) {
-  return mapCoverage.some(({ west, south, east, north }) => longitude >= west && longitude <= east && latitude >= south && latitude <= north);
-}
-
-async function geocode(query: string): Promise<SearchResult[]> {
-  const cacheKey = query.trim().toLocaleLowerCase("ja-JP");
-  const cached = geocoderCache.get(cacheKey);
-  if (cached) return cached;
-  const wait = Math.max(0, 1000 - (Date.now() - lastGeocoderRequest));
-  if (wait) await new Promise((resolve) => window.setTimeout(resolve, wait));
-  lastGeocoderRequest = Date.now();
-  const endpoint = import.meta.env.VITE_GEOCODER_URL || "https://nominatim.openstreetmap.org/search";
-  const url = new URL(endpoint);
-  url.search = new URLSearchParams({
-    q: query,
-    format: "jsonv2",
-    limit: "5",
-    countrycodes: "jp",
-    "accept-language": "ja",
-  }).toString();
-  const response = await fetch(url, { headers: { accept: "application/json" } });
-  if (!response.ok) throw new Error(`Geocoder returned ${response.status}`);
-  const payload = await response.json() as NominatimResult[];
-  const results = payload.map((result) => ({
-    id: `nominatim-${result.place_id}`,
-    label: result.display_name,
-    longitude: Number(result.lon),
-    latitude: Number(result.lat),
-  })).filter(isInMapCoverage);
-  geocoderCache.set(cacheKey, results);
-  return results;
 }
 
 function createStyle(route: MapLocation[]): StyleSpecification {
@@ -126,7 +84,7 @@ export function PmtilesMap({ markers, route = [], focus, ariaLabel }: Props) {
   const [query, setQuery] = useState("");
   const [searching, setSearching] = useState(false);
   const [searchStatus, setSearchStatus] = useState("");
-  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+  const [searchResults, setSearchResults] = useState<GeocoderResult[]>([]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -206,7 +164,7 @@ export function PmtilesMap({ markers, route = [], focus, ariaLabel }: Props) {
     setSearchStatus("地点を検索中...");
     setSearchResults([]);
     try {
-      const results = await geocode(normalized);
+      const results = await geocodePlaces(normalized);
       setSearchResults(results);
       setSearchStatus(results.length ? `${results.length}件見つかりました。` : "収録範囲内に見つかりませんでした。住所や施設名を変えてお試しください。");
     } catch {
@@ -216,7 +174,7 @@ export function PmtilesMap({ markers, route = [], focus, ariaLabel }: Props) {
     }
   };
 
-  const showSearchResult = (result: SearchResult) => {
+  const showSearchResult = (result: GeocoderResult) => {
     const map = mapRef.current;
     if (!map) return;
     searchMarkerRef.current?.remove();

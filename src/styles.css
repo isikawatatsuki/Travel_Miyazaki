@@ -134,8 +134,16 @@ input, textarea, select { width: 100%; min-height: 44px; padding: 10px 12px; col
 textarea { resize: vertical; line-height: 1.6; }
 input:disabled { color: #8b9792; background: #eef0ed; }
 .schedule-card > label + label { margin-top: 12px; }
-.location-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 12px; align-items: end; }
-.location-button { grid-column: 1 / -1; }
+.place-search-field { margin-top: 12px; }
+.place-search-controls { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: end; }
+.place-search-controls label { min-width: 0; }
+.place-search-controls .button { min-width: 92px; }
+.place-search-status { min-height: 22px; margin: 4px 0 0; color: var(--muted); font-size: 12px; line-height: 1.6; }
+.place-search-results { max-height: 180px; display: grid; margin-top: 6px; overflow-y: auto; background: var(--paper); border: 1px solid var(--line); border-radius: 7px; box-shadow: var(--shadow); }
+.place-search-results button { min-height: 48px; padding: 10px 12px; color: var(--ink); text-align: left; background: transparent; border: 0; border-bottom: 1px solid var(--line); line-height: 1.5; }
+.place-search-results button:last-child { border-bottom: 0; }
+.place-search-results button:hover { background: var(--green-soft); }
+.location-button { width: 100%; margin-top: 8px; }
 .add-wide { width: 100%; justify-content: center; }
 
 .button { min-height: 44px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 16px; border: 1px solid transparent; border-radius: 7px; font-weight: 800; text-decoration: none; transition: background-color 180ms ease, border-color 180ms ease, color 180ms ease, opacity 180ms ease; }
@@ -277,8 +285,6 @@ input:disabled { color: #8b9792; background: #eef0ed; }
   .money-summary, .settlement-metrics { grid-template-columns: repeat(2, 1fr); }
   .field-grid.two { grid-template-columns: repeat(2, 1fr); }
   .schedule-card-head { display: flex; }
-  .location-fields { grid-template-columns: repeat(2, minmax(0, 1fr)) auto; }
-  .location-button { grid-column: auto; }
   .editable-row { grid-template-columns: minmax(0, 1.5fr) minmax(120px, .7fr) auto; }
   .editable-row.souvenir { grid-template-columns: minmax(0, 1.4fr) minmax(80px, .45fr) minmax(110px, .6fr) auto; }
   .payment-row { grid-template-columns: minmax(0, 1.4fr) minmax(130px, .7fr) minmax(120px, .6fr) auto; }
