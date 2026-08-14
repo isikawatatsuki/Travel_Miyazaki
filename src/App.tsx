@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useState } from "react";
-import { CalendarDays, CircleDollarSign, Home, Luggage, Settings, Share2 } from "lucide-react";
+import { ArrowLeft, CalendarDays, CircleDollarSign, Home, Luggage, Settings, Share2, Ticket } from "lucide-react";
 import { TripProvider, useTrip } from "./TripContext";
 import { useOnlineStatus } from "./lib";
 import type { PageKey } from "./types";
@@ -8,10 +8,13 @@ import { MoneyPage } from "./pages/MoneyPage";
 import { PackingPage } from "./pages/PackingPage";
 import { SharePage } from "./pages/SharePage";
 import { SettingsDrawer } from "./components/SettingsDrawer";
+import { TicketsPage } from "./pages/TicketsPage";
 
 const PlanPage = lazy(() => import("./pages/PlanPage").then((module) => ({ default: module.PlanPage })));
 
-const pages: Array<{ id: PageKey; label: string; icon: typeof Home }> = [
+type TicketPageKey = Exclude<PageKey, "tickets">;
+
+const pages: Array<{ id: TicketPageKey; label: string; icon: typeof Home }> = [
   { id: "home", label: "ホーム", icon: Home },
   { id: "plan", label: "予定", icon: CalendarDays },
   { id: "money", label: "お金", icon: CircleDollarSign },
@@ -21,14 +24,15 @@ const pages: Array<{ id: PageKey; label: string; icon: typeof Home }> = [
 
 function pageFromHash(): PageKey {
   const value = window.location.hash.replace("#", "") as PageKey;
-  return pages.some((page) => page.id === value) ? value : "home";
+  return value === "tickets" || pages.some((page) => page.id === value) ? value : "tickets";
 }
 
 function AppShell() {
   const [page, setPage] = useState<PageKey>(pageFromHash);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const online = useOnlineStatus();
-  const { activeGroup, syncStatus } = useTrip();
+  const { activeGroup, activeTicket, syncStatus } = useTrip();
+  const inTicket = page !== "tickets";
 
   useEffect(() => {
     const onHashChange = () => {
@@ -37,11 +41,16 @@ function AppShell() {
       window.requestAnimationFrame(() => document.getElementById("main-content")?.focus());
     };
     window.addEventListener("hashchange", onHashChange);
-    if (!window.location.hash) window.history.replaceState(null, "", "#home");
+    if (!window.location.hash) window.history.replaceState(null, "", "#tickets");
     return () => window.removeEventListener("hashchange", onHashChange);
   }, []);
 
+  useEffect(() => {
+    if (inTicket && !activeTicket) window.location.hash = "#tickets";
+  }, [activeTicket, inTicket]);
+
   const pageContent = {
+    tickets: <TicketsPage onOpenTicket={() => { window.location.hash = "#home"; }} />,
     home: <HomePage />,
     plan: <Suspense fallback={<p className="empty-state page-loading" role="status">地図と予定を読み込み中...</p>}><PlanPage /></Suspense>,
     money: <MoneyPage />,
@@ -50,19 +59,20 @@ function AppShell() {
   }[page];
 
   return (
-    <div className="app-shell">
+    <div className={`app-shell ${inTicket ? "is-ticket-open" : "is-ticket-list"}`} style={inTicket ? { ["--ticket-color" as string]: activeTicket?.themeColor || "#23745b" } : undefined}>
       <header className="app-header">
-        <a className="brand" href="#home" aria-label="旅のしおり ホーム">
-          <span>Trip Note</span>
-          <strong>旅のしおり</strong>
+        <a className={`brand ${inTicket ? "brand-back" : ""}`} href="#tickets" aria-label={inTicket ? "チケット一覧へ戻る" : "旅のチケット ホーム"}>
+          {inTicket ? <ArrowLeft size={21} aria-hidden="true" /> : <Ticket size={22} aria-hidden="true" />}
+          <span>{inTicket ? "チケット一覧" : "Travel Tickets"}</span>
+          <strong>{inTicket ? activeTicket?.name || "旅のしおり" : "旅のチケット"}</strong>
         </a>
         <div className="header-actions">
           <span className={`sync-pill ${online ? "" : "is-offline"}`} title={syncStatus}>
             <i aria-hidden="true" />{online ? (activeGroup ? "共有中" : "端末保存") : "オフライン"}
           </span>
-          <button className="icon-button" type="button" onClick={() => setSettingsOpen(true)} aria-label="旅の設定を開く">
+          {inTicket && <button className="icon-button" type="button" onClick={() => setSettingsOpen(true)} aria-label="旅の設定を開く">
             <Settings size={22} aria-hidden="true" />
-          </button>
+          </button>}
         </div>
       </header>
 
@@ -70,15 +80,15 @@ function AppShell() {
         {pageContent}
       </main>
 
-      <nav className="bottom-nav" aria-label="メインメニュー">
+      {inTicket && <nav className="bottom-nav" aria-label="メインメニュー">
         {pages.map(({ id, label, icon: Icon }) => (
           <a key={id} href={`#${id}`} className={page === id ? "is-active" : ""} aria-current={page === id ? "page" : undefined}>
             <Icon size={22} aria-hidden="true" />
             <span>{label}</span>
           </a>
         ))}
-      </nav>
-      <SettingsDrawer open={settingsOpen} onClose={() => setSettingsOpen(false)} />
+      </nav>}
+      {inTicket && <SettingsDrawer open={settingsOpen} onClose={() => setSettingsOpen(false)} />}
     </div>
   );
 }
