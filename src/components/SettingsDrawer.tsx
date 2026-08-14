@@ -30,6 +30,13 @@ export function SettingsDrawer({ open, onClose }: { open: boolean; onClose: () =
   }, [onClose, open]);
 
   const field = <K extends keyof TripSettings>(key: K, value: TripSettings[K]) => setDraft((current) => ({ ...current, [key]: value }));
+  const coordinate = (fieldKey: "mapOriginLocation" | "mapDestinationLocation" | "hotelLocation", key: "longitude" | "latitude", value: string) => {
+    const parsed = Number(value);
+    setDraft((current) => ({ ...current, [fieldKey]: { ...defaultTripSettings[fieldKey], ...current[fieldKey], [key]: Number.isFinite(parsed) ? parsed : 0 } }));
+  };
+  const mapOriginLocation = draft.mapOriginLocation || defaultTripSettings.mapOriginLocation;
+  const mapDestinationLocation = draft.mapDestinationLocation || defaultTripSettings.mapDestinationLocation;
+  const hotelLocation = draft.hotelLocation || defaultTripSettings.hotelLocation;
   const save = async () => {
     setStatus("反映中...");
     await new Promise((resolve) => window.setTimeout(resolve, 450));
@@ -65,11 +72,14 @@ export function SettingsDrawer({ open, onClose }: { open: boolean; onClose: () =
             <label><span>帰りの便・交通</span><input value={draft.returnLabel} onChange={(event) => field("returnLabel", event.target.value)} /></label>
             <div className="field-grid two"><label><span>家を出る時間</span><input type="time" value={draft.departureTime} onChange={(event) => field("departureTime", event.target.value)} /></label><label><span>到着目標</span><input type="time" value={draft.arrivalTargetTime} onChange={(event) => field("arrivalTargetTime", event.target.value)} /></label></div>
             <div className="field-grid two"><label><span>地図の出発地</span><input value={draft.mapOrigin} onChange={(event) => field("mapOrigin", event.target.value)} /></label><label><span>地図の目的地</span><input value={draft.mapDestination} onChange={(event) => field("mapDestination", event.target.value)} /></label></div>
+            <div className="coordinate-group"><span>出発地の座標</span><div className="field-grid two"><label><span>経度</span><input type="number" inputMode="decimal" step="0.0001" value={mapOriginLocation.longitude} onChange={(event) => coordinate("mapOriginLocation", "longitude", event.target.value)} /></label><label><span>緯度</span><input type="number" inputMode="decimal" step="0.0001" value={mapOriginLocation.latitude} onChange={(event) => coordinate("mapOriginLocation", "latitude", event.target.value)} /></label></div></div>
+            <div className="coordinate-group"><span>目的地の座標</span><div className="field-grid two"><label><span>経度</span><input type="number" inputMode="decimal" step="0.0001" value={mapDestinationLocation.longitude} onChange={(event) => coordinate("mapDestinationLocation", "longitude", event.target.value)} /></label><label><span>緯度</span><input type="number" inputMode="decimal" step="0.0001" value={mapDestinationLocation.latitude} onChange={(event) => coordinate("mapDestinationLocation", "latitude", event.target.value)} /></label></div></div>
             <label><span>移動メモ</span><textarea rows={2} value={draft.mapNote} onChange={(event) => field("mapNote", event.target.value)} /></label>
           </fieldset>
           <fieldset><legend>泊まるところ</legend>
             <label><span>ホテル名</span><input value={draft.hotelName} onChange={(event) => field("hotelName", event.target.value)} /></label>
             <label><span>住所</span><input value={draft.hotelAddress} onChange={(event) => field("hotelAddress", event.target.value)} /></label>
+            <div className="coordinate-group"><span>ホテルの座標</span><div className="field-grid two"><label><span>経度</span><input type="number" inputMode="decimal" step="0.0001" value={hotelLocation.longitude} onChange={(event) => coordinate("hotelLocation", "longitude", event.target.value)} /></label><label><span>緯度</span><input type="number" inputMode="decimal" step="0.0001" value={hotelLocation.latitude} onChange={(event) => coordinate("hotelLocation", "latitude", event.target.value)} /></label></div></div>
           </fieldset>
           <div className="app-actions">
             <button className="button button-secondary" type="button" onClick={install}><Download size={18} />ホーム画面に追加</button>

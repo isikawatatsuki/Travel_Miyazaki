@@ -11,6 +11,24 @@ npm run dev
 
 本番ビルドは `npm run build`、出力先は `dist` です。
 
+## 地図（PMTiles）
+
+地図はMapLibre GL JSとPMTilesを使い、Google Mapsには依存しません。既定では `public/maps/travel-miyazaki.pmtiles` を読み込みます。このアーカイブには大阪市内、関西空港、鹿児島空港〜都城の範囲（最大ズーム14）を収録しています。
+
+別のPMTiles v3アーカイブを使う場合は、`.env.example` を参考に `VITE_PMTILES_URL` を設定してください。外部ストレージに置く場合はHTTP Range RequestとCORSの設定が必要です。
+
+地域アーカイブを更新するには、[go-pmtiles](https://github.com/protomaps/go-pmtiles/releases) のCLIを用意し、ProtomapsのビルドURLを指定します。
+
+```powershell
+.\scripts\update-pmtiles.ps1 -SourceUrl "https://build.protomaps.com/YYYYMMDD.pmtiles" -PmtilesExecutable "C:\path\to\pmtiles.exe"
+```
+
+地図データはProtomaps BasemapおよびOpenStreetMapに由来し、地図内に帰属表示を行っています。
+
+地図検索は、登録済み地点を優先し、見つからない場合のみ検索ボタンを押したタイミングでNominatim Search APIを呼び出します。結果は収録済みの地図範囲に限定されます。検索先を変更する場合は `VITE_GEOCODER_URL` を設定してください。公開運用では、[Nominatimの利用ポリシー](https://operations.osmfoundation.org/policies/nominatim/)に従い、利用規模に応じて自前プロキシまたは互換プロバイダーを利用してください。
+
+予定地点間の道路ルートはValhalla APIで計算し、PMTiles地図上へ描画します。車・徒歩・自転車の切り替え、全体と区間ごとの距離・予想所要時間に対応します。計算時に地点座標が経路サービスへ送信されます。既定値は公開デモサーバーのため、本番運用では自前のValhallaまたは契約した互換サービスを `VITE_ROUTER_URL` に設定してください。
+
 ## Cloudflare Pages
 
 - フレームワーク プリセット: `Vite`
