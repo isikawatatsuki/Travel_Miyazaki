@@ -11,6 +11,20 @@ npm run dev
 
 本番ビルドは `npm run build`、出力先は `dist` です。
 
+## 地図（PMTiles）
+
+地図はMapLibre GL JSとPMTilesを使い、Google Mapsには依存しません。既定では `public/maps/travel-miyazaki.pmtiles` を読み込みます。このアーカイブには大阪市内、関西空港、鹿児島空港〜都城の範囲（最大ズーム14）を収録しています。
+
+別のPMTiles v3アーカイブを使う場合は、`.env.example` を参考に `VITE_PMTILES_URL` を設定してください。外部ストレージに置く場合はHTTP Range RequestとCORSの設定が必要です。
+
+地域アーカイブを更新するには、[go-pmtiles](https://github.com/protomaps/go-pmtiles/releases) のCLIを用意し、ProtomapsのビルドURLを指定します。
+
+```powershell
+.\scripts\update-pmtiles.ps1 -SourceUrl "https://build.protomaps.com/YYYYMMDD.pmtiles" -PmtilesExecutable "C:\path\to\pmtiles.exe"
+```
+
+地図データはProtomaps BasemapおよびOpenStreetMapに由来し、地図内に帰属表示を行っています。
+
 ## Cloudflare Pages
 
 - フレームワーク プリセット: `Vite`

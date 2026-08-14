@@ -13,9 +13,13 @@ export type TripSettings = {
   arrivalTargetTime: string;
   mapOrigin: string;
   mapDestination: string;
+  mapOriginLocation: MapLocation;
+  mapDestinationLocation: MapLocation;
+  hotelLocation: MapLocation;
   mapNote: string;
 };
 
+export type MapLocation = { longitude: number; latitude: number };
 export type ScheduleDay = { id: string; label: string; shortLabel: string };
 export type ScheduleItem = {
   id: string;
@@ -23,7 +27,7 @@ export type ScheduleItem = {
   time: string;
   title: string;
   memo: string;
-  mapUrl: string;
+  location?: MapLocation;
   isTimeUnset: boolean;
 };
 export type ScheduleState = { activeDay: string; items: ScheduleItem[] };

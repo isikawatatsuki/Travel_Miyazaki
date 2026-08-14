@@ -1,0 +1,20 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": { "name": "Osaka" },
+      "geometry": { "type": "Polygon", "coordinates": [[[135.35, 34.58], [135.58, 34.58], [135.58, 34.75], [135.35, 34.75], [135.35, 34.58]]] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "Kansai Airport" },
+      "geometry": { "type": "Polygon", "coordinates": [[[135.15, 34.38], [135.34, 34.38], [135.34, 34.50], [135.15, 34.50], [135.15, 34.38]]] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "Kagoshima Airport to Miyakonojo" },
+      "geometry": { "type": "Polygon", "coordinates": [[[130.55, 31.60], [131.25, 31.60], [131.25, 31.90], [130.55, 31.90], [130.55, 31.60]]] }
+    }
+  ]
+}
