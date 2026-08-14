@@ -28,6 +28,7 @@ export type ScheduleItem = {
   title: string;
   memo: string;
   location?: MapLocation;
+  locationLabel?: string;
   isTimeUnset: boolean;
 };
 export type ScheduleState = { activeDay: string; items: ScheduleItem[] };
