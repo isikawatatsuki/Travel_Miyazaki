@@ -1,20 +1,21 @@
-import { useEffect, useState } from "react";
-import { CalendarDays, CircleDollarSign, Home, Settings, Share2, Suitcase } from "lucide-react";
+import { lazy, Suspense, useEffect, useState } from "react";
+import { CalendarDays, CircleDollarSign, Home, Luggage, Settings, Share2 } from "lucide-react";
 import { TripProvider, useTrip } from "./TripContext";
 import { useOnlineStatus } from "./lib";
 import type { PageKey } from "./types";
 import { HomePage } from "./pages/HomePage";
-import { PlanPage } from "./pages/PlanPage";
 import { MoneyPage } from "./pages/MoneyPage";
 import { PackingPage } from "./pages/PackingPage";
 import { SharePage } from "./pages/SharePage";
 import { SettingsDrawer } from "./components/SettingsDrawer";
 
+const PlanPage = lazy(() => import("./pages/PlanPage").then((module) => ({ default: module.PlanPage })));
+
 const pages: Array<{ id: PageKey; label: string; icon: typeof Home }> = [
   { id: "home", label: "ホーム", icon: Home },
   { id: "plan", label: "予定", icon: CalendarDays },
   { id: "money", label: "お金", icon: CircleDollarSign },
-  { id: "packing", label: "持ち物", icon: Suitcase },
+  { id: "packing", label: "持ち物", icon: Luggage },
   { id: "share", label: "共有", icon: Share2 },
 ];
 
@@ -42,7 +43,7 @@ function AppShell() {
 
   const pageContent = {
     home: <HomePage />,
-    plan: <PlanPage />,
+    plan: <Suspense fallback={<p className="empty-state page-loading" role="status">地図と予定を読み込み中...</p>}><PlanPage /></Suspense>,
     money: <MoneyPage />,
     packing: <PackingPage />,
     share: <SharePage />,

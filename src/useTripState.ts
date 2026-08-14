@@ -7,6 +7,15 @@ function initialObject<T extends object>(key: string, fallback: T): T {
   return { ...fallback, ...readStorage<Partial<T>>(key, {}) } as T;
 }
 
+function migrateSchedule(state: Partial<ScheduleState>): ScheduleState {
+  const defaultItems = new Map(defaultSchedule.items.map((item) => [item.id, item]));
+  const items = (state.items || defaultSchedule.items).map((item) => ({
+    ...item,
+    location: item.location || defaultItems.get(item.id)?.location,
+  }));
+  return { ...defaultSchedule, ...state, items };
+}
+
 export function useTripState() {
   const [tripSettings, setTripSettings] = usePersistentState<TripSettings>(
     "tripShioriSettings",
@@ -14,7 +23,7 @@ export function useTripState() {
   );
   const [schedule, setSchedule] = usePersistentState<ScheduleState>(
     "tripShioriSchedule",
-    initialObject("tripShioriSchedule", defaultSchedule),
+    migrateSchedule(readStorage<Partial<ScheduleState>>("tripShioriSchedule", {})),
   );
   const [adjust, setAdjust] = usePersistentState<AdjustState>(
     "tripShioriAdjust",
@@ -54,7 +63,7 @@ export function useTripState() {
     if (!state) return;
     applyingRemote.current = true;
     if (state.tripSettings) setTripSettings({ ...defaultTripSettings, ...state.tripSettings });
-    if (state.schedule) setSchedule({ ...defaultSchedule, ...state.schedule });
+    if (state.schedule) setSchedule(migrateSchedule(state.schedule));
     if (state.adjust) setAdjust({ ...defaultAdjust, ...state.adjust });
     if (state.settlement) setSettlement({ ...defaultSettlement, ...state.settlement });
     if (state.checklist) setChecklist({ ...defaultChecklist, ...state.checklist });

@@ -1,4 +1,4 @@
-const CACHE_NAME = "trip-shiori-react-v1";
+const CACHE_NAME = "trip-shiori-react-v2";
 const APP_SHELL = ["/", "/index.html", "/manifest.webmanifest", "/icons/icon-192.png", "/icons/icon-512.png", "/icons/apple-touch-icon.png"];
 
 self.addEventListener("install", (event) => {
@@ -14,6 +14,9 @@ self.addEventListener("fetch", (event) => {
   const request = event.request;
   const url = new URL(request.url);
   if (request.method !== "GET" || url.pathname.startsWith("/api/")) return;
+  // PMTiles relies on distinct HTTP Range responses. Cache Storage matches by URL,
+  // so caching a 206 response here could serve the wrong byte range later.
+  if (url.pathname.endsWith(".pmtiles")) return;
   if (request.mode === "navigate") {
     event.respondWith(fetch(request).then((response) => {
       const copy = response.clone();
