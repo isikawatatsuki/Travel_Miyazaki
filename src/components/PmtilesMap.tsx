@@ -11,6 +11,7 @@ export type MapMarker = MapLocation & {
   id: string;
   label: string;
   kind?: "origin" | "destination" | "schedule";
+  number?: number;
 };
 
 type Props = {
@@ -121,9 +122,9 @@ export function PmtilesMap({ markers, route = [], focusedRoute = [], focus, aria
       const element = document.createElement("button");
       element.type = "button";
       element.className = `map-marker map-marker-${marker.kind || "schedule"}`;
-      element.textContent = marker.kind === "origin" ? "S" : marker.kind === "destination" ? "G" : String(index + 1);
+      element.textContent = marker.kind === "origin" ? "S" : marker.kind === "destination" ? "G" : String(marker.number ?? index + 1);
       element.title = marker.label;
-      element.setAttribute("aria-label", marker.label);
+      element.setAttribute("aria-label", marker.number ? `${marker.number}番 ${marker.label}` : marker.label);
       element.addEventListener("click", () => map.easeTo({ center: [marker.longitude, marker.latitude], zoom: 14 }));
       return new maplibregl.Marker({ element, anchor: "bottom" })
         .setLngLat([marker.longitude, marker.latitude])

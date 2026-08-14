@@ -44,7 +44,7 @@ export function PlanPage() {
     { id: "route-origin", label: tripSettings.mapOrigin, kind: "origin", ...originLocation },
     { id: "route-destination", label: tripSettings.mapDestination, kind: "destination", ...destinationLocation },
   ], [destinationLocation, originLocation, tripSettings.mapDestination, tripSettings.mapOrigin]);
-  const scheduleMarkers = useMemo<MapMarker[]>(() => items.flatMap((item) => item.location ? [{ id: item.id, label: item.locationLabel || item.title || "予定地点", kind: "schedule" as const, ...item.location }] : []), [items]);
+  const scheduleMarkers = useMemo<MapMarker[]>(() => items.flatMap((item, index) => item.location ? [{ id: item.id, label: item.locationLabel || item.title || "予定地点", kind: "schedule" as const, number: index + 1, ...item.location }] : []), [items]);
   const mapMarkers = [...routeMarkers, ...scheduleMarkers];
   const routePoints = useMemo<RoutePoint[]>(() => items.reduce<RoutePoint[]>((points, item) => {
     if (!item.location) return points;
@@ -95,7 +95,7 @@ export function PlanPage() {
               updateItem(item.id, { location: { longitude: result.longitude, latitude: result.latitude }, locationLabel });
               setFocusMarker({ id: item.id, label: locationLabel, kind: "schedule", longitude: result.longitude, latitude: result.latitude });
             }} />
-            <button className="button button-secondary location-button" type="button" disabled={!item.location} onClick={() => item.location && showMapMarker({ id: item.id, label: item.locationLabel || item.title || "予定地点", kind: "schedule", ...item.location }, "予定地点を中心に表示しています。地図は拡大・縮小できます。")}><LocateFixed size={17} />地図で見る</button>
+            <button className="button button-secondary location-button" type="button" disabled={!item.location} onClick={() => item.location && showMapMarker({ id: item.id, label: item.locationLabel || item.title || "予定地点", kind: "schedule", number: index + 1, ...item.location }, "予定地点を中心に表示しています。地図は拡大・縮小できます。")}><LocateFixed size={17} />地図で見る</button>
           </Panel>
         )) : <EmptyState>この日の予定はまだありません。</EmptyState>}
         <button className="button button-primary add-wide" type="button" onClick={addItem}><Plus size={20} />予定を追加</button>
