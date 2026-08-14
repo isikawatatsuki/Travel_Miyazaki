@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { layers, namedFlavor } from "@protomaps/basemaps";
 import * as maplibregl from "maplibre-gl";
-import { LngLatBounds, type Map as MapLibreMap, type StyleSpecification } from "maplibre-gl";
+import { LngLatBounds, type GeoJSONSource, type Map as MapLibreMap, type StyleSpecification } from "maplibre-gl";
 import { Protocol } from "pmtiles";
 import { geocodePlaces, type GeocoderResult } from "../geocoding";
 import type { MapLocation } from "../types";
@@ -16,6 +16,7 @@ export type MapMarker = MapLocation & {
 type Props = {
   markers: MapMarker[];
   route?: MapLocation[];
+  focusedRoute?: MapLocation[];
   focus?: MapMarker;
   ariaLabel: string;
 };
@@ -38,7 +39,11 @@ function pmtilesUrl() {
   return new URL(configured, window.location.origin).href;
 }
 
-function createStyle(route: MapLocation[]): StyleSpecification {
+function routeGeoJson(route: MapLocation[]) {
+  return { type: "Feature" as const, properties: {}, geometry: { type: "LineString" as const, coordinates: route.map(({ longitude, latitude }) => [longitude, latitude]) } };
+}
+
+function createStyle(route: MapLocation[], focusedRoute: MapLocation[]): StyleSpecification {
   return {
     version: 8,
     glyphs: "https://protomaps.github.io/basemaps-assets/fonts/{fontstack}/{range}.pbf",
@@ -51,11 +56,11 @@ function createStyle(route: MapLocation[]): StyleSpecification {
       },
       route: {
         type: "geojson",
-        data: {
-          type: "Feature",
-          properties: {},
-          geometry: { type: "LineString", coordinates: route.map(({ longitude, latitude }) => [longitude, latitude]) },
-        },
+        data: routeGeoJson(route),
+      },
+      "route-focus": {
+        type: "geojson",
+        data: routeGeoJson(focusedRoute),
       },
     },
     layers: [
@@ -67,16 +72,26 @@ function createStyle(route: MapLocation[]): StyleSpecification {
         minzoom: 5,
         layout: { "line-cap": "round", "line-join": "round" },
         paint: {
+          "line-color": "#236b86",
+          "line-width": ["interpolate", ["linear"], ["zoom"], 5, 3, 12, 6],
+        },
+      },
+      {
+        id: "trip-route-focus",
+        type: "line",
+        source: "route-focus",
+        minzoom: 5,
+        layout: { "line-cap": "round", "line-join": "round" },
+        paint: {
           "line-color": "#d97687",
-          "line-width": ["interpolate", ["linear"], ["zoom"], 5, 2, 12, 5],
-          "line-dasharray": [2, 1.5],
+          "line-width": ["interpolate", ["linear"], ["zoom"], 5, 5, 12, 9],
         },
       },
     ],
   } as StyleSpecification;
 }
 
-export function PmtilesMap({ markers, route = [], focus, ariaLabel }: Props) {
+export function PmtilesMap({ markers, route = [], focusedRoute = [], focus, ariaLabel }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
   const searchMarkerRef = useRef<maplibregl.Marker | null>(null);
@@ -92,7 +107,7 @@ export function PmtilesMap({ markers, route = [], focus, ariaLabel }: Props) {
     acquireProtocol();
     const map = new maplibregl.Map({
       container,
-      style: createStyle(route),
+      style: createStyle(route, focusedRoute),
       center: [131.0736, 31.7356],
       zoom: 10,
       attributionControl: { compact: true },
@@ -116,10 +131,11 @@ export function PmtilesMap({ markers, route = [], focus, ariaLabel }: Props) {
 
     map.once("load", () => {
       setStatus("");
-      if (markers.length > 1) {
-        const bounds = markers.reduce(
-          (current, marker) => current.extend([marker.longitude, marker.latitude]),
-          new LngLatBounds([markers[0].longitude, markers[0].latitude], [markers[0].longitude, markers[0].latitude]),
+      const boundsPoints = route.length > 1 ? route : markers;
+      if (boundsPoints.length > 1) {
+        const bounds = boundsPoints.reduce(
+          (current, point) => current.extend([point.longitude, point.latitude]),
+          new LngLatBounds([boundsPoints[0].longitude, boundsPoints[0].latitude], [boundsPoints[0].longitude, boundsPoints[0].latitude]),
         );
         map.fitBounds(bounds, { padding: 58, maxZoom: 13, duration: 0 });
       } else if (markers[0]) {
@@ -145,6 +161,19 @@ export function PmtilesMap({ markers, route = [], focus, ariaLabel }: Props) {
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     mapRef.current.easeTo({ center: [focus.longitude, focus.latitude], zoom: 14, duration: reducedMotion ? 0 : 500 });
   }, [focus]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !map.isStyleLoaded()) return;
+    (map.getSource("route-focus") as GeoJSONSource | undefined)?.setData(routeGeoJson(focusedRoute));
+    if (focusedRoute.length < 2) return;
+    const bounds = focusedRoute.reduce(
+      (current, point) => current.extend([point.longitude, point.latitude]),
+      new LngLatBounds([focusedRoute[0].longitude, focusedRoute[0].latitude], [focusedRoute[0].longitude, focusedRoute[0].latitude]),
+    );
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    map.fitBounds(bounds, { padding: 72, maxZoom: 15, duration: reducedMotion ? 0 : 500 });
+  }, [focusedRoute]);
 
   const submitSearch = async (event: FormEvent) => {
     event.preventDefault();
@@ -196,7 +225,7 @@ export function PmtilesMap({ markers, route = [], focus, ariaLabel }: Props) {
   };
 
   return (
-    <div className="map-container">
+    <div className="map-container" id="route-map">
       <form className="map-search" role="search" onSubmit={submitSearch}>
         <label><span>地図を検索</span><input type="search" value={query} placeholder="例：都城駅、鹿児島空港" onChange={(event) => setQuery(event.target.value)} /></label>
         <button className="button button-primary" type="submit" disabled={searching}>{searching ? "検索中..." : "検索"}</button>

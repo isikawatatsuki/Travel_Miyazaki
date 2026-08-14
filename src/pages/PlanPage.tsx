@@ -2,15 +2,19 @@ import { LocateFixed, MapPin, Plus, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { PmtilesMap, type MapMarker } from "../components/PmtilesMap";
 import { PlaceSearchField } from "../components/PlaceSearchField";
+import { RoutePlanner } from "../components/RoutePlanner";
 import { EmptyState, IconButton, Panel, SectionHeading } from "../components/ui";
 import { defaultTripSettings, getScheduleDays } from "../data";
 import { makeId } from "../lib";
+import type { RoadRoute, RouteLeg, RoutePoint } from "../routing";
 import { useTrip } from "../TripContext";
 import type { ScheduleItem } from "../types";
 
 export function PlanPage() {
   const { tripSettings, schedule, setSchedule } = useTrip();
   const [focusMarker, setFocusMarker] = useState<MapMarker>();
+  const [roadRoute, setRoadRoute] = useState<RoadRoute>();
+  const [focusedRoute, setFocusedRoute] = useState<RouteLeg["coordinates"]>([]);
   const originLocation = tripSettings.mapOriginLocation || defaultTripSettings.mapOriginLocation;
   const destinationLocation = tripSettings.mapDestinationLocation || defaultTripSettings.mapDestinationLocation;
   const days = getScheduleDays(tripSettings);
@@ -32,7 +36,19 @@ export function PlanPage() {
   ], [destinationLocation, originLocation, tripSettings.mapDestination, tripSettings.mapOrigin]);
   const scheduleMarkers = useMemo<MapMarker[]>(() => items.flatMap((item) => item.location ? [{ id: item.id, label: item.locationLabel || item.title || "予定地点", kind: "schedule" as const, ...item.location }] : []), [items]);
   const mapMarkers = [...routeMarkers, ...scheduleMarkers];
-  const mapKey = mapMarkers.map(({ id, longitude, latitude }) => `${id}:${longitude}:${latitude}`).join("|");
+  const routePoints = useMemo<RoutePoint[]>(() => items.reduce<RoutePoint[]>((points, item) => {
+    if (!item.location) return points;
+    const point = { id: item.id, label: item.locationLabel || item.title || "予定地点", ...item.location };
+    const previous = points[points.length - 1];
+    if (!previous || previous.longitude !== point.longitude || previous.latitude !== point.latitude) points.push(point);
+    return points;
+  }, []), [items]);
+  const mapKey = `${mapMarkers.map(({ id, longitude, latitude }) => `${id}:${longitude}:${latitude}`).join("|")}:${roadRoute?.mode || "none"}:${roadRoute?.coordinates.length || 0}`;
+  const focusRouteLeg = (leg: RouteLeg) => {
+    setFocusedRoute(leg.coordinates);
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    window.setTimeout(() => document.getElementById("route-map")?.scrollIntoView({ behavior: reducedMotion ? "auto" : "smooth", block: "start" }), 0);
+  };
 
   return (
     <div className="page">
@@ -65,8 +81,9 @@ export function PlanPage() {
 
       <section className="section-block route-block">
         <SectionHeading eyebrow="ROUTE & STAY" title="移動とホテル" description={tripSettings.mapNote} />
+        <RoutePlanner points={routePoints} onRouteChange={(route) => { setRoadRoute(route); setFocusedRoute([]); }} onFocusLeg={focusRouteLeg} />
         <div className="route-layout">
-          <PmtilesMap key={mapKey} ariaLabel={`${tripSettings.mapOrigin}から${tripSettings.mapDestination}までのPMTiles地図`} markers={mapMarkers} route={[originLocation, destinationLocation]} focus={focusMarker} />
+          <PmtilesMap key={mapKey} ariaLabel={`${tripSettings.mapOrigin}から${tripSettings.mapDestination}までのPMTiles地図`} markers={mapMarkers} route={roadRoute?.coordinates} focusedRoute={focusedRoute} focus={focusMarker} />
           <Panel className="route-details">
             <div><span>START</span><strong>{tripSettings.mapOrigin}</strong></div>
             <i aria-hidden="true" />
