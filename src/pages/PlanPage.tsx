@@ -44,10 +44,19 @@ export function PlanPage() {
     return points;
   }, []), [items]);
   const mapKey = `${mapMarkers.map(({ id, longitude, latitude }) => `${id}:${longitude}:${latitude}`).join("|")}:${roadRoute?.mode || "none"}:${roadRoute?.coordinates.length || 0}`;
-  const focusRouteLeg = (leg: RouteLeg) => {
-    setFocusedRoute(leg.coordinates);
+  const scrollToMap = () => {
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     window.setTimeout(() => document.getElementById("route-map")?.scrollIntoView({ behavior: reducedMotion ? "auto" : "smooth", block: "start" }), 0);
+  };
+  const focusMapMarker = (marker: MapMarker) => {
+    setFocusedRoute([]);
+    setFocusMarker({ ...marker });
+    scrollToMap();
+  };
+  const focusRouteLeg = (leg: RouteLeg) => {
+    setFocusMarker(undefined);
+    setFocusedRoute(leg.coordinates);
+    scrollToMap();
   };
 
   return (
@@ -73,7 +82,7 @@ export function PlanPage() {
               updateItem(item.id, { location: { longitude: result.longitude, latitude: result.latitude }, locationLabel });
               setFocusMarker({ id: item.id, label: locationLabel, kind: "schedule", longitude: result.longitude, latitude: result.latitude });
             }} />
-            <button className="button button-secondary location-button" type="button" disabled={!item.location} onClick={() => item.location && setFocusMarker({ id: item.id, label: item.locationLabel || item.title || "予定地点", kind: "schedule", ...item.location })}><LocateFixed size={17} />地図で見る</button>
+            <button className="button button-secondary location-button" type="button" disabled={!item.location} onClick={() => item.location && focusMapMarker({ id: item.id, label: item.locationLabel || item.title || "予定地点", kind: "schedule", ...item.location })}><LocateFixed size={17} />地図で見る</button>
           </Panel>
         )) : <EmptyState>この日の予定はまだありません。</EmptyState>}
         <button className="button button-primary add-wide" type="button" onClick={addItem}><Plus size={20} />予定を追加</button>
@@ -88,8 +97,8 @@ export function PlanPage() {
             <div><span>START</span><strong>{tripSettings.mapOrigin}</strong></div>
             <i aria-hidden="true" />
             <div><span>STAY</span><strong>{tripSettings.hotelName}</strong><small>{tripSettings.hotelAddress}</small></div>
-            <button className="button button-primary" type="button" onClick={() => setFocusMarker(routeMarkers[0])}>出発地を地図で見る<LocateFixed size={17} /></button>
-            <button className="button button-secondary" type="button" onClick={() => setFocusMarker(routeMarkers[1])}>ホテルを地図で見る<MapPin size={17} /></button>
+            <button className="button button-primary" type="button" onClick={() => focusMapMarker(routeMarkers[0])}>出発地を地図で見る<LocateFixed size={17} /></button>
+            <button className="button button-secondary" type="button" onClick={() => focusMapMarker(routeMarkers[1])}>ホテルを地図で見る<MapPin size={17} /></button>
           </Panel>
         </div>
       </section>
