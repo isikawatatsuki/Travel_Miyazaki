@@ -1,5 +1,6 @@
 import { LocateFixed, MapPin, Plus, Trash2 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
+import { MapModal } from "../components/MapModal";
 import { PmtilesMap, type MapMarker } from "../components/PmtilesMap";
 import { PlaceSearchField } from "../components/PlaceSearchField";
 import { RoutePlanner } from "../components/RoutePlanner";
@@ -8,13 +9,22 @@ import { defaultTripSettings, getScheduleDays } from "../data";
 import { makeId } from "../lib";
 import type { RoadRoute, RouteLeg, RoutePoint } from "../routing";
 import { useTrip } from "../TripContext";
-import type { ScheduleItem } from "../types";
+import type { MapLocation, ScheduleItem } from "../types";
+
+type MapModalState = {
+  title: string;
+  description: string;
+  markers: MapMarker[];
+  route?: MapLocation[];
+  focusedRoute?: MapLocation[];
+  focus?: MapMarker;
+};
 
 export function PlanPage() {
   const { tripSettings, schedule, setSchedule } = useTrip();
   const [focusMarker, setFocusMarker] = useState<MapMarker>();
   const [roadRoute, setRoadRoute] = useState<RoadRoute>();
-  const [focusedRoute, setFocusedRoute] = useState<RouteLeg["coordinates"]>([]);
+  const [mapModal, setMapModal] = useState<MapModalState>();
   const originLocation = tripSettings.mapOriginLocation || defaultTripSettings.mapOriginLocation;
   const destinationLocation = tripSettings.mapDestinationLocation || defaultTripSettings.mapDestinationLocation;
   const days = getScheduleDays(tripSettings);
@@ -44,19 +54,22 @@ export function PlanPage() {
     return points;
   }, []), [items]);
   const mapKey = `${mapMarkers.map(({ id, longitude, latitude }) => `${id}:${longitude}:${latitude}`).join("|")}:${roadRoute?.mode || "none"}:${roadRoute?.coordinates.length || 0}`;
-  const scrollToMap = () => {
-    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    window.setTimeout(() => document.getElementById("route-map")?.scrollIntoView({ behavior: reducedMotion ? "auto" : "smooth", block: "start" }), 0);
+  const closeMapModal = useCallback(() => setMapModal(undefined), []);
+  const showMapMarker = (marker: MapMarker, description: string) => {
+    setMapModal({ title: marker.label, description, markers: [marker], focus: marker });
   };
-  const focusMapMarker = (marker: MapMarker) => {
-    setFocusedRoute([]);
-    setFocusMarker({ ...marker });
-    scrollToMap();
-  };
-  const focusRouteLeg = (leg: RouteLeg) => {
-    setFocusMarker(undefined);
-    setFocusedRoute(leg.coordinates);
-    scrollToMap();
+  const showRouteLeg = (leg: RouteLeg) => {
+    const markers: MapMarker[] = [
+      { ...leg.from, id: `${leg.from.id}-leg-start`, kind: "origin" },
+      { ...leg.to, id: `${leg.to.id}-leg-end`, kind: "destination" },
+    ];
+    setMapModal({
+      title: `${leg.from.label} → ${leg.to.label}`,
+      description: "この区間で通る道路ルートを表示しています。地図は拡大・縮小できます。",
+      markers,
+      route: leg.coordinates,
+      focusedRoute: leg.coordinates,
+    });
   };
 
   return (
@@ -82,7 +95,7 @@ export function PlanPage() {
               updateItem(item.id, { location: { longitude: result.longitude, latitude: result.latitude }, locationLabel });
               setFocusMarker({ id: item.id, label: locationLabel, kind: "schedule", longitude: result.longitude, latitude: result.latitude });
             }} />
-            <button className="button button-secondary location-button" type="button" disabled={!item.location} onClick={() => item.location && focusMapMarker({ id: item.id, label: item.locationLabel || item.title || "予定地点", kind: "schedule", ...item.location })}><LocateFixed size={17} />地図で見る</button>
+            <button className="button button-secondary location-button" type="button" disabled={!item.location} onClick={() => item.location && showMapMarker({ id: item.id, label: item.locationLabel || item.title || "予定地点", kind: "schedule", ...item.location }, "予定地点を中心に表示しています。地図は拡大・縮小できます。")}><LocateFixed size={17} />地図で見る</button>
           </Panel>
         )) : <EmptyState>この日の予定はまだありません。</EmptyState>}
         <button className="button button-primary add-wide" type="button" onClick={addItem}><Plus size={20} />予定を追加</button>
@@ -90,18 +103,19 @@ export function PlanPage() {
 
       <section className="section-block route-block">
         <SectionHeading eyebrow="ROUTE & STAY" title="移動とホテル" description={tripSettings.mapNote} />
-        <RoutePlanner points={routePoints} onRouteChange={(route) => { setRoadRoute(route); setFocusedRoute([]); }} onFocusLeg={focusRouteLeg} />
+        <RoutePlanner points={routePoints} onRouteChange={setRoadRoute} onFocusLeg={showRouteLeg} />
         <div className="route-layout">
-          <PmtilesMap key={mapKey} ariaLabel={`${tripSettings.mapOrigin}から${tripSettings.mapDestination}までのPMTiles地図`} markers={mapMarkers} route={roadRoute?.coordinates} focusedRoute={focusedRoute} focus={focusMarker} />
+          <PmtilesMap key={mapKey} ariaLabel={`${tripSettings.mapOrigin}から${tripSettings.mapDestination}までのPMTiles地図`} markers={mapMarkers} route={roadRoute?.coordinates} focus={focusMarker} />
           <Panel className="route-details">
             <div><span>START</span><strong>{tripSettings.mapOrigin}</strong></div>
             <i aria-hidden="true" />
             <div><span>STAY</span><strong>{tripSettings.hotelName}</strong><small>{tripSettings.hotelAddress}</small></div>
-            <button className="button button-primary" type="button" onClick={() => focusMapMarker(routeMarkers[0])}>出発地を地図で見る<LocateFixed size={17} /></button>
-            <button className="button button-secondary" type="button" onClick={() => focusMapMarker(routeMarkers[1])}>ホテルを地図で見る<MapPin size={17} /></button>
+            <button className="button button-primary" type="button" onClick={() => showMapMarker(routeMarkers[0], "出発地を中心に表示しています。地図は拡大・縮小できます。")}>出発地を地図で見る<LocateFixed size={17} /></button>
+            <button className="button button-secondary" type="button" onClick={() => showMapMarker(routeMarkers[1], "宿泊先を中心に表示しています。地図は拡大・縮小できます。")}>ホテルを地図で見る<MapPin size={17} /></button>
           </Panel>
         </div>
       </section>
+      {mapModal && <MapModal {...mapModal} onClose={closeMapModal} />}
     </div>
   );
 }

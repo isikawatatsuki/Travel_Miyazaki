@@ -19,6 +19,8 @@ type Props = {
   focusedRoute?: MapLocation[];
   focus?: MapMarker;
   ariaLabel: string;
+  containerId?: string;
+  showSearch?: boolean;
 };
 
 const protocol = new Protocol();
@@ -91,7 +93,7 @@ function createStyle(route: MapLocation[], focusedRoute: MapLocation[]): StyleSp
   } as StyleSpecification;
 }
 
-export function PmtilesMap({ markers, route = [], focusedRoute = [], focus, ariaLabel }: Props) {
+export function PmtilesMap({ markers, route = [], focusedRoute = [], focus, ariaLabel, containerId = "route-map", showSearch = true }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
   const searchMarkerRef = useRef<maplibregl.Marker | null>(null);
@@ -236,18 +238,18 @@ export function PmtilesMap({ markers, route = [], focusedRoute = [], focus, aria
   };
 
   return (
-    <div className="map-container" id="route-map">
-      <form className="map-search" role="search" onSubmit={submitSearch}>
+    <div className="map-container" id={containerId}>
+      {showSearch && <form className="map-search" role="search" onSubmit={submitSearch}>
         <label><span>地図を検索</span><input type="search" value={query} placeholder="例：都城駅、鹿児島空港" onChange={(event) => setQuery(event.target.value)} /></label>
         <button className="button button-primary" type="submit" disabled={searching}>{searching ? "検索中..." : "検索"}</button>
-      </form>
-      <p className="map-search-status" aria-live="polite">{searchStatus}</p>
-      {searchResults.length > 0 && <div className="map-search-results" aria-label="検索結果">{searchResults.map((result) => <button type="button" key={result.id} onClick={() => showSearchResult(result)}>{result.label}</button>)}</div>}
+      </form>}
+      {showSearch && <p className="map-search-status" aria-live="polite">{searchStatus}</p>}
+      {showSearch && searchResults.length > 0 && <div className="map-search-results" aria-label="検索結果">{searchResults.map((result) => <button type="button" key={result.id} onClick={() => showSearchResult(result)}>{result.label}</button>)}</div>}
       <div className="map-frame" role="region" aria-label={ariaLabel}>
         <div ref={containerRef} className="pmtiles-map" />
         {status && <p className="map-status" role="status">{status}</p>}
       </div>
-      <small className="geocoder-attribution">検索データ © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap contributors</a></small>
+      {showSearch && <small className="geocoder-attribution">検索データ © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap contributors</a></small>}
     </div>
   );
 }

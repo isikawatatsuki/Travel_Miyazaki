@@ -205,6 +205,19 @@ input:disabled { color: #8b9792; background: #eef0ed; }
 .maplibregl-ctrl-group button { width: 44px; height: 44px; }
 .geocoder-attribution { display: block; margin-top: 6px; color: var(--muted); font-size: 11px; text-align: right; }
 .geocoder-attribution a { text-decoration: underline; }
+.map-modal-layer { position: fixed; z-index: 1200; inset: 0; display: grid; place-items: center; padding: 20px; background: rgba(15, 31, 25, 0.58); animation: modal-fade-in 180ms ease-out; }
+.map-modal { width: min(900px, 100%); max-height: min(90dvh, 820px); display: flex; flex-direction: column; overflow: hidden; background: var(--paper); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 24px 70px rgba(13, 38, 28, 0.28); animation: modal-rise-in 220ms ease-out; }
+.map-modal-header { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: start; gap: 12px; padding: 18px 20px; border-bottom: 1px solid var(--line); }
+.map-modal-icon { width: 44px; height: 44px; display: grid; place-items: center; color: var(--green-dark); background: var(--green-soft); border-radius: 50%; }
+.map-modal-header .eyebrow { margin: 0 0 2px; }
+.map-modal-header h2 { margin: 0; font-family: "Kiwi Maru", serif; font-size: clamp(20px, 3vw, 26px); line-height: 1.35; }
+.map-modal-header p:last-child { margin: 5px 0 0; color: var(--muted); font-size: 13px; line-height: 1.6; }
+.map-modal-close { margin: 0; }
+.map-modal-body { padding: 16px 20px 20px; overflow-y: auto; }
+.map-modal .map-frame { height: min(58dvh, 540px); }
+.map-modal-dismiss { width: 100%; margin-top: 12px; }
+@keyframes modal-fade-in { from { opacity: 0; } }
+@keyframes modal-rise-in { from { opacity: 0; transform: translateY(12px); } }
 .route-details { padding: 22px; }
 .route-details div { display: grid; gap: 5px; }
 .route-details div span { color: var(--pink); font-size: 11px; font-weight: 900; }
@@ -348,6 +361,12 @@ input:disabled { color: #8b9792; background: #eef0ed; }
   .status-strip strong { font-size: 14px; }
   .route-legs > button { grid-template-columns: auto minmax(0, 1fr); }
   .route-leg-action { grid-column: 2; }
+  .map-modal-layer { place-items: end center; padding: 0; }
+  .map-modal { max-height: 92dvh; border-right: 0; border-bottom: 0; border-left: 0; border-radius: 14px 14px 0 0; }
+  .map-modal-header { grid-template-columns: minmax(0, 1fr) auto; padding: 14px 16px; }
+  .map-modal-icon { display: none; }
+  .map-modal-body { padding: 12px 16px calc(16px + env(safe-area-inset-bottom)); }
+  .map-modal .map-frame { height: 52dvh; min-height: 320px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -356,7 +375,7 @@ input:disabled { color: #8b9792; background: #eef0ed; }
 
 @media print {
   body { background: white; }
-  .app-header, .bottom-nav, .settings-drawer, .drawer-scrim, button { display: none !important; }
+  .app-header, .bottom-nav, .settings-drawer, .drawer-scrim, .map-modal-layer, button { display: none !important; }
   .main-content { width: 100%; padding: 0; }
   .page { display: block; animation: none; }
   .hero-section { min-height: 0; margin: 0 0 20px; padding: 30px; }
