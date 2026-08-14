@@ -61,13 +61,34 @@ export type SharedState = {
   spots: unknown[];
 };
 
+export type TravelProfile = {
+  id: string;
+  name: string;
+  createdAt: string;
+  updatedAt: string;
+  archived: boolean;
+  state: SharedState;
+};
+
+export type TicketStatus = "planning" | "traveling" | "done" | "archived";
+
+export type Ticket = TravelProfile & {
+  themeColor: string;
+  completedAt?: string;
+  groupId?: string;
+  joinCode?: string;
+  readToken?: string;
+  editToken?: string;
+};
+
 export type Group = {
   id: string;
   name: string;
   joinCode: string;
-  editToken: string;
+  readToken?: string;
+  editToken?: string;
   updatedAt?: string;
   state?: Partial<SharedState>;
 };
 
-export type PageKey = "home" | "plan" | "money" | "packing" | "share";
+export type PageKey = "tickets" | "home" | "plan" | "money" | "packing" | "share";
