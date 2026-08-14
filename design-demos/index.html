@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>旅のしおり — デザイン方向比較</title>
+  <style>
+    :root { color: #18342b; background: #f2efe7; font-family: "Yu Gothic UI", "Hiragino Sans", system-ui, sans-serif; }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-width: 320px; }
+    main { width: min(1440px, 100%); margin: auto; padding: 48px clamp(16px, 4vw, 64px) 80px; }
+    header { display: grid; grid-template-columns: 1fr auto; gap: 24px; align-items: end; padding-bottom: 24px; border-bottom: 1px solid #aeb5ad; }
+    h1 { margin: 0; font-family: "Yu Mincho", "Hiragino Mincho ProN", serif; font-size: clamp(32px, 5vw, 64px); font-weight: 500; }
+    header p { max-width: 640px; margin: 12px 0 0; color: #53645d; line-height: 1.7; }
+    .label { color: #23745b; font-size: 12px; font-weight: 800; letter-spacing: .14em; }
+    .grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; margin-top: 32px; }
+    article { min-width: 0; background: #fffef9; border: 1px solid #bfc7c0; }
+    article img { display: block; width: 100%; aspect-ratio: 16 / 10; object-fit: cover; object-position: top; border-bottom: 1px solid #bfc7c0; }
+    .copy { padding: 22px; }
+    h2 { margin: 6px 0 8px; font-family: "Yu Mincho", "Hiragino Mincho ProN", serif; font-size: 24px; }
+    article p { min-height: 4.8em; margin: 0 0 20px; color: #53645d; line-height: 1.6; }
+    a { display: inline-flex; min-height: 48px; align-items: center; justify-content: center; padding: 10px 18px; color: white; background: #1d5f50; text-decoration: none; font-weight: 700; }
+    a:hover { background: #12483b; }
+    a:focus-visible { outline: 3px solid #d97687; outline-offset: 3px; }
+    @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } article p { min-height: 0; } header { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <div><span class="label">HUASHU DESIGN · DIRECTION GATE</span><h1>旅のしおり、3つの方向。</h1><p>同じ旅行データを使い、情報構造と視覚温度だけを変えています。各案を開くと「チケット一覧」と「旅行ホーム」を切り替えて確認できます。</p></div>
+      <strong>選定前のため本体未変更</strong>
+    </header>
+    <section class="grid" aria-label="デザイン方向一覧">
+      <article><img src="direction-a-desktop.png" alt="機能主義グリッド案のデスクトップ画面"><div class="copy"><span class="label">A · ROULETTE 17</span><h2>機能主義グリッド</h2><p>太い罫線と情報密度で、旅程を迷わず読める道具として見せる方向。</p><a href="direction-a-functional-brutalism.html">A案を操作する</a></div></article>
+      <article><img src="direction-b-desktop.png" alt="トラベルウォレット案のデスクトップ画面"><div class="copy"><span class="label">B · REAL REFERENCE</span><h2>トラベルウォレット</h2><p>1旅行を1枚のパスとして扱い、重要情報をすばやく拾える方向。</p><a href="direction-b-travel-wallet.html">B案を操作する</a></div></article>
+      <article><img src="direction-c-desktop.png" alt="静かな日本の紙面案のデスクトップ画面"><div class="copy"><span class="label">C · BEST-FIT DESIGNER</span><h2>静かな日本の紙面</h2><p>余白、罫線、印、旅程線で「持ち歩くしおり」の記憶を強める方向。</p><a href="direction-c-quiet-japanese.html">C案を操作する</a></div></article>
+    </section>
+  </main>
+</body>
+</html>
