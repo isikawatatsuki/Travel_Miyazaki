@@ -25,6 +25,8 @@ npm run dev
 
 地図データはProtomaps BasemapおよびOpenStreetMapに由来し、地図内に帰属表示を行っています。
 
+地図検索は、登録済み地点を優先し、見つからない場合のみ検索ボタンを押したタイミングでNominatim Search APIを呼び出します。結果は収録済みの地図範囲に限定されます。検索先を変更する場合は `VITE_GEOCODER_URL` を設定してください。公開運用では、[Nominatimの利用ポリシー](https://operations.osmfoundation.org/policies/nominatim/)に従い、利用規模に応じて自前プロキシまたは互換プロバイダーを利用してください。
+
 ## Cloudflare Pages
 
 - フレームワーク プリセット: `Vite`
