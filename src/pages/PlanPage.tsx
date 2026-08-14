@@ -51,7 +51,7 @@ export function PlanPage() {
           <Panel className="schedule-card" key={item.id}>
             <div className="schedule-card-head">
               <span className="step-number">{String(index + 1).padStart(2, "0")}</span>
-              <label className="time-field"><span>時間</span><input type="time" value={item.time} disabled={item.isTimeUnset} onChange={(event) => updateItem(item.id, { time: event.target.value })} /></label>
+              <label className="time-field"><span>時間</span><input type="time" value={item.time} onInput={(event) => updateItem(item.id, { time: event.currentTarget.value, isTimeUnset: false })} /></label>
               <label className="unset-field"><input type="checkbox" checked={item.isTimeUnset} onChange={(event) => updateItem(item.id, { isTimeUnset: event.target.checked })} />未定</label>
               <IconButton label={`${item.title || "予定"}を削除`} className="danger" onClick={() => deleteItem(item.id)}><Trash2 size={19} /></IconButton>
             </div>

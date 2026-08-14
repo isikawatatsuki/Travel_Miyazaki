@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { layers, namedFlavor } from "@protomaps/basemaps";
 import * as maplibregl from "maplibre-gl";
 import { LngLatBounds, type Map as MapLibreMap, type StyleSpecification } from "maplibre-gl";
@@ -19,8 +19,18 @@ type Props = {
   ariaLabel: string;
 };
 
+type SearchResult = MapLocation & { id: string; label: string };
+type NominatimResult = { place_id: number; display_name: string; lat: string; lon: string };
+
 const protocol = new Protocol();
 let protocolUsers = 0;
+let lastGeocoderRequest = 0;
+const geocoderCache = new Map<string, SearchResult[]>();
+const mapCoverage = [
+  { west: 135.35, south: 34.58, east: 135.58, north: 34.75 },
+  { west: 135.15, south: 34.38, east: 135.34, north: 34.50 },
+  { west: 130.55, south: 31.60, east: 131.25, north: 31.90 },
+];
 
 function acquireProtocol() {
   if (protocolUsers === 0) maplibregl.addProtocol("pmtiles", protocol.tile);
@@ -35,6 +45,39 @@ function releaseProtocol() {
 function pmtilesUrl() {
   const configured = import.meta.env.VITE_PMTILES_URL || "/maps/travel-miyazaki.pmtiles";
   return new URL(configured, window.location.origin).href;
+}
+
+function isInMapCoverage({ longitude, latitude }: MapLocation) {
+  return mapCoverage.some(({ west, south, east, north }) => longitude >= west && longitude <= east && latitude >= south && latitude <= north);
+}
+
+async function geocode(query: string): Promise<SearchResult[]> {
+  const cacheKey = query.trim().toLocaleLowerCase("ja-JP");
+  const cached = geocoderCache.get(cacheKey);
+  if (cached) return cached;
+  const wait = Math.max(0, 1000 - (Date.now() - lastGeocoderRequest));
+  if (wait) await new Promise((resolve) => window.setTimeout(resolve, wait));
+  lastGeocoderRequest = Date.now();
+  const endpoint = import.meta.env.VITE_GEOCODER_URL || "https://nominatim.openstreetmap.org/search";
+  const url = new URL(endpoint);
+  url.search = new URLSearchParams({
+    q: query,
+    format: "jsonv2",
+    limit: "5",
+    countrycodes: "jp",
+    "accept-language": "ja",
+  }).toString();
+  const response = await fetch(url, { headers: { accept: "application/json" } });
+  if (!response.ok) throw new Error(`Geocoder returned ${response.status}`);
+  const payload = await response.json() as NominatimResult[];
+  const results = payload.map((result) => ({
+    id: `nominatim-${result.place_id}`,
+    label: result.display_name,
+    longitude: Number(result.lon),
+    latitude: Number(result.lat),
+  })).filter(isInMapCoverage);
+  geocoderCache.set(cacheKey, results);
+  return results;
 }
 
 function createStyle(route: MapLocation[]): StyleSpecification {
@@ -78,7 +121,12 @@ function createStyle(route: MapLocation[]): StyleSpecification {
 export function PmtilesMap({ markers, route = [], focus, ariaLabel }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
+  const searchMarkerRef = useRef<maplibregl.Marker | null>(null);
   const [status, setStatus] = useState("地図を読み込み中...");
+  const [query, setQuery] = useState("");
+  const [searching, setSearching] = useState(false);
+  const [searchStatus, setSearchStatus] = useState("");
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -126,6 +174,7 @@ export function PmtilesMap({ markers, route = [], focus, ariaLabel }: Props) {
     observer.observe(container);
     return () => {
       observer.disconnect();
+      searchMarkerRef.current?.remove();
       mapMarkers.forEach((marker) => marker.remove());
       map.remove();
       mapRef.current = null;
@@ -139,10 +188,68 @@ export function PmtilesMap({ markers, route = [], focus, ariaLabel }: Props) {
     mapRef.current.easeTo({ center: [focus.longitude, focus.latitude], zoom: 14, duration: reducedMotion ? 0 : 500 });
   }, [focus]);
 
+  const submitSearch = async (event: FormEvent) => {
+    event.preventDefault();
+    const normalized = query.trim();
+    if (normalized.length < 2) {
+      setSearchResults([]);
+      setSearchStatus("施設名や住所を2文字以上入力してください。");
+      return;
+    }
+    const localResults = markers.filter((marker) => marker.label.toLocaleLowerCase("ja-JP").includes(normalized.toLocaleLowerCase("ja-JP")));
+    if (localResults.length) {
+      setSearchResults(localResults);
+      setSearchStatus(`${localResults.length}件見つかりました。`);
+      return;
+    }
+    setSearching(true);
+    setSearchStatus("地点を検索中...");
+    setSearchResults([]);
+    try {
+      const results = await geocode(normalized);
+      setSearchResults(results);
+      setSearchStatus(results.length ? `${results.length}件見つかりました。` : "収録範囲内に見つかりませんでした。住所や施設名を変えてお試しください。");
+    } catch {
+      setSearchStatus("地点を検索できませんでした。通信状態を確認して、もう一度お試しください。");
+    } finally {
+      setSearching(false);
+    }
+  };
+
+  const showSearchResult = (result: SearchResult) => {
+    const map = mapRef.current;
+    if (!map) return;
+    searchMarkerRef.current?.remove();
+    const element = document.createElement("button");
+    element.type = "button";
+    element.className = "map-marker map-marker-search";
+    element.textContent = "●";
+    element.title = result.label;
+    element.setAttribute("aria-label", result.label);
+    searchMarkerRef.current = new maplibregl.Marker({ element, anchor: "bottom" })
+      .setLngLat([result.longitude, result.latitude])
+      .setPopup(new maplibregl.Popup({ offset: 24 }).setText(result.label))
+      .addTo(map);
+    searchMarkerRef.current.togglePopup();
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    map.easeTo({ center: [result.longitude, result.latitude], zoom: 14, duration: reducedMotion ? 0 : 500 });
+    setSearchResults([]);
+    setSearchStatus(`${result.label}を表示しています。`);
+  };
+
   return (
-    <div className="map-frame" role="region" aria-label={ariaLabel}>
-      <div ref={containerRef} className="pmtiles-map" />
-      {status && <p className="map-status" role="status">{status}</p>}
+    <div className="map-container">
+      <form className="map-search" role="search" onSubmit={submitSearch}>
+        <label><span>地図を検索</span><input type="search" value={query} placeholder="例：都城駅、鹿児島空港" onChange={(event) => setQuery(event.target.value)} /></label>
+        <button className="button button-primary" type="submit" disabled={searching}>{searching ? "検索中..." : "検索"}</button>
+      </form>
+      <p className="map-search-status" aria-live="polite">{searchStatus}</p>
+      {searchResults.length > 0 && <div className="map-search-results" aria-label="検索結果">{searchResults.map((result) => <button type="button" key={result.id} onClick={() => showSearchResult(result)}>{result.label}</button>)}</div>}
+      <div className="map-frame" role="region" aria-label={ariaLabel}>
+        <div ref={containerRef} className="pmtiles-map" />
+        {status && <p className="map-status" role="status">{status}</p>}
+      </div>
+      <small className="geocoder-attribution">検索データ © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap contributors</a></small>
     </div>
   );
 }
