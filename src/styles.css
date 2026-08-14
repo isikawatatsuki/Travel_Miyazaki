@@ -586,19 +586,101 @@ input:focus, textarea:focus, select:focus { border-color: var(--green); }
 
 .tickets-page > .section-block { margin-top: 42px; }
 .ticket-list { gap: 28px; }
-.travel-ticket { overflow: visible; background: rgba(249,247,240,.76); border: 0; border-top: 1px solid var(--ink); border-bottom: 1px solid var(--line); border-radius: 0; box-shadow: none; }
-.travel-ticket.is-active { box-shadow: inset 3px 0 var(--pink); }
-.travel-ticket-open { min-height: 210px; grid-template-columns: 1fr; }
-.travel-ticket-open:hover .travel-ticket-face { background: rgba(231,237,239,.5); }
-.travel-ticket-stub { min-height: 38px; flex-direction: row; justify-content: flex-end; padding: 8px 16px; color: var(--pink); background: transparent; border: 0; border-bottom: 1px dashed var(--line); writing-mode: horizontal-tb; }
-.travel-ticket-stub strong { font-size: 10px; letter-spacing: .18em; }
-.travel-ticket-face { gap: 18px; padding: 22px 24px 24px; }
-.travel-ticket-route { grid-template-columns: auto minmax(0,1fr) 72px auto minmax(0,1fr); }
+.travel-ticket {
+  --stamp-color: var(--pink);
+  overflow: visible;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+.travel-ticket.is-traveling { --stamp-color: #27634f; }
+.travel-ticket.is-done { --stamp-color: var(--green); }
+.travel-ticket.is-archived { --stamp-color: #656966; }
+.travel-ticket.is-active { box-shadow: none; }
+.travel-ticket-open {
+  position: relative;
+  min-height: 236px;
+  grid-template-columns: minmax(0, 1fr) 120px;
+  overflow: visible;
+  background-color: #faf7ed;
+  background-image: radial-gradient(circle at 18% 24%, rgba(77,67,48,.045) 0 1px, transparent 1.5px), radial-gradient(circle at 78% 68%, rgba(77,67,48,.035) 0 1px, transparent 1.5px), linear-gradient(104deg, rgba(255,255,255,.3), transparent 42%);
+  background-size: 17px 19px, 23px 21px, auto;
+  border: 1px solid #9f9b8f;
+  box-shadow: 0 10px 22px rgba(41,45,42,.09), 0 2px 4px rgba(41,45,42,.08);
+  transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+}
+.travel-ticket-open::before, .travel-ticket-open::after {
+  content: "";
+  position: absolute;
+  z-index: 3;
+  right: 110px;
+  width: 18px;
+  height: 18px;
+  background: #ece9df;
+  border: 0;
+  border-radius: 50%;
+  pointer-events: none;
+}
+.travel-ticket-open::before { top: -9px; }
+.travel-ticket-open::after { bottom: -9px; }
+.travel-ticket-open:hover { border-color: var(--green); box-shadow: 0 14px 30px rgba(28,64,85,.13), 0 3px 7px rgba(41,45,42,.1); transform: translateY(-2px); }
+.travel-ticket-open:active { transform: translateY(0); }
+.travel-ticket-open:hover .travel-ticket-face { background: transparent; }
+.travel-ticket-face {
+  grid-column: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: "kicker kicker" "route route" "name stamp" "data data";
+  align-content: space-between;
+  gap: 16px 22px;
+  padding: 24px 28px 22px;
+}
+.travel-ticket-kicker { grid-area: kicker; color: var(--pink); font-size: 9px; font-weight: 700; letter-spacing: .24em; }
+.travel-ticket-route { grid-area: route; grid-template-columns: auto minmax(0,1fr) 52px auto minmax(0,1fr); }
 .travel-ticket-route i { border-color: var(--line); border-top-style: solid; }
-.travel-ticket-name { font-size: clamp(26px, 5vw, 38px); }
-.travel-ticket-data { border-color: var(--ink); }
+.travel-ticket-name { grid-area: name; align-self: center; font-size: clamp(28px, 5vw, 42px); }
+.travel-ticket-data { grid-area: data; border-color: var(--ink); }
 .travel-ticket-data strong { color: var(--green); font-weight: 600; }
-.travel-ticket-actions { border-color: var(--line); }
+.travel-ticket-stamp {
+  grid-area: stamp;
+  align-self: center;
+  width: 96px;
+  height: 96px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 2px;
+  color: var(--stamp-color);
+  border: 3px double currentColor;
+  border-radius: 50%;
+  font-family: "Noto Serif JP", "Yu Mincho", serif;
+  line-height: 1;
+  opacity: .82;
+  transform: rotate(-8deg);
+}
+.travel-ticket-stamp::before, .travel-ticket-stamp::after { content: ""; width: 58px; border-top: 1px solid currentColor; opacity: .68; }
+.travel-ticket-stamp strong { font-size: 16px; font-weight: 700; letter-spacing: .12em; }
+.travel-ticket-stamp small { font-family: "Noto Sans JP", sans-serif; font-size: 7px; font-weight: 700; letter-spacing: .13em; }
+.travel-ticket-stub {
+  grid-column: 2;
+  min-height: 100%;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 20px 14px 16px;
+  color: var(--green);
+  background: rgba(28,64,85,.035);
+  border: 0;
+  border-left: 1px dashed #85857e;
+  writing-mode: horizontal-tb;
+}
+.travel-ticket-stub small { font-size: 8px; font-weight: 700; letter-spacing: .18em; }
+.travel-ticket-stub strong { font-family: "Noto Serif JP", "Yu Mincho", serif; font-size: 24px; letter-spacing: .16em; writing-mode: vertical-rl; }
+.travel-ticket-stub > span:last-child { font-family: ui-monospace, "SFMono-Regular", Consolas, monospace; font-size: 8px; letter-spacing: .08em; writing-mode: vertical-rl; }
+.travel-ticket-barcode { width: 54px; height: 34px; display: block; background: repeating-linear-gradient(90deg, currentColor 0 1px, transparent 1px 3px, currentColor 3px 5px, transparent 5px 7px); opacity: .78; transform: rotate(90deg); }
+.travel-ticket.is-active .travel-ticket-open { border-color: var(--green); box-shadow: 0 0 0 2px rgba(28,64,85,.12), 0 10px 22px rgba(41,45,42,.09); }
+.travel-ticket-actions { min-height: 52px; padding: 6px 4px 0; border: 0; }
+.travel-ticket-actions > span { color: var(--green); }
 .ticket-join-fold { border-radius: 0; background: rgba(249,247,240,.6); }
 .ticket-join-fold summary { color: var(--green); }
 .ticket-color-picker label > span { border-radius: 0; }
@@ -629,9 +711,17 @@ input:focus, textarea:focus, select:focus { border-color: var(--green); }
   .quick-card { border-right: 0; border-bottom: 1px solid var(--line); }
   .quick-card:last-child { border-bottom: 0; }
   .home-overview a { border-right: 0; border-bottom: 1px solid var(--line); }
-  .travel-ticket-open { grid-template-columns: 1fr; }
-  .travel-ticket-face { padding: 18px 16px 20px; }
+  .travel-ticket-open { min-height: 278px; grid-template-columns: minmax(0,1fr) 62px; }
+  .travel-ticket-open::before, .travel-ticket-open::after { right: 53px; width: 16px; height: 16px; }
+  .travel-ticket-face { grid-template-columns: minmax(0,1fr) 76px; gap: 13px 10px; padding: 18px 14px 18px; }
   .travel-ticket-route { grid-template-columns: auto minmax(0,1fr); }
+  .travel-ticket-name { font-size: clamp(25px, 9vw, 34px); }
+  .travel-ticket-stamp { width: 74px; height: 74px; }
+  .travel-ticket-stamp::before, .travel-ticket-stamp::after { width: 42px; }
+  .travel-ticket-stamp strong { font-size: 12px; }
+  .travel-ticket-stub { grid-column: 2; padding: 16px 7px 12px; }
+  .travel-ticket-stub strong { font-size: 18px; }
+  .travel-ticket-barcode { width: 44px; height: 24px; }
   .travel-ticket-data { grid-template-columns: repeat(2, minmax(0,1fr)); }
   .map-modal, .ticket-dialog { border-radius: 0; }
 }
