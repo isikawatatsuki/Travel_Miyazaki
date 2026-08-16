@@ -95,7 +95,7 @@ export function SharePage() {
             <form onSubmit={(event) => { event.preventDefault(); setHelpOpen(showHelpAfterCreate); run(() => createGroup(groupName)); }}>
               <h3>新しく作る</h3><label><span>グループ名</span><input value={groupName} maxLength={40} onChange={(event) => setGroupName(event.target.value)} /></label><label className="check-option"><input type="checkbox" checked={showHelpAfterCreate} onChange={(event) => setShowHelpAfterCreate(event.target.checked)} />使い方の説明を表示する</label><button className="button button-primary" disabled={busy}>グループを作成</button>
             </form>
-            <form onSubmit={(event) => { event.preventDefault(); run(() => joinGroup(joinCode)); }}>
+            <form onSubmit={(event) => { event.preventDefault(); run(async () => { await joinGroup(joinCode); }); }}>
               <h3>コードで参加</h3><label><span>6桁の参加コード</span><input value={joinCode} inputMode="numeric" pattern="[0-9]{6}" maxLength={6} onChange={(event) => setJoinCode(event.target.value.replace(/\D/g, ""))} /></label><button className="button button-secondary" disabled={busy}>グループに参加</button>
             </form>
           </div>}

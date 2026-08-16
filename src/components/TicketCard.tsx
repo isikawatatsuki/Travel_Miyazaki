@@ -1,4 +1,4 @@
-import { Archive, CalendarDays, CheckCircle2, Plane, Users } from "lucide-react";
+import { Archive, CalendarDays, CheckCircle2, Plane, RotateCcw, Users } from "lucide-react";
 import { countdownLabel, STATUS_LABELS, ticketStatus } from "../tickets";
 import type { Ticket, TicketStatus } from "../types";
 
@@ -14,7 +14,13 @@ function short(date?: string) {
   return date ? date.slice(5).replace("-", ".") : "--.--";
 }
 
-export function TicketCard({ ticket, onOpen, active = false }: { ticket: Ticket; onOpen: () => void; active?: boolean }) {
+export function TicketCard({ ticket, active, onOpen, onArchive, onRestore }: {
+  ticket: Ticket;
+  active: boolean;
+  onOpen: () => void;
+  onArchive: () => void;
+  onRestore: () => void;
+}) {
   const status = ticketStatus(ticket);
   const StatusIcon = STATUS_ICONS[status];
   const settings = ticket.state.tripSettings || {};
@@ -87,6 +93,12 @@ export function TicketCard({ ticket, onOpen, active = false }: { ticket: Ticket;
         )}
       </span>
       </button>
+      <div className="travel-ticket-actions">
+        {active && status !== "archived" && <span>現在開いているチケット</span>}
+        {status === "archived"
+          ? <button className="button button-quiet small" type="button" onClick={onRestore}><RotateCcw size={16} />戻す</button>
+          : <button className="button button-quiet small" type="button" onClick={onArchive}><Archive size={16} />アーカイブ</button>}
+      </div>
     </article>
   );
 }

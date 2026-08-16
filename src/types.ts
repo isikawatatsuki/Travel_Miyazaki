@@ -27,6 +27,7 @@ export type TripSettings = {
 };
 
 export type ScheduleDay = { id: string; label: string; shortLabel: string };
+export type MapLocation = { longitude: number; latitude: number };
 export type ScheduleItem = {
   id: string;
   day: string;
