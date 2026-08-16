@@ -1489,3 +1489,104 @@ input:focus, textarea:focus, select:focus { border-color: var(--green); }
   .is-ticket-detail .hero-section { margin-top: 0; border-radius: 0 0 24px 24px; }
   .app-shell.is-tickets .main-content { padding-top: 34px; }
 }
+
+/* v5 SVGを券面そのものとして使い、値だけを元SVGの座標へ重ねる。 */
+.ticket-list { grid-template-columns: minmax(0, 1fr) !important; max-width: 900px; margin-inline: auto; }
+.ticket .ticket-open {
+  display: block;
+  min-height: 0;
+  padding: 0;
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  filter: none;
+  color: #20221f;
+}
+.ticket .ticket-open:hover { transform: translateY(-2px); box-shadow: none; }
+.ticket .ticket-open:active { transform: translateY(0); }
+.ticket.is-done .ticket-open,
+.ticket.is-archived .ticket-open { filter: none; }
+.ticket-art {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 1200 / 460;
+  container-type: inline-size;
+}
+.ticket-template { display: block; width: 100%; height: 100%; object-fit: contain; pointer-events: none; user-select: none; }
+.ticket.is-active .ticket-art { filter: drop-shadow(0 0 5px color-mix(in srgb, var(--ticket) 46%, transparent)); }
+.ticket-dynamic {
+  position: absolute;
+  z-index: 1;
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  color: #20221f;
+  line-height: 1.12;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ticket-journey {
+  top: 35%;
+  left: 6.35%;
+  width: 72%;
+  font-family: "Kiwi Maru", "Yu Mincho", serif;
+  font-size: clamp(14px, 4.2cqw, 36px);
+  font-weight: 500;
+}
+.ticket-from,
+.ticket-to {
+  top: 63.5%;
+  width: 32%;
+  font-size: clamp(10px, 2.35cqw, 21px);
+  font-weight: 700;
+}
+.ticket-from { left: 6.35%; }
+.ticket-to { left: 42.7%; }
+.ticket-date,
+.ticket-party,
+.ticket-status-value,
+.ticket-stub-date,
+.ticket-stub-party {
+  font-family: var(--data-font), ui-monospace, monospace;
+  font-size: clamp(8px, 1.65cqw, 15px);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.ticket-date { top: 84.3%; left: 6.35%; width: 27.5%; }
+.ticket-party { top: 84.3%; left: 37.35%; width: 9.5%; }
+.ticket-status-value { top: 84.3%; left: 49.85%; width: 29%; color: color-mix(in srgb, var(--ticket) 72%, #20221f); }
+.ticket-stub-date,
+.ticket-stub-party { left: 85.35%; width: 10%; font-size: clamp(7px, 1.35cqw, 12px); }
+.ticket-stub-date { top: 31.5%; }
+.ticket-stub-party { top: 48%; }
+.ticket-svg-stamp {
+  position: absolute;
+  z-index: 2;
+  top: 36%;
+  left: 67.5%;
+  width: 15%;
+  height: auto;
+  color: color-mix(in srgb, var(--ticket) 62%, #7b332b);
+  opacity: .56;
+  rotate: -10deg;
+  pointer-events: none;
+  filter: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='r'%3E%3CfeTurbulence baseFrequency='.9' numOctaves='2' seed='7' result='n'/%3E%3CfeDisplacementMap in='SourceGraphic' in2='n' scale='1.2'/%3E%3C/filter%3E%3C/svg%3E%23r");
+}
+.ticket-svg-stamp.is-archived { opacity: .42; }
+.ticket-stamp-brand,
+.ticket-stamp-label,
+.ticket-stamp-date { fill: currentColor; font-family: var(--data-font), ui-monospace, monospace; font-weight: 800; }
+.ticket-stamp-brand { font-size: 12px; letter-spacing: 4px; }
+.ticket-stamp-label { font-size: 22px; letter-spacing: 2px; }
+.ticket-stamp-date { font-size: 14px; letter-spacing: 1px; }
+.ticket.is-archived .ticket-art { opacity: .7; }
+
+@media (max-width: 480px) {
+  .ticket-list { gap: 10px; }
+  .ticket-svg-stamp { top: 33%; width: 17%; }
+  .travel-ticket-actions { min-height: 44px; }
+}
