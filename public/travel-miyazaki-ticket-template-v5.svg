@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="460" viewBox="0 0 1200 460" role="img" aria-labelledby="title description">
+  <title id="title">トラベルチケット券面テンプレート</title>
+  <desc id="description">和紙調の地に固定の項目名だけを配し、旅行情報をWebアプリ側で重ねられる横長のチケットテンプレート</desc>
+  <defs>
+    <mask id="ticket-mask" maskUnits="userSpaceOnUse" x="0" y="0" width="1200" height="460">
+      <rect x="30" y="30" width="1140" height="400" rx="18" fill="white"/>
+      <circle cx="1000" cy="30" r="15" fill="black"/>
+      <circle cx="1000" cy="430" r="15" fill="black"/>
+    </mask>
+    <pattern id="paper-texture" width="30" height="30" patternUnits="userSpaceOnUse">
+      <circle cx="5" cy="8" r=".7" fill="#776f61" opacity=".07"/>
+      <circle cx="21" cy="19" r=".55" fill="#776f61" opacity=".055"/>
+      <path d="M3 24l8-1M18 5l7 1" stroke="#776f61" stroke-width=".5" opacity=".045"/>
+    </pattern>
+    <pattern id="paper-fibers" width="180" height="90" patternUnits="userSpaceOnUse">
+      <path d="M-12 58C28 32 65 74 105 48S170 27 202 45" fill="none" stroke="#183c54" stroke-width=".7" opacity=".025"/>
+      <path d="M-18 70C32 44 72 86 118 60S178 42 207 58" fill="none" stroke="#a33d2f" stroke-width=".6" opacity=".02"/>
+    </pattern>
+    <style>
+      .ticket-sans { font-family: "Hiragino Sans", "Yu Gothic", "Noto Sans JP", sans-serif; }
+      .ticket-serif { font-family: "Yu Mincho", "Hiragino Mincho ProN", "Noto Serif JP", serif; }
+      .ticket-mono { font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace; }
+      .field-label { fill: #686a64; font-size: 10px; font-weight: 700; letter-spacing: .2em; }
+    </style>
+  </defs>
+  <rect id="ticket-shadow" x="38" y="43" width="1124" height="391" rx="18" fill="#183c54" opacity=".13"/>
+  <g id="ticket" mask="url(#ticket-mask)">
+    <rect id="ticket-paper" x="30" y="30" width="1140" height="400" rx="18" fill="#f8f6ef" stroke="#20221f" stroke-width="2"/>
+    <rect x="30" y="30" width="1140" height="400" fill="url(#paper-texture)" pointer-events="none"/>
+    <rect x="30" y="30" width="1140" height="400" fill="url(#paper-fibers)" pointer-events="none"/>
+    <g id="ticket-face">
+      <path d="M76 108H958" stroke="#c9c6bb" stroke-width="1"/>
+      <path d="M76 343H958" stroke="#20221f" stroke-width="1"/>
+      <path d="M76 414H958" stroke="#c9c6bb" stroke-width="1"/>
+      <text x="76" y="139" class="ticket-mono field-label">JOURNEY</text>
+      <text x="76" y="278" class="ticket-mono field-label">FROM</text>
+      <text x="512" y="278" class="ticket-mono field-label">TO</text>
+      <text x="76" y="369" class="ticket-mono field-label">DATE</text>
+      <text x="448" y="369" class="ticket-mono field-label">PARTY</text>
+      <text x="598" y="369" class="ticket-mono field-label">STATUS</text>
+      <path d="M420 355V414M570 355V414" stroke="#c9c6bb" stroke-width="1"/>
+    </g>
+    <g id="ticket-stub">
+      <rect x="1000" y="30" width="170" height="400" fill="#eeebe1" opacity=".9"/>
+      <path d="M1000 46V414" fill="none" stroke="#8f918b" stroke-width="2" stroke-dasharray="4 9"/>
+      <path d="M1024 108H1146M1024 184H1146M1024 343H1146" stroke="#c9c6bb" stroke-width="1"/>
+      <text x="1024" y="72" class="ticket-mono field-label">TICKET STUB</text>
+      <text x="1024" y="131" class="ticket-mono field-label">DATE</text>
+      <text x="1024" y="207" class="ticket-mono field-label">PARTY</text>
+      <path d="M1138 64h8v8" fill="none" stroke="#a33d2f" stroke-width="2"/>
+      <path d="M1024 388v8h8" fill="none" stroke="#183c54" stroke-width="2"/>
+    </g>
+  </g>
+</svg>
