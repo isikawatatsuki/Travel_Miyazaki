@@ -1,0 +1,200 @@
+import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { Crosshair, LoaderCircle, MapPin, Search, X } from "lucide-react";
+import maplibregl from "maplibre-gl";
+import "maplibre-gl/dist/maplibre-gl.css";
+import { isValidCoordinate } from "../tickets";
+import { IconButton } from "./ui";
+
+type LocationSelection = { lat: number; lng: number; name: string };
+type Coordinate = Pick<LocationSelection, "lat" | "lng">;
+
+function roundedCoordinate(lat: number, lng: number): Coordinate {
+  return { lat: Number(lat.toFixed(6)), lng: Number(lng.toFixed(6)) };
+}
+
+export function LocationPicker({
+  initial,
+  initialName = "",
+  onConfirm,
+  onClose,
+}: {
+  initial?: Coordinate;
+  initialName?: string;
+  onConfirm: (location: LocationSelection) => void;
+  onClose: () => void;
+}) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<maplibregl.Map | null>(null);
+  const markerRef = useRef<maplibregl.Marker | null>(null);
+  const [picked, setPicked] = useState<Coordinate | null>(
+    initial && isValidCoordinate(initial.lat, initial.lng) ? initial : null,
+  );
+  const [locationStatus, setLocationStatus] = useState("");
+  const [name, setName] = useState(initialName);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searching, setSearching] = useState(false);
+
+  useEffect(() => {
+    const previousOverflow = document.body.style.overflow;
+    const closeOnEscape = (event: KeyboardEvent) => { if (event.key === "Escape") onClose(); };
+    document.body.style.overflow = "hidden";
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [onClose]);
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const map = new maplibregl.Map({
+      container: containerRef.current,
+      style: "https://tiles.openfreemap.org/styles/positron",
+      center: picked ? [picked.lng, picked.lat] : [137.5, 36.2],
+      zoom: picked ? 15 : 4.2,
+      attributionControl: false,
+    });
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
+    map.on("click", (event) => setPicked(roundedCoordinate(event.lngLat.lat, event.lngLat.lng)));
+    mapRef.current = map;
+    const resize = window.setTimeout(() => map.resize(), 0);
+
+    return () => {
+      window.clearTimeout(resize);
+      markerRef.current?.remove();
+      markerRef.current = null;
+      map.remove();
+      mapRef.current = null;
+    };
+    // 初期位置はモーダルを開いた時点の値として扱う。
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !picked) return;
+    if (!markerRef.current) {
+      const marker = new maplibregl.Marker({ color: "#d85f4b", draggable: true })
+        .setLngLat([picked.lng, picked.lat])
+        .addTo(map);
+      marker.on("dragend", () => {
+        const point = marker.getLngLat();
+        setPicked(roundedCoordinate(point.lat, point.lng));
+      });
+      markerRef.current = marker;
+    } else {
+      markerRef.current.setLngLat([picked.lng, picked.lat]);
+    }
+  }, [picked]);
+
+  const useCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      setLocationStatus("この端末では現在地を取得できません。");
+      return;
+    }
+    setLocationStatus("現在地を取得しています…");
+    navigator.geolocation.getCurrentPosition(
+      ({ coords }) => {
+        const coordinate = roundedCoordinate(coords.latitude, coords.longitude);
+        setPicked(coordinate);
+        setLocationStatus("");
+        mapRef.current?.easeTo({ center: [coordinate.lng, coordinate.lat], zoom: 16, duration: 500 });
+      },
+      () => setLocationStatus("現在地を取得できませんでした。位置情報の許可を確認してください。"),
+      { enableHighAccuracy: true, timeout: 10_000, maximumAge: 60_000 },
+    );
+  };
+
+  const searchLocation = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const query = searchQuery.trim();
+    if (!query || searching) return;
+    setSearching(true);
+    setLocationStatus("場所を検索しています…");
+    try {
+      const response = await fetch("/api/geocode", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ query }),
+        credentials: "same-origin",
+      });
+      const payload = await response.json() as { lat?: number; lng?: number; displayName?: string; error?: string };
+      if (!response.ok || !isValidCoordinate(payload.lat, payload.lng)) {
+        throw new Error(payload.error || "その場所は見つかりませんでした。");
+      }
+      const coordinate = roundedCoordinate(payload.lat as number, payload.lng as number);
+      setPicked(coordinate);
+      setName(query);
+      setLocationStatus(payload.displayName ? `${payload.displayName} に移動しました。` : `${query} に移動しました。`);
+      mapRef.current?.easeTo({ center: [coordinate.lng, coordinate.lat], zoom: 16, duration: 600 });
+    } catch (error) {
+      setLocationStatus(error instanceof Error ? error.message : "場所を検索できませんでした。");
+    } finally {
+      setSearching(false);
+    }
+  };
+
+  return createPortal(
+    <div className="location-picker-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
+      <section className="location-picker-dialog" role="dialog" aria-modal="true" aria-labelledby="location-picker-title">
+        <header className="location-picker-head">
+          <div>
+            <p className="eyebrow">LOCATION</p>
+            <h2 id="location-picker-title">地図から場所を選ぶ</h2>
+          </div>
+          <IconButton label="場所の選択を閉じる" onClick={onClose}><X size={20} /></IconButton>
+        </header>
+
+        <p className="location-picker-guide">場所名や住所で検索するか、地図をタップしてピンを合わせてください。</p>
+        <form className="location-search" role="search" onSubmit={searchLocation}>
+          <span id="location-search-label">場所名・住所を検索</span>
+          <div>
+            <input
+              aria-labelledby="location-search-label"
+              value={searchQuery}
+              maxLength={100}
+              placeholder="例：宮崎駅、青島神社"
+              autoComplete="off"
+              onChange={(event) => setSearchQuery(event.target.value)}
+            />
+            <button className="button button-primary" type="submit" disabled={!searchQuery.trim() || searching}>
+              {searching ? <LoaderCircle className="spin" size={18} aria-hidden="true" /> : <Search size={18} aria-hidden="true" />}
+              検索
+            </button>
+          </div>
+        </form>
+        <button className="button button-secondary location-current" type="button" onClick={useCurrentLocation}>
+          <Crosshair size={18} aria-hidden="true" />現在地を使う
+        </button>
+        {locationStatus && <p className="location-picker-status" role="status">{locationStatus}</p>}
+
+        <div className="location-picker-map" ref={containerRef} aria-label="場所を選択する地図" />
+        <p className="location-picker-attribution">© OpenStreetMap contributors / OpenFreeMap</p>
+
+        <div className="location-picker-coordinate" aria-live="polite">
+          <MapPin size={18} aria-hidden="true" />
+          {picked
+            ? <span>緯度 {picked.lat} ・ 経度 {picked.lng}</span>
+            : <span>地図上で場所を選んでください</span>}
+        </div>
+        <label className="location-picker-name">
+          <span>場所の名前</span>
+          <input
+            value={name}
+            maxLength={40}
+            placeholder="例：宮崎駅、青島神社"
+            autoComplete="off"
+            onChange={(event) => setName(event.target.value)}
+          />
+          <small>予定名とは別に、地図上で表示する名前を付けられます。</small>
+        </label>
+        <footer className="location-picker-actions">
+          <button className="button button-quiet" type="button" onClick={onClose}>キャンセル</button>
+          <button className="button button-primary" type="button" disabled={!picked} onClick={() => picked && onConfirm({ ...picked, name: name.trim() })}>この場所を設定</button>
+        </footer>
+      </section>
+    </div>,
+    document.body,
+  );
+}
