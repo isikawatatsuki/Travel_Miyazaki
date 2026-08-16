@@ -15,22 +15,25 @@ export function PlanPage() {
   const [isEditing, setIsEditing] = useState(false);
   const [locationTarget, setLocationTarget] = useState<LocationTarget | null>(null);
   const { tripSettings, setTripSettings, schedule, setSchedule, helpOpen, setHelpOpen } = useTrip();
-  // 地図は予定から作った経路に合わせる。予定に場所が無ければ旅行設定へ落ちる。
+  // 地図の出発点は予定から作った経路に合わせ、終点はその日に設定したホテルにする。
   const route = useMemo(() => buildTicketRoute({ tripSettings, schedule } as Parameters<typeof buildTicketRoute>[0]), [schedule, tripSettings]);
   const first = route.points[0];
-  const last = route.points[route.points.length - 1];
+  const days = getScheduleDays(tripSettings);
+  const activeDay = days.some((day) => day.id === schedule.activeDay) ? schedule.activeDay : days[0].id;
+  const stay = stayForDay(schedule.items, activeDay);
+  const stayPlace = stay ? resolvePlace(stay.mapUrl, stay.locationName || stay.title) : null;
+  const stayCoordinate = stay ? scheduleItemCoordinate(stay) : null;
   // 横のリストと地図は必ず同じ値から作る。予定由来なら地点名と座標が同じ予定に
   // 属するので座標を使い、設定由来なら地名と緯度経度が別々に編集できてしまうため
   // 両方とも地名を使う。混ぜると「リストは弁天町、地図は鹿児島空港」になる。
   const fromSchedule = route.source === "schedule" && Boolean(first);
   const startLabel = fromSchedule ? first.title : tripSettings.mapOrigin;
-  const endLabel = fromSchedule && last !== first ? last.title : tripSettings.mapDestination;
+  const hotelQuery = tripSettings.hotelName && tripSettings.hotelName !== "未設定"
+    ? `${tripSettings.hotelName} ${tripSettings.hotelAddress}`.trim()
+    : "";
+  const endLabel = stay?.locationName || stayPlace?.name || stay?.title || tripSettings.hotelName || tripSettings.mapDestination || "ホテル未設定";
   const mapFrom = fromSchedule ? `${first.lat},${first.lng}` : startLabel;
-  const mapTo = fromSchedule && last !== first ? `${last.lat},${last.lng}` : endLabel;
-  const days = getScheduleDays(tripSettings);
-  const activeDay = days.some((day) => day.id === schedule.activeDay) ? schedule.activeDay : days[0].id;
-  const stay = stayForDay(schedule.items, activeDay);
-  const stayPlace = stay ? resolvePlace(stay.mapUrl, stay.title) : null;
+  const mapTo = stayCoordinate ? `${stayCoordinate.lat},${stayCoordinate.lng}` : hotelQuery || tripSettings.mapDestination || endLabel;
   const items = schedule.items
     .filter((item) => item.day === activeDay)
     .sort((a, b) => (a.isTimeUnset ? "99:99" : a.time).localeCompare(b.isTimeUnset ? "99:99" : b.time));
@@ -140,7 +143,7 @@ export function PlanPage() {
             <div><span>GOAL</span><strong>{endLabel}</strong></div>
             <i aria-hidden="true" />
             <div><span>STAY</span><strong>{stayPlace?.name || stay?.title || tripSettings.hotelName || "未設定"}</strong>{stay && stay.day !== activeDay && <small>{stay.day.slice(5).replace("-", "/")}から引き継ぎ</small>}</div>
-            <p className="route-source">{fromSchedule ? `この地図は予定に登録した${route.points.length}地点から描いています。` : "予定に場所がまだ無いため、設定の「地図の出発地・目的地」を表示しています。"}</p>
+            <p className="route-source">{stayCoordinate || hotelQuery ? "地図の終点は、設定したホテルです。" : "ホテルが未設定のため、旅行設定の目的地を表示しています。"}</p>
             <a className="button button-primary" href={mapsDirections(mapFrom, mapTo)} target="_blank" rel="noreferrer">Google Mapsで経路を見る<ExternalLink size={17} /></a>
             {(stayPlace?.url || tripSettings.hotelName) && (
               <a className="button button-secondary" href={stayPlace?.url || mapsSearch(`${tripSettings.hotelName} ${tripSettings.hotelAddress}`)} target="_blank" rel="noreferrer">宿を地図で見る<MapPin size={17} /></a>
