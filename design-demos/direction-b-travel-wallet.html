@@ -1,0 +1,667 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f4efe6">
+  <link rel="icon" href="../public/icons/favicon.svg" type="image/svg+xml">
+  <title>旅のしおり — Direction B / Travel Wallet</title>
+  <!--
+    Direction B assumptions
+    - This is a visual direction study; the two app states share one local, static data set.
+    - At desktop size both states are shown together for comparison. At phone size, the segmented control and ticket open/back controls switch states.
+    - No additional trip, price, reservation status, or destination fact has been inferred.
+    Verified real-world reference: Apple Wallet — Apple Human Interface Guidelines / Wallet
+    Official URL: https://developer.apple.com/design/human-interface-guidelines/wallet/
+    Structural principles translated (not visually cloned): one trip per pass; critical fields stay visible when a pass is collapsed; primary, secondary, and supplemental fields follow a clear hierarchy; passes are designed as clean digital objects rather than literal replicas of paper.
+    Form origin: the brief's physical ticket/perforation motif becomes a continuous route spine, connecting the ticket's origin/destination/date to the opened trip's flights, hotel, and next itinerary.
+  -->
+  <style>
+    :root {
+      --paper: #f4efe6;
+      --surface: #fffdf8;
+      --ink: #182727;
+      --muted: #596968;
+      --line: #cbd2cc;
+      --green: #174f4a;
+      --green-soft: #dce9e3;
+      --orange: #c54e29;
+      --orange-soft: #f4d8ca;
+      --sun: #e5b95d;
+      --focus: #086e98;
+      --shadow: 0 18px 50px rgba(32, 45, 42, .10);
+      --radius: 24px;
+      --ease: 220ms cubic-bezier(.2, .8, .2, 1);
+    }
+
+    * { box-sizing: border-box; }
+    html { min-width: 320px; background: var(--paper); }
+    body {
+      margin: 0;
+      min-height: 100dvh;
+      overflow-x: hidden;
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(24,39,39,.035) 1px, transparent 1px),
+        var(--paper);
+      background-size: 100% 32px;
+      font-family: "Hiragino Sans", "Yu Gothic UI", "Yu Gothic", Meiryo, sans-serif;
+      font-size: 16px;
+      line-height: 1.55;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    button { font: inherit; }
+    button, [role="button"] { touch-action: manipulation; }
+    button:focus-visible, [tabindex]:focus-visible {
+      outline: 3px solid var(--focus);
+      outline-offset: 3px;
+    }
+    .skip-link {
+      position: fixed;
+      z-index: 100;
+      top: 8px;
+      left: 8px;
+      padding: 10px 14px;
+      color: #fff;
+      background: var(--ink);
+      transform: translateY(-150%);
+    }
+    .skip-link:focus { transform: translateY(0); }
+
+    .direction-bar {
+      width: min(1320px, calc(100% - 48px));
+      min-height: 72px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+      border-bottom: 1px solid rgba(24,39,39,.28);
+    }
+    .direction-id {
+      display: flex;
+      align-items: baseline;
+      gap: 14px;
+      min-width: 0;
+    }
+    .direction-id strong {
+      font-family: Georgia, "Yu Mincho", serif;
+      font-size: 20px;
+      font-weight: 600;
+      letter-spacing: .02em;
+    }
+    .direction-id span {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .15em;
+      text-transform: uppercase;
+    }
+    .view-switch {
+      display: flex;
+      gap: 4px;
+      padding: 4px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: rgba(255,253,248,.6);
+    }
+    .view-switch button {
+      min-height: 44px;
+      padding: 0 18px;
+      border: 0;
+      border-radius: 10px;
+      color: var(--muted);
+      background: transparent;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 700;
+      transition: color var(--ease), background var(--ease), transform 100ms ease;
+    }
+    .view-switch button[aria-selected="true"] { color: #fff; background: var(--green); }
+    .view-switch button:hover:not([aria-selected="true"]) { color: var(--ink); background: var(--green-soft); }
+    .view-switch button:active { transform: scale(.97); }
+
+    .board {
+      width: min(1320px, calc(100% - 48px));
+      height: calc(100dvh - 72px);
+      min-height: 720px;
+      margin: 0 auto;
+      padding: 28px 0 36px;
+      display: grid;
+      grid-template-columns: minmax(420px, .82fr) minmax(600px, 1.18fr);
+      gap: 28px;
+    }
+    .panel {
+      position: relative;
+      min-width: 0;
+      overflow: hidden;
+      border: 1px solid rgba(24,39,39,.16);
+      border-radius: 30px;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+    .panel[data-view="tickets"] { background: #f8f4ec; }
+
+    .panel-head {
+      min-height: 104px;
+      padding: 24px 28px 18px;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 20px;
+    }
+    .eyebrow {
+      margin: 0 0 5px;
+      color: var(--orange);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: .18em;
+    }
+    h1, h2, h3, p { margin-top: 0; }
+    h1, h2 {
+      margin-bottom: 0;
+      font-family: Georgia, "Yu Mincho", "Hiragino Mincho ProN", serif;
+      font-weight: 600;
+      letter-spacing: .01em;
+    }
+    h1 { font-size: clamp(25px, 2vw, 34px); line-height: 1.2; }
+    h2 { font-size: clamp(24px, 2vw, 32px); line-height: 1.25; }
+
+    .issue-button, .back-button {
+      min-width: 44px;
+      min-height: 44px;
+      border: 1px solid var(--green);
+      border-radius: 12px;
+      color: #fff;
+      background: var(--green);
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 700;
+      transition: background var(--ease), color var(--ease), transform 100ms ease;
+    }
+    .issue-button { padding: 0 16px; white-space: nowrap; }
+    .issue-button:hover, .back-button:hover { color: var(--green); background: var(--green-soft); }
+    .issue-button:active, .back-button:active { transform: scale(.97); }
+    .back-button {
+      display: none;
+      place-items: center;
+      padding: 0;
+    }
+    .back-button svg { width: 20px; height: 20px; }
+
+    .ticket-stage {
+      padding: 16px 28px 28px;
+      display: grid;
+      align-content: center;
+      min-height: calc(100% - 104px);
+    }
+    .ticket {
+      position: relative;
+      width: 100%;
+      padding: 0;
+      overflow: visible;
+      border: 0;
+      color: var(--ink);
+      background: transparent;
+      cursor: pointer;
+      text-align: left;
+      filter: drop-shadow(0 16px 24px rgba(41,54,51,.13));
+      transition: transform var(--ease), filter var(--ease);
+    }
+    .ticket:hover { transform: translateY(-4px); filter: drop-shadow(0 21px 28px rgba(41,54,51,.17)); }
+    .ticket:active { transform: translateY(-1px) scale(.99); }
+    .ticket-body {
+      position: relative;
+      display: block;
+      overflow: hidden;
+      border-radius: 22px;
+      background: var(--surface);
+    }
+    .ticket-body::before, .ticket-body::after {
+      content: "";
+      position: absolute;
+      z-index: 2;
+      top: 59%;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: #f8f4ec;
+      transform: translateY(-50%);
+    }
+    .ticket-body::before { left: -12px; }
+    .ticket-body::after { right: -12px; }
+    .ticket-top {
+      padding: 20px 24px 22px;
+      display: block;
+      color: #fff;
+      background: var(--green);
+    }
+    .ticket-kicker {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      color: rgba(255,255,255,.78);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .15em;
+    }
+    .save-state { display: inline-flex; align-items: center; gap: 7px; letter-spacing: .02em; }
+    .save-state::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--sun); }
+    .ticket-name {
+      margin: 28px 0 12px;
+      display: block;
+      font-family: Georgia, "Yu Mincho", serif;
+      font-size: 27px;
+      font-weight: 600;
+    }
+    .route {
+      display: grid;
+      grid-template-columns: minmax(0,1fr) 48px minmax(0,1fr);
+      align-items: center;
+      gap: 10px;
+      font-size: 15px;
+      font-weight: 700;
+    }
+    .route span:last-child { text-align: right; }
+    .route-line { position: relative; height: 1px; background: rgba(255,255,255,.58); }
+    .route-line::before, .route-line::after {
+      content: "";
+      position: absolute;
+      top: 50%;
+      width: 7px;
+      height: 7px;
+      border: 1px solid #fff;
+      border-radius: 50%;
+      background: var(--green);
+      transform: translateY(-50%);
+    }
+    .route-line::before { left: 0; }
+    .route-line::after { right: 0; background: #fff; }
+    .tear-line { height: 1px; margin: 0 18px; display: block; background: repeating-linear-gradient(90deg, var(--line) 0 7px, transparent 7px 13px); }
+    .ticket-bottom {
+      padding: 24px;
+      display: grid;
+      grid-template-columns: 1.2fr .8fr;
+      gap: 16px;
+    }
+    .field { min-width: 0; }
+    .field-label {
+      display: block;
+      margin-bottom: 5px;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .12em;
+    }
+    .field-value { display: block; font-size: 17px; font-weight: 750; font-variant-numeric: tabular-nums; }
+    .field.align-right { text-align: right; }
+    .ticket-status {
+      grid-column: 1 / -1;
+      padding-top: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-top: 1px solid var(--line);
+    }
+    .status-pill {
+      min-height: 32px;
+      padding: 5px 11px;
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      color: var(--green);
+      background: var(--green-soft);
+      font-size: 13px;
+      font-weight: 700;
+    }
+    .countdown { color: var(--orange); font-size: 14px; font-weight: 800; }
+    .open-hint { margin: 18px 0 0; color: var(--muted); text-align: center; font-size: 13px; }
+
+    .trip-panel { display: grid; grid-template-rows: auto 1fr auto; }
+    .trip-head {
+      padding: 24px 28px 20px;
+      border-bottom: 1px solid var(--line);
+    }
+    .trip-title-row { display: flex; align-items: flex-start; gap: 16px; }
+    .trip-title-row > div { flex: 1; min-width: 0; }
+    .trip-meta {
+      margin: 8px 0 0;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 18px;
+      color: var(--muted);
+      font-size: 14px;
+      font-variant-numeric: tabular-nums;
+    }
+    .trip-meta .save-state { color: var(--green); font-weight: 700; }
+    .trip-meta .save-state::before { background: var(--green); }
+
+    .trip-content {
+      min-height: 0;
+      padding: 22px 28px 20px;
+      display: grid;
+      grid-template-columns: .96fr 1.04fr;
+      gap: 28px;
+      overflow: auto;
+    }
+    .section-label {
+      margin: 0 0 13px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: .13em;
+    }
+    .journey-block {
+      position: relative;
+      padding-left: 26px;
+    }
+    .journey-block::before {
+      content: "";
+      position: absolute;
+      top: 10px;
+      bottom: 8px;
+      left: 5px;
+      border-left: 1px dashed var(--orange);
+    }
+    .fact {
+      position: relative;
+      padding: 0 0 18px;
+      border-bottom: 1px solid var(--line);
+    }
+    .fact + .fact { padding-top: 18px; }
+    .fact:last-child { border-bottom: 0; }
+    .fact::before {
+      content: "";
+      position: absolute;
+      top: 7px;
+      left: -25px;
+      width: 9px;
+      height: 9px;
+      border: 2px solid var(--orange);
+      border-radius: 50%;
+      background: var(--surface);
+    }
+    .fact + .fact::before { top: 25px; }
+    .fact-time { color: var(--orange); font-size: 13px; font-weight: 800; font-variant-numeric: tabular-nums; }
+    .fact-main { margin: 3px 0 0; font-size: 16px; font-weight: 750; }
+
+    .next-list { margin: 0; padding: 0; list-style: none; border-top: 2px solid var(--ink); }
+    .next-list li {
+      min-height: 58px;
+      display: grid;
+      grid-template-columns: 58px 1fr;
+      align-items: center;
+      gap: 12px;
+      border-bottom: 1px solid var(--line);
+    }
+    .next-time { color: var(--green); font-size: 17px; font-weight: 800; font-variant-numeric: tabular-nums; }
+    .next-place { font-size: 15px; font-weight: 650; }
+
+    .bottom-nav {
+      min-height: 76px;
+      padding: 8px 14px max(8px, env(safe-area-inset-bottom));
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      border-top: 1px solid var(--line);
+      background: rgba(255,253,248,.96);
+    }
+    .nav-item {
+      min-height: 52px;
+      padding: 6px 4px;
+      border: 0;
+      border-radius: 10px;
+      color: var(--muted);
+      background: transparent;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 700;
+      transition: color var(--ease), background var(--ease), transform 100ms ease;
+    }
+    .nav-item::before {
+      content: "";
+      width: 20px;
+      height: 2px;
+      margin: 0 auto 6px;
+      display: block;
+      border-radius: 2px;
+      background: transparent;
+    }
+    .nav-item[aria-current="page"] { color: var(--green); background: var(--green-soft); }
+    .nav-item[aria-current="page"]::before { background: var(--green); }
+    .nav-item:hover { color: var(--green); background: var(--green-soft); }
+    .nav-item:active { transform: scale(.96); }
+
+    .mobile-only { display: none; }
+
+    @media (max-width: 800px) {
+      body {
+        height: 100dvh;
+        display: grid;
+        grid-template-rows: auto minmax(0, 1fr);
+        overflow: hidden;
+        background-size: 100% 24px;
+      }
+      .direction-bar {
+        width: 100%;
+        min-height: 94px;
+        padding: 10px 16px;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+        background: rgba(244,239,230,.96);
+      }
+      .direction-id { justify-content: space-between; }
+      .direction-id strong { font-size: 16px; }
+      .direction-id span { font-size: 10px; }
+      .view-switch { width: 100%; }
+      .view-switch button { flex: 1; }
+      .board {
+        width: 100%;
+        height: auto;
+        min-height: 0;
+        padding: 0;
+        display: block;
+      }
+      .panel {
+        height: 100%;
+        border: 0;
+        border-radius: 0;
+        box-shadow: none;
+      }
+      .panel[hidden] { display: none; }
+      .panel-head, .trip-head { padding: 20px 20px 16px; }
+      .panel-head { min-height: 92px; }
+      h1 { font-size: 26px; }
+      h2 { font-size: 25px; }
+      .ticket-stage { min-height: calc(100% - 92px); padding: 12px 20px 28px; align-content: start; }
+      .ticket { margin-top: 18px; }
+      .ticket-top { padding: 18px 20px 20px; }
+      .ticket-name { margin-top: 22px; font-size: 25px; }
+      .route { grid-template-columns: minmax(0,1fr) 40px minmax(0,1fr); font-size: 14px; }
+      .ticket-bottom { padding: 22px 20px; }
+      .open-hint { font-size: 12px; }
+      .back-button { display: grid; flex: 0 0 44px; }
+      .trip-panel { grid-template-rows: auto 1fr auto; }
+      .trip-content {
+        padding: 18px 20px 24px;
+        display: block;
+      }
+      .next-section { margin-top: 24px; }
+      .bottom-nav { min-height: 70px; }
+      .mobile-only { display: initial; }
+    }
+
+    @media (max-width: 390px) {
+      .issue-button { padding: 0 12px; }
+      .ticket-kicker { gap: 8px; }
+      .ticket-name { font-size: 23px; }
+      .field-value { font-size: 15px; }
+      .trip-meta { gap: 4px 12px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        scroll-behavior: auto !important;
+        transition-duration: .01ms !important;
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main">内容へ移動</a>
+  <header class="direction-bar">
+    <div class="direction-id">
+      <strong>旅のしおり</strong>
+      <span>Direction B · Travel wallet</span>
+    </div>
+    <div class="view-switch" role="tablist" aria-label="表示する画面">
+      <button id="tab-tickets" role="tab" aria-selected="true" aria-controls="tickets-view">旅のチケット</button>
+      <button id="tab-trip" role="tab" aria-selected="false" aria-controls="trip-view">開いた旅</button>
+    </div>
+  </header>
+
+  <main class="board" id="main">
+    <section class="panel" id="tickets-view" data-view="tickets" role="tabpanel" aria-labelledby="tab-tickets">
+      <header class="panel-head">
+        <div>
+          <p class="eyebrow">TRAVEL TICKETS</p>
+          <h1>旅のチケット</h1>
+        </div>
+        <button class="issue-button" type="button">チケットを発行</button>
+      </header>
+
+      <div class="ticket-stage">
+        <button class="ticket" id="open-trip" type="button" aria-label="旅のしおり、鹿児島空港から都城グリーンホテルを開く">
+          <span class="ticket-body">
+            <span class="ticket-top">
+              <span class="ticket-kicker">
+                <span>TRAVEL TICKET</span>
+                <span class="save-state">端末保存</span>
+              </span>
+              <span class="ticket-name">旅のしおり</span>
+              <span class="route">
+                <span>鹿児島空港</span>
+                <span class="route-line" aria-hidden="true"></span>
+                <span>都城グリーンホテル</span>
+              </span>
+            </span>
+            <span class="tear-line" aria-hidden="true"></span>
+            <span class="ticket-bottom">
+              <span class="field">
+                <span class="field-label">DATE</span>
+                <span class="field-value">09.21–09.23</span>
+              </span>
+              <span class="field align-right">
+                <span class="field-label">TRAVELERS</span>
+                <span class="field-value">2名</span>
+              </span>
+              <span class="ticket-status">
+                <span class="status-pill">計画中</span>
+                <span class="countdown">あと38日</span>
+              </span>
+            </span>
+          </span>
+        </button>
+        <p class="open-hint">チケットを選ぶと、旅の予定を開きます</p>
+      </div>
+    </section>
+
+    <section class="panel trip-panel" id="trip-view" data-view="trip" role="tabpanel" aria-labelledby="tab-trip">
+      <header class="trip-head">
+        <div class="trip-title-row">
+          <button class="back-button" id="back-tickets" type="button" aria-label="旅のチケットへ戻る">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
+          </button>
+          <div>
+            <p class="eyebrow">大阪から都城へ</p>
+            <h2>都城旅行</h2>
+            <p class="trip-meta"><span>2026.09.21–09.23</span><span class="save-state">端末保存</span></p>
+          </div>
+        </div>
+      </header>
+
+      <div class="trip-content" tabindex="-1">
+        <section aria-labelledby="journey-heading">
+          <h3 class="section-label" id="journey-heading">旅の要点</h3>
+          <div class="journey-block">
+            <article class="fact">
+              <span class="fact-time">MM193 · 08:30</span>
+              <p class="fact-main">関西発</p>
+            </article>
+            <article class="fact">
+              <span class="fact-time">STAY</span>
+              <p class="fact-main">都城グリーンホテル</p>
+            </article>
+            <article class="fact">
+              <span class="fact-time">MM198 · 16:30</span>
+              <p class="fact-main">鹿児島発</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="next-section" aria-labelledby="next-heading">
+          <h3 class="section-label" id="next-heading">次の予定</h3>
+          <ol class="next-list">
+            <li><time class="next-time">05:40</time><span class="next-place">市岡元町を出る</span></li>
+            <li><time class="next-time">05:50</time><span class="next-place">弁天町駅</span></li>
+            <li><time class="next-time">07:00</time><span class="next-place">関西空港駅</span></li>
+          </ol>
+        </section>
+      </div>
+
+      <nav class="bottom-nav" aria-label="旅行メニュー">
+        <button class="nav-item" type="button" aria-current="page">ホーム</button>
+        <button class="nav-item" type="button">予定</button>
+        <button class="nav-item" type="button">お金</button>
+        <button class="nav-item" type="button">持ち物</button>
+        <button class="nav-item" type="button">共有</button>
+      </nav>
+    </section>
+  </main>
+
+  <script>
+    (() => {
+      const tabs = [...document.querySelectorAll('[role="tab"]')];
+      const panels = [...document.querySelectorAll('[role="tabpanel"]')];
+      const narrow = () => window.matchMedia('(max-width: 800px)').matches;
+
+      function select(view, moveFocus = false) {
+        tabs.forEach(tab => {
+          const active = tab.id === `tab-${view}`;
+          tab.setAttribute('aria-selected', String(active));
+          tab.tabIndex = active ? 0 : -1;
+        });
+        panels.forEach(panel => {
+          const active = panel.dataset.view === view;
+          panel.hidden = narrow() ? !active : false;
+        });
+        if (moveFocus && narrow()) {
+          const target = document.querySelector(`[data-view="${view}"]`);
+          const heading = target.querySelector('h1, h2');
+          heading.setAttribute('tabindex', '-1');
+          heading.focus({ preventScroll: true });
+        }
+      }
+
+      tabs.forEach((tab, index) => {
+        tab.addEventListener('click', () => select(tab.id.replace('tab-', '')));
+        tab.addEventListener('keydown', event => {
+          if (!['ArrowLeft', 'ArrowRight'].includes(event.key)) return;
+          event.preventDefault();
+          const next = event.key === 'ArrowRight' ? (index + 1) % tabs.length : (index - 1 + tabs.length) % tabs.length;
+          tabs[next].focus();
+          select(tabs[next].id.replace('tab-', ''));
+        });
+      });
+      document.getElementById('open-trip').addEventListener('click', () => select('trip', true));
+      document.getElementById('back-tickets').addEventListener('click', () => select('tickets', true));
+      window.addEventListener('resize', () => select(document.querySelector('[role="tab"][aria-selected="true"]').id.replace('tab-', '')));
+      select('tickets');
+    })();
+  </script>
+</body>
+</html>

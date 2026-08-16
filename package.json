@@ -14,8 +14,10 @@
     "test": "node --experimental-strip-types --test"
   },
   "dependencies": {
+    "@protomaps/basemaps": "^5.7.2",
     "lucide-react": "1.25.0",
     "maplibre-gl": "4.7.1",
+    "pmtiles": "^4.5.0",
     "react": "19.2.7",
     "react-dom": "19.2.7"
   },

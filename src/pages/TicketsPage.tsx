@@ -8,7 +8,7 @@ import { AboutDeveloper } from "../components/AboutDeveloper";
 import { NewTicketDialog, type NewTicket } from "../components/NewTicketDialog";
 
 export function TicketsPage({ onOpenTicket }: { onOpenTicket: (id: string) => void }) {
-  const { trips, activeTripId, createTrip, switchTrip, joinGroup } = useTrip();
+  const { trips, activeTripId, createTrip, switchTrip, archiveTrip, restoreTrip, joinGroup } = useTrip();
   const [newOpen, setNewOpen] = useState(false);
   const [joinCode, setJoinCode] = useState("");
   const [busy, setBusy] = useState(false);
@@ -51,7 +51,13 @@ export function TicketsPage({ onOpenTicket }: { onOpenTicket: (id: string) => vo
           <ul className="ticket-list">
             {visible.map((ticket) => (
               <li key={ticket.id}>
-                <TicketCard ticket={ticket} active={ticket.id === activeTripId} onOpen={() => void open(ticket.id)} />
+                <TicketCard
+                  ticket={ticket}
+                  active={ticket.id === activeTripId}
+                  onOpen={() => void open(ticket.id)}
+                  onArchive={() => void archiveTrip(ticket.id)}
+                  onRestore={() => restoreTrip(ticket.id)}
+                />
               </li>
             ))}
           </ul>
