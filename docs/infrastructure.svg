@@ -1,0 +1,153 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="820" viewBox="0 0 1400 820" role="img" aria-labelledby="title desc">
+  <title id="title">Travel Miyazaki infrastructure architecture</title>
+  <desc id="desc">Users access a React progressive web app on Cloudflare Pages. Pages Functions use Cloudflare D1 and connect to Google OAuth, Nominatim, and Google Maps. The browser loads map tiles from OpenFreeMap and OpenStreetMap and stores a local copy of trip data.</desc>
+  <metadata>Service artwork is sourced from Cloudflare, Google Identity, Google Maps, OpenFreeMap, and OpenStreetMap. Source URLs and usage notes are listed in infrastructure-icons/README.md.</metadata>
+
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#f8fafc"/><stop offset="1" stop-color="#eef2ff"/>
+    </linearGradient>
+    <linearGradient id="cloudflareArea" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#fffaf5"/><stop offset="1" stop-color="#fff3e6"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="6" stdDeviation="10" flood-color="#0f172a" flood-opacity=".09"/>
+    </filter>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0 10 5 0 10Z" fill="#475569"/>
+    </marker>
+    <style>
+      .heading{font:700 30px system-ui,-apple-system,"Segoe UI",sans-serif;fill:#0f172a}
+      .subtitle{font:500 14px system-ui,-apple-system,"Segoe UI",sans-serif;fill:#64748b}
+      .section-label{font:700 13px system-ui,-apple-system,"Segoe UI",sans-serif;letter-spacing:.08em;fill:#64748b}
+      .card-title{font:700 18px system-ui,-apple-system,"Segoe UI",sans-serif;fill:#0f172a}
+      .service-title{font:700 16px system-ui,-apple-system,"Segoe UI",sans-serif;fill:#0f172a}
+      .body{font:500 13px system-ui,-apple-system,"Segoe UI",sans-serif;fill:#475569}
+      .small{font:500 12px system-ui,-apple-system,"Segoe UI",sans-serif;fill:#64748b}
+      .micro{font:500 11px system-ui,-apple-system,"Segoe UI",sans-serif;fill:#64748b}
+      .card{fill:#fff;stroke:#cbd5e1;stroke-width:1.5;filter:url(#shadow)}
+      .flow{fill:none;stroke:#475569;stroke-width:2.25;stroke-linecap:round;stroke-linejoin:round;marker-end:url(#arrow)}
+      .local-flow{fill:none;stroke:#64748b;stroke-width:2;stroke-dasharray:7 6;stroke-linecap:round;stroke-linejoin:round;marker-end:url(#arrow)}
+      .flow-badge{fill:#fff;stroke:#e2e8f0;stroke-width:1}
+    </style>
+  </defs>
+
+  <rect width="1400" height="820" rx="28" fill="url(#background)"/>
+  <text x="48" y="54" class="heading">Travel Miyazaki — Infrastructure</text>
+  <text x="48" y="80" class="subtitle">Cloudflare edge platform architecture</text>
+
+  <!-- System boundaries -->
+  <rect x="280" y="106" width="780" height="648" rx="28" fill="url(#cloudflareArea)" stroke="#f97316" stroke-width="2.5"/>
+  <image href="infrastructure-icons/cloudflare.svg" x="312" y="126" width="172" height="64" preserveAspectRatio="xMinYMid meet"/>
+  <text x="1120" y="130" class="section-label">EXTERNAL SERVICES</text>
+
+  <!-- Connections: kept behind cards and routed on a fixed orthogonal grid -->
+  <path d="M220 365H252Q264 365 264 353V307Q264 295 276 295H330" class="flow"/>
+  <path d="M630 295H700" class="flow"/>
+  <path d="M850 500V570" class="flow"/>
+  <path d="M1000 250H1064V210H1120" class="flow"/>
+  <path d="M1000 320H1064V350H1120" class="flow"/>
+  <path d="M1000 390H1064V490H1120" class="flow"/>
+  <path d="M500 400V724H1080V630H1120" class="flow"/>
+  <path d="M370 400V480H250V575H220" class="local-flow"/>
+
+  <!-- Flow labels -->
+  <g transform="translate(232 326)"><rect width="54" height="24" rx="12" class="flow-badge"/><text x="27" y="16" text-anchor="middle" class="micro">HTTPS</text></g>
+  <g transform="translate(649 270)"><rect width="44" height="24" rx="12" class="flow-badge"/><text x="22" y="16" text-anchor="middle" class="micro">API</text></g>
+  <g transform="translate(862 526)"><rect width="42" height="24" rx="12" class="flow-badge"/><text x="21" y="16" text-anchor="middle" class="micro">SQL</text></g>
+  <g transform="translate(758 700)"><rect width="200" height="24" rx="12" class="flow-badge"/><text x="100" y="16" text-anchor="middle" class="micro">MapLibre GL · style &amp; tiles</text></g>
+  <g transform="translate(232 542)"><rect width="72" height="24" rx="12" class="flow-badge"/><text x="36" y="16" text-anchor="middle" class="micro">autosave</text></g>
+
+  <!-- User and local storage -->
+  <g transform="translate(40 280)">
+    <rect width="180" height="170" rx="18" class="card"/>
+    <circle cx="90" cy="48" r="22" fill="#334155"/>
+    <path d="M51 118c3-31 18-49 39-49s36 18 39 49" fill="#334155"/>
+    <text x="90" y="142" text-anchor="middle" class="card-title">User</text>
+    <text x="90" y="160" text-anchor="middle" class="micro">Browser / Installed PWA</text>
+  </g>
+  <g transform="translate(40 510)">
+    <rect width="180" height="130" rx="18" fill="#fff" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="7 5"/>
+    <rect x="22" y="24" width="44" height="44" rx="10" fill="#f1f5f9"/>
+    <path d="M33 39h22v18H33zM37 35h14l4 4H33z" fill="none" stroke="#475569" stroke-width="2" stroke-linejoin="round"/>
+    <text x="78" y="42" class="service-title">Local storage</text>
+    <text x="78" y="60" class="micro">Browser cache</text>
+    <text x="22" y="94" class="small">Trip data remains available</text>
+    <text x="22" y="112" class="small">when the device is offline.</text>
+  </g>
+
+  <!-- Cloudflare Pages -->
+  <g transform="translate(330 190)">
+    <rect width="300" height="210" rx="18" fill="#fff" stroke="#fb923c" stroke-width="1.7" filter="url(#shadow)"/>
+    <rect x="24" y="24" width="56" height="56" rx="14" fill="#f97316"/>
+    <image href="infrastructure-icons/cloudflare-pages.svg" x="34" y="34" width="36" height="36" style="filter:invert(1)"/>
+    <text x="96" y="48" class="card-title">Cloudflare Pages</text>
+    <text x="96" y="70" class="body">Static hosting · CDN · PWA</text>
+    <line x1="24" y1="100" x2="276" y2="100" stroke="#fed7aa"/>
+    <text x="24" y="130" class="body">React 19 · TypeScript · Vite</text>
+    <text x="24" y="157" class="body">Service Worker · Web Manifest</text>
+    <rect x="24" y="174" width="252" height="22" rx="7" fill="#fff7ed"/>
+    <text x="150" y="189" text-anchor="middle" class="micro">HTML · CSS · JavaScript · icons</text>
+  </g>
+
+  <!-- Pages Functions -->
+  <g transform="translate(700 190)">
+    <rect width="300" height="310" rx="18" class="card" stroke="#fb923c"/>
+    <rect x="24" y="24" width="56" height="56" rx="14" fill="#f97316"/>
+    <image href="infrastructure-icons/cloudflare-workers.svg" x="34" y="34" width="36" height="36" style="filter:invert(1)"/>
+    <text x="96" y="48" class="card-title">Pages Functions</text>
+    <text x="96" y="70" class="body">Serverless API</text>
+    <line x1="24" y1="100" x2="276" y2="100" stroke="#e2e8f0"/>
+    <text x="24" y="132" class="body">/api/groups/*</text><text x="276" y="132" text-anchor="end" class="small">共有・同期</text>
+    <text x="24" y="170" class="body">/api/auth/*</text><text x="276" y="170" text-anchor="end" class="small">OAuth · session</text>
+    <text x="24" y="208" class="body">/api/geocode</text><text x="276" y="208" text-anchor="end" class="small">住所検索</text>
+    <text x="24" y="246" class="body">/api/resolve</text><text x="276" y="246" text-anchor="end" class="small">短縮URL展開</text>
+    <rect x="24" y="270" width="252" height="24" rx="8" fill="#f1f5f9"/>
+    <text x="150" y="286" text-anchor="middle" class="micro">validation · rate limit · cache</text>
+  </g>
+
+  <!-- Cloudflare D1 -->
+  <g transform="translate(535 570)">
+    <rect width="360" height="120" rx="18" class="card" stroke="#fb923c"/>
+    <rect x="24" y="24" width="72" height="72" rx="16" fill="#f97316"/>
+    <image href="infrastructure-icons/cloudflare-d1.svg" x="36" y="36" width="48" height="48" style="filter:invert(1)"/>
+    <text x="116" y="44" class="card-title">Cloudflare D1</text>
+    <text x="116" y="67" class="body">Serverless SQLite database</text>
+    <text x="116" y="91" class="small">groups · users · sessions · tokens</text>
+    <text x="116" y="108" class="micro">geocode cache · rate limits</text>
+  </g>
+
+  <!-- External services -->
+  <g transform="translate(1120 160)">
+    <rect width="250" height="100" rx="18" class="card"/>
+    <rect x="20" y="22" width="56" height="56" rx="13" fill="#fff" stroke="#e2e8f0"/>
+    <image href="infrastructure-icons/google-g.png" x="33" y="35" width="30" height="30"/>
+    <text x="94" y="44" class="service-title">Google OAuth</text>
+    <text x="94" y="67" class="small">Login &amp; account recovery</text>
+  </g>
+  <g transform="translate(1120 300)">
+    <rect width="250" height="100" rx="18" class="card"/>
+    <image href="infrastructure-icons/openstreetmap.svg" x="20" y="22" width="56" height="56" preserveAspectRatio="xMidYMid meet"/>
+    <text x="94" y="44" class="service-title">Nominatim</text>
+    <text x="94" y="67" class="small">OpenStreetMap geocoding</text>
+  </g>
+  <g transform="translate(1120 440)">
+    <rect width="250" height="100" rx="18" class="card"/>
+    <image href="infrastructure-icons/google-maps.png" x="26" y="18" width="44" height="60" preserveAspectRatio="xMidYMid meet"/>
+    <text x="94" y="44" class="service-title">Google Maps</text>
+    <text x="94" y="67" class="small">Short URL resolution</text>
+  </g>
+  <g transform="translate(1120 580)">
+    <rect width="250" height="100" rx="18" class="card"/>
+    <image href="infrastructure-icons/openfreemap.jpg" x="20" y="22" width="56" height="56" preserveAspectRatio="xMidYMid slice"/>
+    <text x="94" y="39" class="service-title">Map tiles &amp; styles</text>
+    <text x="94" y="62" class="small">OpenFreeMap</text>
+    <text x="94" y="80" class="micro">© OpenStreetMap contributors</text>
+  </g>
+
+  <!-- Legend -->
+  <g transform="translate(1060 730)">
+    <path d="M0 0H42" class="flow"/><text x="54" y="4" class="micro">network request</text>
+    <path d="M160 0H202" class="local-flow"/><text x="214" y="4" class="micro">local save</text>
+  </g>
+</svg>

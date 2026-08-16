@@ -1,4 +1,4 @@
-import type { AdjustState, ChecklistState, NotesState, ScheduleDay, ScheduleState, SettlementState, TripSettings } from "./types";
+import type { AdjustState, AlbumState, ChecklistState, HistoryState, NotesState, ReservationsState, ScheduleDay, ScheduleState, SettlementState, SharedState, TripSettings } from "./types";
 
 export const defaultTripSettings: TripSettings = {
   tripName: "旅のしおり",
@@ -6,18 +6,22 @@ export const defaultTripSettings: TripSettings = {
   endDate: "2026-09-23",
   dateLabel: "2026.09.21 - 09.23",
   routeLabel: "大阪から都城へ",
-  heroRouteLabel: "Osaka to Miyakonojo",
+  originCode: "OSA",
+  destinationCode: "MIY",
   outboundLabel: "MM193 08:30 関西発",
   returnLabel: "MM198 16:30 鹿児島発",
   hotelName: "都城グリーンホテル",
   hotelAddress: "宮崎県都城市栄町27-2-1",
   departureTime: "05:40",
   arrivalTargetTime: "07:15",
+  mapOriginUrl: "https://www.google.com/maps/place/%E9%B9%BF%E5%85%90%E5%B3%B6%E7%A9%BA%E6%B8%AF/@31.803333,130.719444,15z",
+  mapDestinationUrl: "https://www.google.com/maps/place/%E9%83%BD%E5%9F%8E%E3%82%B0%E3%83%AA%E3%83%BC%E3%83%B3%E3%83%9B%E3%83%86%E3%83%AB/@31.7362,131.0743,15z",
   mapOrigin: "鹿児島空港",
   mapDestination: "都城グリーンホテル",
-  mapOriginLocation: { longitude: 130.7194, latitude: 31.8034 },
-  mapDestinationLocation: { longitude: 131.0736, latitude: 31.7356 },
-  hotelLocation: { longitude: 131.0736, latitude: 31.7356 },
+  mapOriginLat: 31.803333,
+  mapOriginLng: 130.719444,
+  mapDestinationLat: 31.7362,
+  mapDestinationLng: 131.0743,
   mapNote: "鹿児島空港についたら都城方面へ移動。",
 };
 
@@ -46,16 +50,18 @@ export function getScheduleDays(settings: TripSettings): ScheduleDay[] {
 export const defaultSchedule: ScheduleState = {
   activeDay: scheduleDays[0].id,
   items: [
-    { id: "schedule-ikoaka", day: "2026-09-21", time: "05:40", title: "市岡元町を出る", memo: "弁天町駅まで徒歩10分。朝早いので少し余裕を持つ。", location: { longitude: 135.4615, latitude: 34.671 }, isTimeUnset: false },
-    { id: "schedule-bentencho", day: "2026-09-21", time: "05:50", title: "弁天町駅", memo: "弁天町から関空まで、1人片道1,180円。", location: { longitude: 135.4622, latitude: 34.6691 }, isTimeUnset: false },
-    { id: "schedule-kix-station", day: "2026-09-21", time: "07:00", title: "関西空港駅", memo: "エアロプラザ1階から第2ターミナル行きの無料連絡バスへ。", location: { longitude: 135.2441, latitude: 34.4359 }, isTimeUnset: false },
-    { id: "schedule-kix-t2", day: "2026-09-21", time: "07:15", title: "関空第2ターミナル", memo: "Peachのチェックイン、手荷物、保安検査へ。", location: { longitude: 135.2304, latitude: 34.4253 }, isTimeUnset: false },
-    { id: "schedule-mm193", day: "2026-09-21", time: "08:30", title: "MM193 出発", memo: "関西空港から鹿児島空港へ。09:45到着予定。", location: { longitude: 135.2304, latitude: 34.4253 }, isTimeUnset: false },
-    { id: "schedule-mm198", day: "2026-09-23", time: "16:30", title: "MM198 復路出発", memo: "鹿児島空港から関西空港へ。17:50到着予定。", location: { longitude: 130.7194, latitude: 31.8034 }, isTimeUnset: false },
+    { id: "schedule-ikoaka", day: "2026-09-21", time: "05:40", title: "市岡元町を出る", memo: "弁天町駅まで徒歩10分。朝早いので少し余裕を持つ。", mapUrl: "", isTimeUnset: false },
+    { id: "schedule-bentencho", day: "2026-09-21", time: "05:50", title: "弁天町駅", memo: "弁天町から関空まで、1人片道1,180円。", mapUrl: "", isTimeUnset: false },
+    { id: "schedule-kix-station", day: "2026-09-21", time: "07:00", title: "関西空港駅", memo: "エアロプラザ1階から第2ターミナル行きの無料連絡バスへ。", mapUrl: "", isTimeUnset: false },
+    { id: "schedule-kix-t2", day: "2026-09-21", time: "07:15", title: "関空第2ターミナル", memo: "Peachのチェックイン、手荷物、保安検査へ。", mapUrl: "", isTimeUnset: false },
+    { id: "schedule-mm193", day: "2026-09-21", time: "08:30", title: "MM193 出発", memo: "関西空港から鹿児島空港へ。09:45到着予定。", mapUrl: "", isTimeUnset: false },
+    { id: "schedule-mm198", day: "2026-09-23", time: "16:30", title: "MM198 復路出発", memo: "鹿児島空港から関西空港へ。17:50到着予定。", mapUrl: "", isTimeUnset: false },
   ],
 };
 
 export const defaultAdjust: AdjustState = {
+  transportCost: 36200,
+  accessCost: 2360,
   breakfast: false,
   hotelNoBreakfast: 6500,
   hotelBreakfast: 9100,
@@ -87,5 +93,26 @@ export const defaultNotes: NotesState = {
     "宿は料金、禁煙・喫煙、チェックイン時間、キャンセル条件だけ最後に見ておく。",
   ].map((text, index) => ({ id: `default-note-${index}`, text })),
 };
+
+export const defaultReservations: ReservationsState = { items: [] };
+export const defaultAlbum: AlbumState = { items: [] };
+export const defaultHistory: HistoryState = { items: [] };
+
+export function createDefaultSharedState(tripName = defaultTripSettings.tripName): SharedState {
+  return {
+    tripSettings: { ...defaultTripSettings, tripName },
+    schedule: { ...defaultSchedule, items: defaultSchedule.items.map((item) => ({ ...item })) },
+    adjust: { ...defaultAdjust, customItems: [], souvenirs: [] },
+    settlement: {
+      people: defaultSettlement.people.map((person) => ({ ...person })),
+      payments: [],
+    },
+    checklist: { items: defaultChecklist.items.map((item) => ({ ...item })) },
+    notes: { items: defaultNotes.items.map((item) => ({ ...item })) },
+    reservations: { ...defaultReservations, items: [] },
+    album: { ...defaultAlbum, items: [] },
+    history: { ...defaultHistory, items: [] },
+  };
+}
 
 export const baseCost = { flight: 36200, access: 2360 };

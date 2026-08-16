@@ -25,8 +25,7 @@
 
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
-body { margin: 0; min-width: 320px; min-height: 100dvh; overflow-x: hidden; background-color: #f6f5ef; background-image: linear-gradient(#dfe5df 1px, transparent 1px), linear-gradient(90deg, #dfe5df 1px, transparent 1px); background-size: 48px 48px; }
-#root { min-height: 100dvh; }
+body { margin: 0; min-width: 320px; min-height: 100dvh; background-color: #f6f5ef; background-image: linear-gradient(#dfe5df 1px, transparent 1px), linear-gradient(90deg, #dfe5df 1px, transparent 1px); background-size: 48px 48px; }
 button, input, textarea, select { font: inherit; }
 button, a { touch-action: manipulation; }
 button { cursor: pointer; }
@@ -40,18 +39,21 @@ svg { flex: 0 0 auto; }
 .app-shell { min-height: 100dvh; }
 .app-header { position: sticky; top: 0; z-index: 40; height: var(--header-height); display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: max(8px, env(safe-area-inset-top)) 18px 8px; background: rgba(255, 254, 249, 0.96); border-bottom: 1px solid var(--line); backdrop-filter: blur(12px); }
 .brand { display: flex; align-items: baseline; gap: 10px; text-decoration: none; min-width: 0; }
-.brand span { color: var(--pink); font-family: "Kiwi Maru", serif; font-size: 13px; }
+.brand span { color: var(--pink); font-family: "Kiwi Maru", serif; font-size: 13px; white-space: nowrap; }
 .brand strong { font-family: "Kiwi Maru", serif; font-size: 20px; white-space: nowrap; }
-.brand > svg { color: var(--green); }
-.brand-back { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; column-gap: 9px; }
-.brand-back > svg { grid-row: 1 / 3; color: var(--ticket-color, var(--green)); }
-.brand-back span { align-self: end; color: var(--muted); font-family: inherit; font-size: 10px; line-height: 1.1; }
-.brand-back strong { align-self: start; overflow: hidden; text-overflow: ellipsis; font-size: 17px; line-height: 1.25; }
 .header-actions { display: flex; align-items: center; gap: 8px; }
+.storage-status-wrap { position: relative; }
 .sync-pill { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 6px 10px; border: 1px solid #bdd5ca; border-radius: 999px; color: var(--green-dark); background: var(--green-soft); font-size: 12px; font-weight: 700; }
 .sync-pill i { width: 7px; height: 7px; border-radius: 50%; background: var(--green); }
 .sync-pill.is-offline { color: #755a1e; border-color: #e7ce8e; background: var(--yellow-soft); }
 .sync-pill.is-offline i { background: #a77814; }
+.sync-pill.is-error { color: var(--danger); border-color: #e7a9af; background: #fff0f1; }
+.storage-popover { position: absolute; z-index: 70; top: calc(100% + 10px); right: 0; width: min(290px, calc(100vw - 24px)); padding: 14px; background: var(--paper); border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 16px 40px rgba(13, 38, 28, 0.2); }
+.storage-popover > div { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.storage-popover p { margin: 8px 0; color: var(--muted); font-size: 13px; line-height: 1.55; }
+.storage-popover small { display: block; color: var(--muted); font-size: 11px; }
+.storage-popover .button { width: 100%; margin-top: 12px; }
+.popover-close { width: 36px; height: 36px; display: grid; place-items: center; padding: 0; color: var(--muted); background: transparent; border: 0; border-radius: 6px; }
 .icon-button { display: inline-grid; place-items: center; width: 44px; height: 44px; padding: 0; color: var(--ink); background: transparent; border: 1px solid var(--line); border-radius: 8px; transition: background-color 180ms ease, color 180ms ease, border-color 180ms ease; }
 .icon-button:hover { background: #edf2ee; border-color: #aebdb5; }
 .icon-button:disabled { opacity: 0.4; cursor: not-allowed; }
@@ -59,19 +61,32 @@ svg { flex: 0 0 auto; }
 .icon-button.danger:hover { background: #fff0f1; border-color: #e7a9af; }
 
 .main-content { width: min(100%, 1120px); margin: 0 auto; padding: 0 16px calc(var(--nav-height) + 32px + env(safe-area-inset-bottom)); outline: none; }
-.page { min-width: 0; animation: page-in 260ms ease-out both; }
+.page { animation: page-in 260ms ease-out both; }
 @keyframes page-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 .eyebrow { margin: 0 0 6px; color: var(--green); font-size: 12px; font-weight: 900; text-transform: uppercase; }
 
-.hero-section { position: relative; min-height: 440px; margin: 0 -16px 28px; padding: 64px 24px 40px; overflow: hidden; text-align: center; background: #dcece4; border-bottom: 1px solid #bcd0c5; }
-.hero-section::before, .hero-section::after { content: ""; position: absolute; border: 1px solid rgba(35, 116, 91, 0.28); border-radius: 50%; }
-.hero-section::before { width: 280px; height: 280px; left: -170px; bottom: -80px; }
-.hero-section::after { width: 210px; height: 210px; right: -120px; top: 20px; }
+.hero-section { position: relative; margin: 0 -16px 28px; padding: 52px 24px 88px; overflow: hidden; text-align: center; background: #dcece4; border-bottom: 1px solid #bcd0c5; }
+.hero-section > :not(.hero-map):not(.hero-map-fallback):not(.hero-map-attribution) { position: relative; z-index: 3; }
+.hero-map-fallback { position: absolute; z-index: 0; inset: 0; width: 100%; height: 100%; background-color: #dcece4; background-image: linear-gradient(rgba(255, 254, 249, 0.2) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 254, 249, 0.2) 1px, transparent 1px); background-size: 22px 22px; opacity: 0.78; }
+.fallback-road { fill: none; stroke: rgba(97, 139, 124, 0.28); stroke-width: 2; }
+.fallback-road-wide { stroke: rgba(255, 254, 249, 0.7); stroke-width: 7; }
+.fallback-road-minor { stroke-dasharray: 5 9; }
+.fallback-route-shadow { fill: none; stroke: rgba(255, 254, 249, 0.88); stroke-linecap: round; stroke-width: 10; }
+.fallback-route { fill: none; stroke: #14523f; stroke-linecap: round; stroke-width: 5; }
+.fallback-point { stroke: #fffef9; stroke-width: 4; }
+.fallback-point-start { fill: #23745b; }
+.fallback-point-end { fill: #d97687; }
+.hero-map { position: absolute; z-index: 1; inset: 0; overflow: hidden; pointer-events: none; opacity: 0; transition: opacity 420ms ease; }
+.hero-map.is-loaded { opacity: 1; }
+.hero-map::after { content: ""; position: absolute; z-index: 1; inset: 0; pointer-events: none; background-color: rgba(220, 236, 228, 0.36); background-image: linear-gradient(rgba(255, 254, 249, 0.13) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 254, 249, 0.13) 1px, transparent 1px); background-size: 18px 18px; }
+.hero-map .maplibregl-canvas { filter: saturate(0.48) contrast(0.78) brightness(1.08); }
+.hero-map-attribution { position: absolute; z-index: 3; right: 8px; bottom: 58px; color: rgba(24, 52, 43, 0.66); font-size: 9px; text-decoration: none; }
+.hero-map-attribution:hover { text-decoration: underline; }
 .hero-route { position: relative; z-index: 1; display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 30px; color: var(--green-dark); font-weight: 900; }
 .hero-route i { width: 42px; border-top: 2px dashed rgba(20, 82, 63, 0.48); }
 .hero-section h1 { position: relative; z-index: 1; margin: 8px 0; font-family: "Kiwi Maru", serif; font-size: 42px; line-height: 1.25; letter-spacing: 0; }
 .hero-destination { position: relative; z-index: 1; margin: 0; color: #385b4e; font-size: 16px; }
-.trip-note-ticket { position: relative; z-index: 2; width: min(320px, calc(100% - 24px)); margin: 42px auto 0; padding: 18px 20px; display: grid; gap: 4px; text-align: left; background: var(--paper); border: 1px solid #bdc8c1; border-radius: 8px; box-shadow: var(--shadow); transform: rotate(-2deg); animation: ticket-in 480ms cubic-bezier(.2,.8,.2,1) 100ms both; }
+.trip-note-ticket { position: relative; z-index: 2; width: min(320px, calc(100% - 24px)); margin: 30px auto 0; padding: 18px 20px; display: grid; gap: 4px; text-align: left; background: var(--paper); border: 1px solid #bdc8c1; border-radius: 8px; box-shadow: var(--shadow); transform: rotate(-2deg); animation: ticket-in 480ms cubic-bezier(.2,.8,.2,1) 100ms both; }
 .trip-note-ticket::after { content: ""; position: absolute; right: 20px; top: 16px; width: 46px; height: 46px; border: 2px solid var(--pink); border-radius: 50%; opacity: 0.65; }
 .trip-note-ticket span { color: var(--pink); font-family: "Kiwi Maru", serif; font-size: 13px; }
 .trip-note-ticket strong { font-size: 22px; }
@@ -102,7 +117,6 @@ svg { flex: 0 0 auto; }
 .text-link { min-height: 44px; display: inline-flex; align-items: center; gap: 2px; color: var(--green-dark); font-size: 14px; font-weight: 700; text-decoration: none; white-space: nowrap; }
 .text-link:hover { text-decoration: underline; }
 .empty-state { margin: 0; padding: 20px; color: var(--muted); text-align: center; background: #f5f6f2; border: 1px dashed #cbd3cd; border-radius: 6px; }
-.page-loading { margin-top: 32px; }
 
 .timeline-panel { padding: 8px 20px; }
 .timeline-row { display: grid; grid-template-columns: 62px 1fr; gap: 16px; padding: 18px 0; border-bottom: 1px solid var(--line); }
@@ -114,7 +128,7 @@ svg { flex: 0 0 auto; }
 .stay-icon { display: grid; place-items: center; width: 48px; height: 48px; color: #236b86; background: var(--blue-soft); border-radius: 50%; }
 .stay-summary strong { display: block; }
 .stay-summary p { margin: 5px 0 0; color: var(--muted); font-size: 13px; }
-.status-strip { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 48px 0 12px; }
+.status-strip { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin: 48px 0 12px; }
 .status-strip a { min-height: 92px; display: grid; place-items: center; align-content: center; gap: 3px; padding: 10px; text-align: center; text-decoration: none; background: var(--paper); border: 1px solid var(--line); border-radius: 8px; }
 .status-strip svg { width: 20px; color: var(--green); }
 .status-strip span { color: var(--muted); font-size: 12px; }
@@ -124,11 +138,25 @@ svg { flex: 0 0 auto; }
 .day-tabs button { min-width: 80px; min-height: 52px; padding: 8px 14px; color: var(--muted); background: var(--paper); border: 1px solid var(--line); border-radius: 8px; font-weight: 800; }
 .day-tabs button small { display: block; margin-top: 2px; font-size: 11px; font-weight: 500; }
 .day-tabs button.is-active { color: white; background: var(--green); border-color: var(--green); }
+.plan-edit-toggle { flex: 0 0 auto; }
+.plan-timeline { overflow: hidden; padding: 4px 20px; }
+.plan-timeline-row { display: grid; grid-template-columns: 72px minmax(0, 1fr); gap: 16px; min-height: 104px; padding: 18px 0; border-bottom: 1px solid var(--line); }
+.plan-timeline-row:last-child { border-bottom: 0; }
+.plan-time { position: relative; display: flex; justify-content: flex-end; padding: 3px 22px 0 0; color: var(--green-dark); font-weight: 900; font-variant-numeric: tabular-nums; }
+.plan-time i { position: absolute; top: 31px; right: 7px; bottom: -19px; width: 1px; background: #b8cbc1; }
+.plan-time::after { content: ""; position: absolute; top: 7px; right: 0; width: 8px; height: 8px; background: var(--paper); border: 3px solid var(--green); border-radius: 50%; }
+.plan-timeline-row:last-child .plan-time i { display: none; }
+.plan-event { min-width: 0; padding-left: 4px; }
+.plan-event small { display: block; margin-bottom: 3px; color: var(--pink); font-size: 11px; font-weight: 900; }
+.plan-event strong { display: block; overflow-wrap: anywhere; font-size: 17px; }
+.plan-event p { margin: 6px 0 0; color: var(--muted); line-height: 1.65; overflow-wrap: anywhere; }
+.plan-event .plan-location-name { display: flex; align-items: center; gap: 5px; color: var(--green-dark); font-size: 13px; font-weight: 700; }
+.plan-event .inline-map-link { width: fit-content; margin-top: 6px; font-size: 14px; }
+.plan-empty { display: grid; gap: 12px; padding: 16px 0; }
+.plan-empty .button { justify-self: center; }
 .schedule-editor { display: grid; gap: 14px; }
 .schedule-card { padding: 18px; }
-.schedule-card-head { display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; align-items: end; gap: 10px; margin-bottom: 14px; }
-.schedule-card-head .unset-field { grid-column: 2; }
-.schedule-card-head .icon-button { grid-column: 3; grid-row: 1; }
+.schedule-card-head { display: flex; align-items: end; gap: 10px; margin-bottom: 14px; }
 .step-number { display: grid; place-items: center; width: 44px; height: 44px; color: var(--green-dark); background: var(--green-soft); border-radius: 50%; font-weight: 900; font-variant-numeric: tabular-nums; }
 .time-field { flex: 1; }
 .unset-field { min-height: 44px; display: flex !important; flex-direction: row !important; align-items: center; gap: 7px !important; color: var(--muted); font-size: 13px; }
@@ -139,16 +167,7 @@ input, textarea, select { width: 100%; min-height: 44px; padding: 10px 12px; col
 textarea { resize: vertical; line-height: 1.6; }
 input:disabled { color: #8b9792; background: #eef0ed; }
 .schedule-card > label + label { margin-top: 12px; }
-.place-search-field { margin-top: 12px; }
-.place-search-controls { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: end; }
-.place-search-controls label { min-width: 0; }
-.place-search-controls .button { min-width: 92px; }
-.place-search-status { min-height: 22px; margin: 4px 0 0; color: var(--muted); font-size: 12px; line-height: 1.6; }
-.place-search-results { max-height: 180px; display: grid; margin-top: 6px; overflow-y: auto; background: var(--paper); border: 1px solid var(--line); border-radius: 7px; box-shadow: var(--shadow); }
-.place-search-results button { min-height: 48px; padding: 10px 12px; color: var(--ink); text-align: left; background: transparent; border: 0; border-bottom: 1px solid var(--line); line-height: 1.5; }
-.place-search-results button:last-child { border-bottom: 0; }
-.place-search-results button:hover { background: var(--green-soft); }
-.location-button { width: 100%; margin-top: 8px; }
+.inline-map-link { min-height: 44px; display: inline-flex; align-items: center; gap: 6px; margin-top: 8px; color: var(--green-dark); font-weight: 700; }
 .add-wide { width: 100%; justify-content: center; }
 
 .button { min-height: 44px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 16px; border: 1px solid transparent; border-radius: 7px; font-weight: 800; text-decoration: none; transition: background-color 180ms ease, border-color 180ms ease, color 180ms ease, opacity 180ms ease; }
@@ -160,69 +179,9 @@ input:disabled { color: #8b9792; background: #eef0ed; }
 .button-quiet { color: var(--muted); background: transparent; border-color: transparent; }
 .button.small { min-height: 40px; padding: 8px 12px; font-size: 13px; }
 
-.route-layout { display: grid; min-width: 0; gap: 16px; }
-.route-planner { margin-bottom: 16px; }
-.route-planner-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
-.route-planner-head span { color: var(--pink-dark); font-size: 11px; font-weight: 900; letter-spacing: .14em; }
-.route-planner-head h3 { display: flex; align-items: center; gap: 8px; margin: 3px 0 0; font-size: 18px; }
-.route-planner-head > small { padding: 5px 9px; color: var(--green-dark); background: var(--green-soft); border-radius: 999px; font-weight: 800; white-space: nowrap; }
-.route-mode-switch { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 14px; }
-.route-mode-switch button { min-height: 46px; display: inline-flex; align-items: center; justify-content: center; gap: 7px; color: var(--muted); background: white; border: 1px solid var(--line); border-radius: 7px; font-weight: 800; }
-.route-mode-switch button:hover { background: var(--green-soft); }
-.route-mode-switch button.is-active { color: white; background: var(--green); border-color: var(--green); }
-.route-calculate { width: 100%; margin-top: 10px; }
-.route-planner-status { min-height: 22px; margin: 6px 0 0; color: var(--muted); font-size: 12px; line-height: 1.6; }
-.route-summary { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-top: 10px; }
-.route-summary div { padding: 12px; background: var(--green-soft); border: 1px solid var(--line); border-radius: 7px; }
-.route-summary span { display: block; color: var(--muted); font-size: 11px; font-weight: 700; }
-.route-summary strong { display: block; margin-top: 2px; color: var(--green-dark); font-size: 19px; }
-.route-legs { display: grid; margin-top: 10px; border: 1px solid var(--line); border-radius: 7px; overflow: hidden; }
-.route-legs > button { min-height: 62px; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 10px 12px; color: var(--ink); text-align: left; background: white; border: 0; border-bottom: 1px solid var(--line); }
-.route-legs > button:last-child { border-bottom: 0; }
-.route-legs > button:hover { background: var(--green-soft); }
-.route-leg-number { width: 28px; height: 28px; display: inline-grid; place-items: center; color: white; background: var(--green); border-radius: 50%; font-size: 12px; font-weight: 900; }
-.route-leg-detail { min-width: 0; }
-.route-leg-detail strong, .route-leg-detail small { display: block; }
-.route-leg-detail strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
-.route-leg-detail small { margin-top: 2px; color: var(--muted); font-size: 12px; }
-.route-leg-action { display: inline-flex; align-items: center; gap: 5px; color: var(--green-dark); font-size: 12px; font-weight: 800; white-space: nowrap; }
-.route-service-note { display: block; margin-top: 10px; color: var(--muted); font-size: 10px; line-height: 1.6; }
-.map-container { min-width: 0; scroll-margin-top: calc(var(--header-height) + 16px); }
-.map-search { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 8px; margin-bottom: 6px; }
-.map-search .button { min-width: 82px; }
-.map-search-status { min-height: 22px; margin: 0 0 6px; color: var(--muted); font-size: 12px; line-height: 1.6; }
-.map-search-results { max-height: 180px; display: grid; margin-bottom: 8px; overflow-y: auto; background: var(--paper); border: 1px solid var(--line); border-radius: 7px; box-shadow: var(--shadow); }
-.map-search-results button { min-height: 48px; padding: 10px 12px; color: var(--ink); text-align: left; background: transparent; border: 0; border-bottom: 1px solid var(--line); line-height: 1.5; }
-.map-search-results button:last-child { border-bottom: 0; }
-.map-search-results button:hover { background: var(--green-soft); }
-.map-frame { position: relative; min-width: 0; height: 420px; overflow: hidden; background: #dce8e1; border: 1px solid var(--line); border-radius: 8px; box-shadow: var(--shadow); }
-.map-frame > .pmtiles-map { position: absolute; inset: 0; width: 100%; height: 100%; }
-.map-status { position: absolute; left: 50%; top: 50%; z-index: 2; width: min(280px, calc(100% - 32px)); margin: 0; padding: 12px 14px; color: var(--green-dark); text-align: center; background: rgba(255, 254, 249, 0.94); border: 1px solid var(--line); border-radius: 7px; box-shadow: var(--shadow); transform: translate(-50%, -50%); }
-.map-marker { width: 44px; height: 44px; padding: 0; color: white; background: var(--green); border: 3px solid white; border-radius: 50%; box-shadow: 0 3px 10px rgba(24, 52, 43, 0.28); font-size: 12px; font-weight: 900; }
-.map-marker:hover { background: var(--green-dark); }
-.map-marker:focus-visible { outline-offset: 4px; }
-.map-marker-origin { background: #236b86; }
-.map-marker-destination { background: var(--pink); }
-.map-marker-schedule { color: var(--ink); background: var(--yellow); }
-.map-marker-search { background: #e26b25; }
-.maplibregl-popup-content { color: var(--ink); font-family: "Noto Sans JP", system-ui, sans-serif; border-radius: 7px; box-shadow: var(--shadow); }
-.maplibregl-ctrl-attrib { font-family: "Noto Sans JP", system-ui, sans-serif; }
-.maplibregl-ctrl-group button { width: 44px; height: 44px; }
-.geocoder-attribution { display: block; margin-top: 6px; color: var(--muted); font-size: 11px; text-align: right; }
-.geocoder-attribution a { text-decoration: underline; }
-.map-modal-layer { position: fixed; z-index: 1200; inset: 0; display: grid; place-items: center; padding: 20px; background: rgba(15, 31, 25, 0.58); animation: modal-fade-in 180ms ease-out; }
-.map-modal { width: min(900px, 100%); max-height: min(90dvh, 820px); display: flex; flex-direction: column; overflow: hidden; background: var(--paper); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 24px 70px rgba(13, 38, 28, 0.28); animation: modal-rise-in 220ms ease-out; }
-.map-modal-header { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: start; gap: 12px; padding: 18px 20px; border-bottom: 1px solid var(--line); }
-.map-modal-icon { width: 44px; height: 44px; display: grid; place-items: center; color: var(--green-dark); background: var(--green-soft); border-radius: 50%; }
-.map-modal-header .eyebrow { margin: 0 0 2px; }
-.map-modal-header h2 { margin: 0; font-family: "Kiwi Maru", serif; font-size: clamp(20px, 3vw, 26px); line-height: 1.35; }
-.map-modal-header p:last-child { margin: 5px 0 0; color: var(--muted); font-size: 13px; line-height: 1.6; }
-.map-modal-close { margin: 0; }
-.map-modal-body { padding: 16px 20px 20px; overflow-y: auto; }
-.map-modal .map-frame { height: min(58dvh, 540px); }
-.map-modal-dismiss { width: 100%; margin-top: 12px; }
-@keyframes modal-fade-in { from { opacity: 0; } }
-@keyframes modal-rise-in { from { opacity: 0; transform: translateY(12px); } }
+.route-layout { display: grid; gap: 16px; }
+.map-frame { min-height: 360px; overflow: hidden; background: #dce8e1; border: 1px solid var(--line); border-radius: 8px; box-shadow: var(--shadow); }
+.map-frame iframe { display: block; width: 100%; height: 100%; min-height: 360px; border: 0; }
 .route-details { padding: 22px; }
 .route-details div { display: grid; gap: 5px; }
 .route-details div span { color: var(--pink); font-size: 11px; font-weight: 900; }
@@ -294,6 +253,29 @@ input:disabled { color: #8b9792; background: #eef0ed; }
 .group-manage form { padding: 16px; background: #f5f7f3; border-radius: 7px; }
 .group-manage h3 { margin: 0 0 12px; font-size: 16px; }
 .group-manage .button { width: 100%; margin-top: 10px; }
+.check-option { display: flex; flex-direction: row; align-items: center; gap: 9px; margin-top: 12px; color: var(--ink); font-size: 13px; font-weight: 700; }
+.check-option input { width: 18px; height: 18px; }
+.page-help { margin: 0 0 20px; padding: 12px 14px; color: var(--green-dark); background: var(--green-soft); border: 1px solid #c9d9d1; border-radius: 8px; }
+.page-help summary { min-height: 28px; display: flex; align-items: center; font-size: 13px; font-weight: 900; cursor: pointer; }
+.page-help p { margin: 8px 0 0; color: var(--muted); font-size: 13px; line-height: 1.65; }
+.page-help-body b { color: var(--green-dark); font-weight: 700; }
+.page-help-body code { padding: 1px 5px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; word-break: break-all; background: rgba(255, 255, 255, .7); border-radius: 4px; }
+/* 手順の見出し。本文より一段強くして、読み飛ばしても場所が分かるようにする。 */
+.page-help-lead { margin-top: 14px !important; color: var(--green-dark) !important; font-weight: 900; }
+.page-help-body ol { margin: 6px 0 0; padding-left: 0; list-style: none; counter-reset: help; }
+.page-help-body ol li { position: relative; margin-top: 6px; padding-left: 26px; color: var(--muted); font-size: 13px; line-height: 1.65; counter-increment: help; }
+.page-help-body ol li::before {
+  content: counter(help); position: absolute; top: .18em; left: 0; display: grid; place-items: center;
+  width: 18px; height: 18px; color: #ffffff; font-size: 11px; font-weight: 900;
+  background: var(--green); border-radius: 50%;
+}
+.account-panel { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 12px; padding: 18px; }
+.account-panel > div { display: grid; gap: 4px; }
+.account-panel small { color: var(--muted); line-height: 1.5; }
+.account-error { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; padding: 10px 12px; color: #8a2b2b; font-size: 13px; line-height: 1.5; background: #fdecec; border: 1px solid #f3c9c9; border-radius: 8px; }
+.account-error button { margin-left: auto; flex-shrink: 0; }
+.account-restore { grid-column: 1 / -1; padding-top: 12px; border-top: 1px solid var(--line); }
+.local-only-note { margin: 12px 0 0; padding: 10px 12px; color: #76571c; background: #fff7dc; border: 1px solid #ead79a; border-radius: 7px; font-size: 13px; font-weight: 700; }
 .note-row { display: flex; align-items: center; gap: 12px; min-height: 64px; padding: 10px 0; border-bottom: 1px solid var(--line); }
 .note-row:last-child { border-bottom: 0; }
 .note-row p { flex: 1; margin: 0; line-height: 1.65; overflow-wrap: anywhere; }
@@ -313,76 +295,103 @@ input:disabled { color: #8b9792; background: #eef0ed; }
 .drawer-header h2 { margin: 0; font-family: "Kiwi Maru", serif; font-size: 24px; }
 .drawer-footer { padding-bottom: calc(16px + env(safe-area-inset-bottom)); border-top: 1px solid var(--line); }
 .drawer-footer .button-primary { flex: 1; }
+.save-progress-layer { position: fixed; z-index: 120; inset: 0; display: grid; place-items: center; padding: 20px; background: rgba(15, 31, 25, 0.58); backdrop-filter: blur(6px); }
+.save-progress-dialog { width: min(100%, 360px); padding: 28px 24px 24px; color: var(--ink); text-align: center; background: var(--paper); border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 24px 70px rgba(13, 38, 28, 0.26); animation: save-progress-in 220ms ease-out both; }
+.save-progress-icon { width: 64px; height: 64px; display: grid; place-items: center; margin: 0 auto 16px; color: var(--green); background: var(--green-soft); border-radius: 50%; }
+.save-progress-dialog.is-complete .save-progress-icon { color: #fff; background: var(--green); }
+.save-progress-dialog.is-error .save-progress-icon { color: var(--danger); background: #fff0f1; }
+.save-progress-dialog h2 { margin: 5px 0 7px; font-family: "Kiwi Maru", serif; font-size: 22px; }
+.save-progress-dialog #save-progress-detail { min-height: 24px; margin: 0; color: var(--muted); font-size: 14px; line-height: 1.6; }
+.save-progress-track { height: 10px; margin-top: 22px; overflow: hidden; background: #e4e8e4; border-radius: 999px; }
+.save-progress-track i { width: 100%; height: 100%; display: block; background: var(--green); border-radius: inherit; transform-origin: left center; transition: transform 280ms ease-out; }
+.save-progress-dialog > strong { display: block; margin-top: 8px; color: var(--green-dark); font-size: 13px; font-variant-numeric: tabular-nums; }
+.save-progress-dialog.is-error > strong { color: var(--danger); }
+.save-progress-dialog.is-error .save-progress-track i { background: var(--danger); }
+.save-progress-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 20px; }
+@keyframes save-progress-in { from { opacity: 0; transform: translateY(10px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
 .drawer-body { overflow-y: auto; padding: 18px; }
 .drawer-body fieldset { display: grid; gap: 13px; margin: 0 0 22px; padding: 0; border: 0; }
 .drawer-body fieldset legend { margin-bottom: 10px; color: var(--green); font-size: 14px; font-weight: 900; }
-.coordinate-group { display: grid; gap: 7px; padding: 12px; background: #f5f7f3; border-radius: 7px; }
-.coordinate-group > span { color: #52655d; font-size: 12px; font-weight: 800; }
+.coordinate-settings { margin: 4px 0 14px; padding: 12px; background: #f5f7f3; border: 1px solid var(--line); border-radius: 7px; }
+.coordinate-settings summary { min-height: 32px; color: var(--green-dark); font-size: 13px; font-weight: 800; cursor: pointer; }
+.coordinate-settings p { margin: 0 0 12px; color: var(--muted); font-size: 12px; line-height: 1.6; }
+.coordinate-settings .field-grid + .field-grid { margin-top: 10px; }
 .app-actions { display: grid; gap: 8px; }
+.help-toggle { margin-bottom: 14px; }
 .drawer-status { min-height: 44px; margin: 10px 0 0; color: var(--muted); font-size: 13px; line-height: 1.6; }
+.storage-guide { margin-top: 20px; padding: 16px; border: 1px solid #c9d9d1; border-radius: 8px; background: rgba(220, 236, 228, 0.46); }
+.storage-guide-heading { display: flex; align-items: center; gap: 8px; color: var(--green-dark); }
+.storage-guide-heading h3 { margin: 0; font-size: 15px; }
+.storage-guide-list { display: grid; gap: 12px; margin-top: 14px; }
+.storage-guide-list > div { display: grid; grid-template-columns: 20px 1fr; gap: 8px; align-items: start; color: var(--green-dark); }
+.storage-guide-list p { display: grid; gap: 3px; margin: 0; }
+.storage-guide-list strong { font-size: 13px; }
+.storage-guide-list span, .storage-guide-note { color: var(--muted); font-size: 12px; line-height: 1.65; }
+.storage-guide-note { margin: 14px 0 0; padding-top: 12px; border-top: 1px dashed #b9cec3; }
+.settings-tabs, .detail-tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 22px; padding: 5px; background: #eef1ed; border: 1px solid var(--line); border-radius: 8px; }
+.settings-tabs button, .detail-tabs button { min-width: 0; min-height: 44px; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 8px; color: var(--muted); background: transparent; border: 0; border-radius: 6px; font-size: 13px; font-weight: 800; }
+.settings-tabs button.is-active, .detail-tabs button.is-active { color: var(--green-dark); background: var(--paper); box-shadow: 0 2px 8px rgba(30, 62, 50, 0.08); }
+.trip-manager { margin-bottom: 24px; padding: 16px; background: rgba(220, 236, 228, 0.36); border: 1px solid #c9d9d1; border-radius: 8px; }
+.trip-list { display: grid; gap: 8px; margin-top: 14px; }
+.trip-list > div { display: grid; grid-template-columns: 1fr 44px 44px; align-items: center; gap: 6px; padding: 5px; background: var(--paper); border: 1px solid var(--line); border-radius: 7px; }
+.trip-list > div.is-active { border-color: var(--green); box-shadow: inset 3px 0 var(--green); }
+.trip-list > div > button:first-child { min-width: 0; min-height: 44px; display: grid; gap: 2px; padding: 6px 9px; text-align: left; background: transparent; border: 0; }
+.trip-list strong { overflow-wrap: anywhere; }
+.trip-list small { color: var(--muted); font-size: 11px; }
+.new-trip-form { display: grid; gap: 8px; margin-top: 14px; padding-top: 14px; border-top: 1px dashed #b9cec3; }
+.archived-trips { margin-top: 14px; color: var(--muted); font-size: 13px; }
+.archived-trips summary { min-height: 40px; display: flex; align-items: center; cursor: pointer; font-weight: 800; }
+.archived-trips > div { display: flex; align-items: center; justify-content: space-between; gap: 8px; border-top: 1px solid var(--line); }
 
-.is-ticket-list .main-content { padding-bottom: 48px; }
-.tickets-page { padding-top: 1px; }
-.tickets-page > .section-block { margin-top: 34px; }
-.tickets-toolbar { min-height: 44px; display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: -6px 0 12px; }
-.tickets-toolbar p { margin: 0; color: var(--muted); font-size: 13px; font-weight: 700; }
-.tickets-message { margin: 0 0 12px; padding: 12px 14px; color: var(--danger); background: #fff0f1; border: 1px solid #e7a9af; border-radius: 7px; }
-.ticket-list { display: grid; gap: 16px; margin: 0; padding: 0; list-style: none; }
-.travel-ticket { --ticket-color: var(--green); overflow: hidden; background: var(--paper); border: 1px solid color-mix(in srgb, var(--ticket-color) 42%, var(--line)); border-radius: 12px; box-shadow: var(--shadow); }
-.travel-ticket.is-active { box-shadow: 0 0 0 3px color-mix(in srgb, var(--ticket-color) 24%, transparent), var(--shadow); }
-.travel-ticket-open { width: 100%; min-height: 188px; display: grid; grid-template-columns: 54px minmax(0, 1fr); padding: 0; color: var(--ink); text-align: left; background: transparent; border: 0; }
-.travel-ticket-open:hover .travel-ticket-face { background: color-mix(in srgb, var(--ticket-color) 5%, var(--paper)); }
-.travel-ticket-stub { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7px; color: color-mix(in srgb, var(--ticket-color) 72%, #24362f); background: color-mix(in srgb, var(--ticket-color) 17%, white); border-right: 2px dashed color-mix(in srgb, var(--ticket-color) 35%, white); writing-mode: vertical-rl; }
-.travel-ticket-stub strong { font-size: 12px; letter-spacing: .14em; }
-.travel-ticket-face { min-width: 0; display: grid; gap: 13px; padding: 18px; transition: background-color 180ms ease; }
-.travel-ticket-route { display: grid; grid-template-columns: auto minmax(0, 1fr) 36px auto minmax(0, 1fr); align-items: center; gap: 7px; }
-.travel-ticket-route small, .travel-ticket-data small { color: var(--muted); font-size: 9px; font-weight: 900; letter-spacing: .12em; }
-.travel-ticket-route strong { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
-.travel-ticket-route i { border-top: 2px dotted color-mix(in srgb, var(--ticket-color) 60%, var(--line)); }
-.travel-ticket-name { display: block; overflow-wrap: anywhere; font-family: "Kiwi Maru", serif; font-size: clamp(22px, 4vw, 31px); font-weight: 700; line-height: 1.3; }
-.travel-ticket-data { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-top: 1px solid var(--line); }
-.travel-ticket-data > span { min-width: 0; display: grid; gap: 3px; padding: 11px 10px 0 0; }
-.travel-ticket-data strong { min-width: 0; display: flex; align-items: center; gap: 4px; overflow-wrap: anywhere; color: color-mix(in srgb, var(--ticket-color) 65%, var(--ink)); font-size: 13px; font-variant-numeric: tabular-nums; }
-.travel-ticket-actions { min-height: 48px; display: flex; align-items: center; justify-content: flex-end; gap: 12px; padding: 4px 10px; border-top: 1px solid var(--line); }
-.travel-ticket-actions > span { margin-right: auto; color: var(--muted); font-size: 11px; font-weight: 700; }
-.tickets-empty { display: grid; justify-items: center; gap: 8px; padding: 32px 20px; color: var(--green); }
-.tickets-empty .empty-state { width: min(100%, 520px); }
-.ticket-join-fold { margin: 22px 0 48px; border: 1px solid var(--line); border-radius: 9px; background: rgba(255, 254, 249, .72); }
-.ticket-join-fold summary { min-height: 52px; display: flex; align-items: center; gap: 8px; padding: 12px 16px; color: var(--green-dark); cursor: pointer; font-weight: 800; }
-.ticket-join-fold > .panel { margin: 0 12px 12px; padding: 16px; box-shadow: none; }
-.ticket-join-fold form { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 10px; }
-
-.ticket-dialog-layer { position: fixed; z-index: 1250; inset: 0; display: grid; place-items: center; padding: 18px; }
-.ticket-dialog-scrim { position: absolute; inset: 0; width: 100%; height: 100%; background: rgba(15, 31, 25, .58); border: 0; }
-.ticket-dialog { position: relative; z-index: 1; width: min(640px, 100%); max-height: 92dvh; overflow-y: auto; background: var(--paper); border: 1px solid var(--line); border-radius: 11px; box-shadow: 0 24px 70px rgba(13, 38, 28, .28); animation: modal-rise-in 220ms ease-out; }
-.ticket-dialog > header { position: sticky; top: 0; z-index: 2; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 17px 20px; background: rgba(255, 254, 249, .97); border-bottom: 1px solid var(--line); }
-.ticket-dialog h2 { margin: 0; font-family: "Kiwi Maru", serif; font-size: 24px; }
-.ticket-dialog form { display: grid; gap: 16px; padding: 20px; }
-.ticket-color-picker { margin: 0; padding: 0; border: 0; }
-.ticket-color-picker > div { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 8px; }
-.ticket-color-picker label { position: relative; width: 44px; height: 44px; display: grid; place-items: center; cursor: pointer; }
-.ticket-color-picker input { position: absolute; width: 1px; height: 1px; min-height: 0; opacity: 0; }
-.ticket-color-picker label > span { width: 34px; height: 34px; display: block; background: var(--swatch); border: 3px solid white; border-radius: 50%; box-shadow: 0 0 0 1px #9eaba5; }
-.ticket-color-picker input:checked + span { box-shadow: 0 0 0 3px var(--paper), 0 0 0 6px var(--swatch); }
-.ticket-color-picker input:focus-visible + span { outline: 3px solid #e26b25; outline-offset: 5px; }
-.ticket-color-picker em { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-.ticket-dialog-note { margin: -4px 0 0; color: var(--muted); font-size: 12px; line-height: 1.6; }
-.ticket-dialog-actions { display: flex; justify-content: flex-end; gap: 8px; padding-top: 4px; }
+.detail-tabs { position: sticky; top: calc(var(--header-height) + 8px); z-index: 25; margin: 20px 0 30px; background: rgba(238, 241, 237, 0.96); backdrop-filter: blur(12px); }
+.detail-message { margin: -16px 0 20px; padding: 10px 12px; color: var(--green-dark); background: var(--green-soft); border-radius: 7px; font-size: 13px; }
+.reservation-list { display: grid; gap: 14px; margin-top: 18px; }
+.reservation-card { display: grid; gap: 12px; padding: 18px; }
+.reservation-card-head { display: grid; grid-template-columns: 1fr 44px; gap: 10px; }
+.file-button { min-height: 48px; display: flex; flex-direction: row; align-items: center; gap: 8px; padding: 10px 12px; color: var(--green-dark); background: var(--green-soft); border: 1px dashed #95b4a6; border-radius: 7px; cursor: pointer; }
+.file-button span { flex: 1; color: inherit; }
+.file-button input, .visually-hidden { position: absolute !important; width: 1px !important; height: 1px !important; overflow: hidden !important; clip: rect(0 0 0 0) !important; white-space: nowrap !important; }
+.album-grid { display: grid; gap: 14px; margin-top: 18px; }
+.photo-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+.photo-actions .button { cursor: pointer; }
+.photo-actions .is-disabled { opacity: 0.45; pointer-events: none; }
+.album-entry { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 14px; padding: 18px; }
+.album-entry-icon { width: 48px; height: 48px; display: grid; place-items: center; color: var(--green-dark); background: var(--green-soft); border-radius: 50%; }
+.album-entry strong { display: block; }
+.album-entry p { margin: 4px 0 0; color: var(--muted); font-size: 13px; line-height: 1.55; }
+.photo-card { position: relative; display: grid; overflow: hidden; background: var(--paper); border: 1px solid var(--line); border-radius: 8px; box-shadow: var(--shadow); }
+.photo-card > img { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; background: var(--green-soft); }
+.photo-card > div { display: grid; gap: 10px; padding: 14px; }
+.photo-meta { display: grid; grid-template-columns: minmax(130px, .7fr) 1fr; gap: 10px; padding: 0 !important; }
+.photo-delete { position: absolute; top: 10px; right: 10px; background: rgba(255, 254, 249, 0.92); box-shadow: 0 4px 12px rgba(13, 38, 28, 0.18); }
+.history-panel { margin-top: 18px; padding: 8px 18px; }
+.history-row { display: grid; grid-template-columns: 22px 1fr; gap: 10px; padding: 14px 0; border-bottom: 1px solid var(--line); }
+.history-row:last-child { border-bottom: 0; }
+.history-row svg { margin-top: 2px; color: var(--green); }
+.history-row div { display: grid; gap: 3px; }
+.history-row span { color: var(--muted); font-size: 11px; }
+.payment-participants { grid-column: 1 / -2; margin: 0; padding: 0; border: 0; }
+.payment-participants legend { margin-bottom: 7px; color: #52655d; font-size: 12px; font-weight: 700; }
+.payment-participants > div { display: flex; flex-wrap: wrap; gap: 7px; }
+.payment-participants label { min-height: 40px; display: flex; flex-direction: row; align-items: center; gap: 6px; padding: 7px 10px; background: #f5f7f3; border: 1px solid var(--line); border-radius: 999px; font-size: 13px; cursor: pointer; }
+.payment-participants input { width: 18px; height: 18px; min-height: 0; accent-color: var(--green); }
 
 @media (min-width: 700px) {
   .main-content { padding-inline: 28px; }
-  .hero-section { margin-inline: -28px; min-height: 470px; }
+  .hero-section { margin-inline: -28px; padding-top: 56px; padding-bottom: 96px; }
   .quick-grid { grid-template-columns: repeat(3, 1fr); }
   .home-overview { grid-template-columns: repeat(3, 1fr); }
   .money-summary, .settlement-metrics { grid-template-columns: repeat(2, 1fr); }
   .field-grid.two { grid-template-columns: repeat(2, 1fr); }
-  .schedule-card-head { display: flex; }
   .editable-row { grid-template-columns: minmax(0, 1.5fr) minmax(120px, .7fr) auto; }
   .editable-row.souvenir { grid-template-columns: minmax(0, 1.4fr) minmax(80px, .45fr) minmax(110px, .6fr) auto; }
-  .payment-row { grid-template-columns: minmax(0, 1.4fr) minmax(130px, .7fr) minmax(120px, .6fr) auto; }
+.payment-row { grid-template-columns: minmax(0, 1.4fr) minmax(130px, .7fr) minmax(120px, .6fr) auto; }
   .member-row { grid-template-columns: auto minmax(0, 1fr) minmax(130px, .7fr) minmax(0, 1.4fr) auto; }
   .add-form { grid-template-columns: 1fr auto; align-items: end; }
   .group-manage { grid-template-columns: repeat(2, 1fr); }
+  .status-strip { grid-template-columns: repeat(4, 1fr); }
+  .new-trip-form { grid-template-columns: 1fr auto; align-items: end; }
+  .album-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 @media (min-width: 960px) {
@@ -392,48 +401,47 @@ input:disabled { color: #8b9792; background: #eef0ed; }
   .main-content { padding-bottom: 56px; }
   .hero-section { margin-inline: 0; border: 1px solid #bcd0c5; border-top: 0; border-radius: 0 0 8px 8px; }
   .route-layout { grid-template-columns: minmax(0, 1.6fr) minmax(300px, .8fr); }
-  .day-tabs { top: calc(var(--header-height) + 78px); }
   .bottom-nav { position: fixed; top: calc(var(--header-height) + 8px); left: 50%; right: auto; bottom: auto; z-index: 39; width: min(680px, calc(100% - 32px)); height: 62px; margin: 0; padding: 5px; transform: translateX(-50%); border: 1px solid var(--line); border-radius: 8px; box-shadow: var(--shadow); }
   .bottom-nav a { min-height: 50px; flex-direction: row; gap: 7px; font-size: 13px; }
   .page { padding-top: 88px; }
   .home-page { padding-top: 78px; }
+  .tickets-page, .travel-map-page { padding-top: 0; }
 }
 
 @media (max-width: 480px) {
-  .sync-pill { max-width: 92px; overflow: hidden; white-space: nowrap; }
+  .app-header { gap: 8px; padding-inline: 12px; }
+  .brand { gap: 7px; }
+  .brand span { font-size: 11px; }
+  .brand strong { font-size: 18px; }
+  .header-actions { gap: 6px; }
+  .sync-pill { max-width: 84px; overflow: hidden; white-space: nowrap; }
   .hero-section h1 { font-size: 36px; }
-  .section-heading { align-items: start; }
+  .section-heading { align-items: start; flex-wrap: wrap; gap: 12px; }
+  .section-heading > div { min-width: 0; flex: 1 1 220px; }
+  .plan-page > .section-heading .plan-edit-toggle { width: 100%; }
   .section-heading h2 { font-size: 24px; }
   .stay-summary { grid-template-columns: auto 1fr; }
   .stay-summary .button { grid-column: 1 / -1; }
-  .schedule-card-head .time-field { min-width: 0; }
+  .plan-timeline { padding-inline: 14px; }
+  .plan-timeline-row { grid-template-columns: 68px minmax(0, 1fr); gap: 10px; }
+  .schedule-card { padding: 14px; }
+  .schedule-card-head { display: grid; grid-template-columns: 44px minmax(0, 1fr) 44px; align-items: center; }
+  .schedule-card-head .step-number { grid-column: 1; grid-row: 1 / 3; }
+  .schedule-card-head .time-field { grid-column: 2; grid-row: 1; min-width: 0; }
+  .schedule-card-head .unset-field { grid-column: 2 / 4; grid-row: 2; }
+  .schedule-card-head .icon-button { grid-column: 3; grid-row: 1; }
   .editable-row, .payment-row, .member-row { grid-template-columns: 1fr auto; }
   .editable-row > label, .payment-row > label, .member-row > label { grid-column: 1 / -1; }
   .editable-row .icon-button, .payment-row .icon-button, .member-row .icon-button { grid-column: 2; }
   .member-row .avatar { grid-column: 1; }
   .status-strip strong { font-size: 14px; }
-  .route-legs > button { grid-template-columns: auto minmax(0, 1fr); }
-  .route-leg-action { grid-column: 2; }
-  .map-modal-layer { place-items: end center; padding: 0; }
-  .map-modal { max-height: 92dvh; border-right: 0; border-bottom: 0; border-left: 0; border-radius: 14px 14px 0 0; }
-  .map-modal-header { grid-template-columns: minmax(0, 1fr) auto; padding: 14px 16px; }
-  .map-modal-icon { display: none; }
-  .map-modal-body { padding: 12px 16px calc(16px + env(safe-area-inset-bottom)); }
-  .map-modal .map-frame { height: 52dvh; min-height: 320px; }
-  .tickets-page .section-heading { display: grid; }
-  .tickets-page .section-heading .button { width: 100%; }
-  .travel-ticket-open { grid-template-columns: 44px minmax(0, 1fr); }
-  .travel-ticket-face { padding: 15px 13px; }
-  .travel-ticket-route { grid-template-columns: auto minmax(0, 1fr); gap: 3px 7px; }
-  .travel-ticket-route i { display: none; }
-  .travel-ticket-route small:nth-of-type(2), .travel-ticket-route strong:nth-of-type(2) { grid-column: auto; }
-  .travel-ticket-data { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .travel-ticket-data > span:last-child { grid-column: 1 / -1; }
-  .ticket-join-fold form { grid-template-columns: 1fr; }
-  .ticket-dialog-layer { place-items: end center; padding: 0; }
-  .ticket-dialog { max-height: 94dvh; border-right: 0; border-bottom: 0; border-left: 0; border-radius: 14px 14px 0 0; }
-  .ticket-dialog form { padding: 16px; }
-  .ticket-dialog-actions .button-primary { flex: 1; }
+  .settings-tabs button, .detail-tabs button { font-size: 12px; }
+  .photo-meta { grid-template-columns: 1fr; }
+  .payment-participants { grid-column: 1 / -1; }
+  .photo-actions { width: 100%; justify-content: stretch; }
+  .photo-actions .button { flex: 1; padding-inline: 10px; white-space: nowrap; }
+  .album-entry { grid-template-columns: auto 1fr; }
+  .album-entry .button { grid-column: 1 / -1; }
 }
 
 /* Direction C: quiet Japanese paper */
@@ -732,9 +740,752 @@ input:focus, textarea:focus, select:focus { border-color: var(--green); }
 
 @media print {
   body { background: white; }
-  .app-header, .bottom-nav, .settings-drawer, .drawer-scrim, .map-modal-layer, .ticket-dialog-layer, button { display: none !important; }
+  .app-header, .bottom-nav, .settings-drawer, .drawer-scrim, button { display: none !important; }
   .main-content { width: 100%; padding: 0; }
   .page { display: block; animation: none; }
   .hero-section { min-height: 0; margin: 0 0 20px; padding: 30px; }
   .panel { break-inside: avoid; box-shadow: none; }
+}
+
+/* --------------------------------------------------------------------------
+   トラベルチケット
+   券は「空の上に置かれた紙の券」として扱う。切り取り線はマスクで実際に貫通させ、
+   穴から背景の空が見える。データはシステム等幅で組み、搭乗券の語彙に寄せる。
+   -------------------------------------------------------------------------- */
+
+.app-shell.is-tickets {
+  --sky-high: #7fb9e3;
+  --sky-low: #cfe9f5;
+  --stock: #fffcf4;
+  --sky-ink: #1e3a4c;
+  --data-font: ui-monospace, SFMono-Regular, Menlo, "Courier New", monospace;
+  /* 空のグラデーションは .sky（position: fixed）側で描く。
+     background-attachment: fixed は iOS Safari で、文書の高さが変わったときに
+     再描画されず古い絵が residual に残る（details を閉じても余白が残って見える）。 */
+  background: #a5d3ec;
+  /* 雲(z-index:-1)がこの背景より上に載るよう、ここで重ね合わせコンテキストを作る。
+     isolation は transform と違い fixed の含みブロックを作らないので、雲は画面全体に広がる。 */
+  position: relative;
+  isolation: isolate;
+}
+.app-shell.is-tickets .app-header { background: rgba(255, 255, 255, .8); backdrop-filter: blur(10px); border-bottom-color: rgba(255, 255, 255, .55); }
+.app-shell.is-tickets .main-content { padding-bottom: 40px; }
+
+.brand-logo { display: flex; align-items: center; gap: 9px; text-decoration: none; color: inherit; }
+.brand-logo strong { font-family: "Kiwi Maru", serif; font-size: 20px; letter-spacing: .01em; }
+.brand img { border-radius: 8px; }
+
+.brand-back { display: flex; align-items: center; gap: 10px; text-decoration: none; color: inherit; min-width: 0; }
+.brand-back span { display: grid; min-width: 0; }
+.brand-back small { color: var(--muted); font-size: 11px; font-weight: 700; }
+.brand-back strong { font-size: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.tickets-page { width: min(100%, 860px); margin-inline: auto; }
+
+/* 雲は券の背後の空気。文字の可読性を落とさないよう淡く、数を絞る。 */
+.sky { position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none;
+  background: linear-gradient(#7fb9e3 0%, #a5d3ec 46%, #cfe9f5 100%); }
+.cloud { position: absolute; width: 150px; height: 42px; background: rgba(255, 255, 255, .42); border-radius: 999px; will-change: transform; }
+.cloud::before, .cloud::after { content: ""; position: absolute; background: inherit; border-radius: 50%; }
+.cloud::before { width: 66px; height: 66px; top: -28px; left: 22px; }
+.cloud::after { width: 44px; height: 44px; top: -17px; right: 26px; }
+
+.cloud-1 { top: 4%;  left: -200px; scale: .8;  opacity: .8; animation: drift 92s  linear infinite -18s; }
+.cloud-2 { top: 19%; left: -200px; scale: 1.25; opacity: .5; animation: drift 148s linear infinite -96s; }
+.cloud-3 { top: 33%; left: -200px; scale: .6;  opacity: .7; animation: drift 104s linear infinite -70s; }
+.cloud-4 { top: 48%; left: -200px; scale: 1;   opacity: .45; animation: drift 126s linear infinite -30s; }
+.cloud-5 { top: 62%; left: -200px; scale: .72; opacity: .62; animation: drift 88s  linear infinite -58s; }
+.cloud-6 { top: 78%; left: -200px; scale: 1.35; opacity: .4; animation: drift 160s linear infinite -12s; }
+.cloud-7 { top: 90%; left: -200px; scale: .55; opacity: .6; animation: drift 116s linear infinite -84s; }
+
+@keyframes drift { from { translate: 0; } to { translate: calc(100vw + 320px); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .cloud { animation: none; }
+  .cloud-1 { left: 6%; }  .cloud-2 { left: 54%; } .cloud-3 { left: 28%; } .cloud-4 { left: 72%; }
+  .cloud-5 { left: 12%; } .cloud-6 { left: 62%; } .cloud-7 { left: 38%; }
+}
+
+/* 券の上に置く操作列。見出しを置かず、券そのものを主役にする。 */
+.tickets-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 4px 0 16px; }
+.tickets-actions .button-secondary,
+.tickets-actions .button-quiet { background: rgba(255, 255, 255, .92); border-color: rgba(255, 255, 255, .9); }
+.tickets-actions .button-primary { box-shadow: 0 2px 8px rgba(23, 62, 88, .22); }
+.tickets-error { margin-bottom: 12px; padding: 10px 12px; color: #7d2222; font-size: 13px; background: #fdecec; border: 1px solid #f0c4c4; border-radius: 10px; }
+
+.ticket-list { display: grid; gap: 16px; margin: 0 0 22px; padding: 0; list-style: none; }
+
+.ticket { --ticket: #e8735f; --notch: 11px; --perf: 58px; }
+/* ボタン自体はレイアウトを持たない。iOS Safari は button に敷いた grid/flex の
+   子を高さいっぱいに伸ばさないため、組み方は .ticket-inner 側に置く。 */
+.ticket-open {
+  display: block; width: 100%; padding: 0; text-align: left; cursor: pointer;
+  background: none; border: 0; color: var(--sky-ink, #1e3a4c);
+  filter: drop-shadow(0 3px 6px rgba(23, 62, 88, .22));
+  transition: translate .16s ease;
+}
+.ticket-inner {
+  position: relative; display: grid; grid-template-columns: var(--perf) 1fr;
+  background: var(--stock, #fffcf4); border-radius: 14px;
+  /* 切り取り線の上下を実際に打ち抜く。穴から空が透ける。 */
+  mask-image:
+    radial-gradient(circle var(--notch) at var(--perf) 0, transparent 98%, #000 100%),
+    radial-gradient(circle var(--notch) at var(--perf) 100%, transparent 98%, #000 100%);
+  mask-composite: intersect;
+  -webkit-mask-composite: source-in;
+}
+.ticket-open:hover { translate: 0 -2px; }
+.ticket-open:focus-visible { outline: 3px solid var(--sky-ink, #1e3a4c); outline-offset: 3px; }
+.ticket.is-active .ticket-inner { box-shadow: inset 0 0 0 2px var(--ticket); }
+
+.ticket-stub {
+  position: relative; display: grid; place-items: center;
+  padding: 14px 0; background: color-mix(in srgb, var(--ticket) 16%, #fffcf4);
+}
+/* 切り取り線 */
+.ticket-stub::after {
+  content: ""; position: absolute; top: 6px; right: 0; bottom: 6px; width: 0;
+  border-right: 2px dashed color-mix(in srgb, var(--ticket) 55%, #fffcf4);
+}
+.ticket-stub-status {
+  display: inline-flex; align-items: center; gap: 3px; writing-mode: vertical-rl;
+  color: color-mix(in srgb, var(--ticket) 78%, #1a1210); font-size: 11px; font-weight: 900; letter-spacing: .12em;
+}
+.ticket-stub-status svg { rotate: 90deg; }
+
+.ticket-face { display: grid; gap: 11px; padding: 15px 17px 14px; min-width: 0; }
+
+.ticket-route { display: grid; grid-template-columns: 1fr auto 1fr; align-items: start; gap: 10px; min-width: 0; }
+.ticket-place { display: grid; gap: 2px; min-width: 0; }
+.ticket-place small { color: color-mix(in srgb, var(--ticket) 60%, #56514c); font-family: var(--data-font); font-size: 9px; font-weight: 700; letter-spacing: .16em; }
+.ticket-place strong { font-size: 14px; font-weight: 700; line-height: 1.35; overflow-wrap: anywhere; }
+.ticket-arrow { position: relative; width: 26px; height: 12px; margin-top: 14px; }
+.ticket-arrow::before { content: ""; position: absolute; top: 5px; left: 0; right: 5px; border-top: 2px dotted color-mix(in srgb, var(--ticket) 65%, #fffcf4); }
+.ticket-arrow::after { content: ""; position: absolute; top: 2px; right: 0; width: 7px; height: 7px; border-top: 2px solid var(--ticket); border-right: 2px solid var(--ticket); rotate: 45deg; }
+
+.ticket-name { font-family: "Kiwi Maru", serif; font-size: 19px; font-weight: 500; line-height: 1.35; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.ticket-data { display: grid; grid-template-columns: auto auto 1fr; gap: 6px 16px; padding-top: 10px; border-top: 1px dashed color-mix(in srgb, var(--ticket) 32%, #d8d2c6); }
+.ticket-data-cell { display: grid; gap: 1px; min-width: 0; }
+.ticket-data-cell small { color: #8b8378; font-family: var(--data-font); font-size: 8px; font-weight: 700; letter-spacing: .16em; }
+.ticket-data-cell b { font-family: var(--data-font); font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: .02em; }
+.ticket-data-cell b i { margin-left: 1px; font-family: "Noto Sans JP", sans-serif; font-size: 10px; font-style: normal; font-weight: 500; color: #8b8378; }
+.ticket-data-cell b i:only-child { margin: 0 2px; }
+.ticket-data-cell u { display: inline-flex; align-items: center; gap: 3px; color: #8b8378; font-size: 10px; text-decoration: none; }
+.ticket-data-cell.is-wide { justify-self: end; text-align: right; }
+.ticket-data-cell.is-wide u { justify-content: flex-end; color: var(--green); font-weight: 800; }
+.ticket-countdown { color: color-mix(in srgb, var(--ticket) 74%, #1a1210); font-family: inherit !important; font-size: 12px !important; }
+
+/* 使用済みの券に押されるスタンプ */
+/* 入国スタンプ。二重罫の角丸枠に、到着ラベル・日付・発行元を刷る。
+   券名の行の右へ置き、データ行とは重ならない。 */
+.ticket-stamp {
+  position: absolute; right: 16px; bottom: 11px; display: grid; justify-items: center; gap: 1px;
+  padding: 5px 9px; color: color-mix(in srgb, var(--ticket) 72%, #6b3b32);
+  border: 1px solid currentColor; border-radius: 7px;
+  box-shadow: inset 0 0 0 3px var(--stock, #fffcf4), inset 0 0 0 4px currentColor;
+  rotate: -9deg; opacity: .5; pointer-events: none;
+}
+.ticket-stamp b { font-family: var(--data-font); font-size: 9px; font-weight: 700; letter-spacing: .18em; }
+.ticket-stamp em { font-family: var(--data-font); font-size: 13px; font-style: normal; font-weight: 700; letter-spacing: .02em; font-variant-numeric: tabular-nums; }
+.ticket-stamp i { font-family: var(--data-font); font-size: 7px; font-style: normal; letter-spacing: .22em; opacity: .8; }
+.ticket.is-done .ticket-open, .ticket.is-archived .ticket-open { filter: drop-shadow(0 2px 4px rgba(23, 62, 88, .16)); }
+.ticket.is-archived .ticket-face { opacity: .72; }
+
+/* 空状態と折りたたみは縦に並ぶ同種の器。角丸と間隔を揃える。 */
+.tickets-empty {
+  display: grid; justify-items: center; gap: 10px; margin-bottom: 10px; padding: 34px 22px; text-align: center;
+  background: rgba(255, 255, 255, .28); border: 1px solid rgba(255, 255, 255, .5);
+  border-radius: 12px; backdrop-filter: blur(2px); box-shadow: none;
+}
+.tickets-empty .empty-state { color: #244a60; background: none; border: 0; }
+.tickets-empty svg { color: var(--pink); }
+.tickets-empty strong { font-family: "Kiwi Maru", serif; font-size: 17px; }
+
+.ticket-fold {
+  margin-bottom: 10px; background: rgba(255, 255, 255, .9); border-radius: 12px; overflow: hidden;
+  box-shadow: 0 2px 8px rgba(23, 62, 88, .12);
+}
+.ticket-fold > summary {
+  display: flex; align-items: center; gap: 9px; padding: 15px 18px;
+  color: var(--sky-ink, #1e3a4c); font-size: 14px; font-weight: 700; cursor: pointer; list-style: none;
+}
+.ticket-fold > summary::-webkit-details-marker { display: none; }
+.ticket-fold > summary::after { content: "＋"; margin-left: auto; color: #7c8a93; font-size: 17px; }
+.ticket-fold[open] > summary::after { content: "−"; }
+.ticket-fold > summary:focus-visible { outline: 3px solid var(--sky-ink, #1e3a4c); outline-offset: -3px; }
+.ticket-fold .panel { background: transparent; border: 0; border-radius: 0; box-shadow: none; }
+
+.ticket-form form { display: grid; gap: 14px; padding: 4px 18px 18px; }
+.color-picker { display: flex; flex-wrap: wrap; gap: 10px; padding: 0; border: 0; }
+.color-picker legend { margin-bottom: 8px; color: var(--muted); font-size: 12px; font-weight: 700; }
+.color-swatch { position: relative; cursor: pointer; }
+.color-swatch input { position: absolute; opacity: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }
+.color-swatch > span[aria-hidden] { display: block; width: 32px; height: 32px; background: var(--swatch); border: 2px solid #ffffff; border-radius: 50%; box-shadow: 0 0 0 1px var(--line); }
+.color-swatch input:checked + span[aria-hidden] { box-shadow: 0 0 0 3px var(--swatch); }
+.color-swatch input:focus-visible + span[aria-hidden] { outline: 3px solid var(--ink); outline-offset: 2px; }
+
+/* 経路の設定（予定ページ） */
+.schedule-card .unset-field { padding-top: 8px; border-top: 1px dashed var(--line); }
+.route-field { display: grid; gap: 8px; padding-top: 10px; border-top: 1px dashed var(--line); }
+.location-picker-open { width: fit-content; margin-top: 10px; }
+.map-location-field { display: grid; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--line); }
+.map-location-field > span { color: #52655d; font-size: 12px; font-weight: 700; }
+.map-location-field > p { color: var(--muted); font-size: 13px; }
+.map-location-selected { display: flex; align-items: center; gap: 10px; padding: 11px 12px; color: var(--green-dark); background: var(--green-soft); border-radius: 10px; }
+.map-location-selected div { display: grid; gap: 2px; }
+.map-location-selected strong { font-size: 14px; }
+.map-location-selected small { color: var(--muted); font-size: 11px; }
+.map-location-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.map-location-actions .location-picker-open,
+.map-location-actions .inline-map-link { margin-top: 0; }
+.location-picker-backdrop {
+  position: fixed; z-index: 120; inset: 0; display: grid; place-items: center; padding: 16px;
+  background: rgba(13, 38, 28, .58); backdrop-filter: blur(4px);
+}
+.location-picker-dialog {
+  width: min(100%, 680px); max-height: calc(100dvh - 32px); padding: 20px; overflow-y: auto;
+  color: var(--ink); background: var(--paper); border: 1px solid var(--line); border-radius: 16px;
+  box-shadow: 0 24px 70px rgba(13, 38, 28, .3);
+}
+.location-picker-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.location-picker-head h2 { margin-top: 2px; font-family: "Kiwi Maru", serif; font-size: 23px; }
+.location-picker-guide { margin: 12px 0 10px; color: var(--muted); font-size: 14px; line-height: 1.6; }
+.location-search { display: grid; gap: 6px; margin-bottom: 10px; }
+.location-search > span { color: #52655d; font-size: 12px; font-weight: 700; }
+.location-search > div { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
+.location-search .button { min-width: 92px; }
+.location-current { width: fit-content; margin-bottom: 10px; }
+.location-picker-status { margin: 0 0 10px; color: var(--muted); font-size: 13px; }
+.location-picker-map { width: 100%; height: min(48vh, 420px); min-height: 280px; overflow: hidden; background: #dce8e1; border: 1px solid var(--line); border-radius: 12px; }
+.location-picker-attribution { margin: 5px 2px 0; color: var(--muted); font-size: 10px; }
+.location-picker-coordinate { min-height: 44px; display: flex; align-items: center; gap: 8px; margin-top: 10px; padding: 10px 12px; color: var(--green-dark); font-size: 13px; font-weight: 700; background: #eef6f1; border-radius: 10px; }
+.location-picker-name { margin-top: 12px; }
+.location-picker-name small { color: var(--muted); font-size: 11px; line-height: 1.5; }
+.location-picker-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
+.location-picker-actions .button:disabled { cursor: not-allowed; opacity: .5; }
+.release-notice-backdrop {
+  position: fixed; z-index: 140; inset: 0; display: grid; place-items: center; padding: 16px;
+  background: rgba(19, 45, 54, .62); backdrop-filter: blur(6px);
+}
+.release-notice {
+  width: min(100%, 560px); max-height: calc(100dvh - 32px); padding: 24px; overflow-y: auto;
+  color: var(--ink); background: var(--paper); border: 1px solid rgba(255, 255, 255, .8); border-radius: 20px;
+  box-shadow: 0 28px 80px rgba(13, 38, 28, .34); animation: save-progress-in 240ms ease-out both;
+}
+.release-notice-head { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px; }
+.release-notice-icon { display: grid; place-items: center; width: 52px; height: 52px; color: #ffffff; background: var(--green); border-radius: 16px; transform: rotate(-4deg); }
+.release-notice-head h2 { margin-top: 3px; font-family: "Kiwi Maru", serif; font-size: 23px; line-height: 1.35; }
+.release-notice-lead { margin: 18px 0 14px; color: var(--muted); line-height: 1.7; }
+.release-notice-list { display: grid; gap: 9px; margin: 0; padding: 0; list-style: none; }
+.release-notice-list li { display: grid; grid-template-columns: auto 1fr; gap: 11px; padding: 13px; color: var(--green-dark); background: #eef6f1; border-radius: 12px; }
+.release-notice-list svg { margin-top: 2px; }
+.release-notice-list strong, .release-notice-list small { display: block; }
+.release-notice-list strong { color: var(--ink); font-size: 14px; }
+.release-notice-list small { margin-top: 3px; color: var(--muted); font-size: 12px; line-height: 1.55; }
+.release-notice-confirm { width: 100%; margin-top: 18px; }
+@media (max-width: 520px) {
+  .release-notice { padding: 20px 16px; }
+  .release-notice-head { grid-template-columns: 44px minmax(0, 1fr) 42px; gap: 9px; }
+  .release-notice-icon { width: 44px; height: 44px; border-radius: 13px; }
+  .release-notice-head h2 { font-size: 19px; }
+}
+.route-hint { display: flex; align-items: center; gap: 6px; font-size: 12px; line-height: 1.6; }
+.route-hint.is-ok { color: var(--green); }
+.route-hint.is-missing { color: #8a5a20; }
+
+.theme-fieldset .field-note { margin-top: 8px; color: var(--muted); font-size: 12px; line-height: 1.6; }
+
+/* --------------------------------------------------------------------------
+   旅の地図
+   -------------------------------------------------------------------------- */
+
+.map-page-head { display: grid; gap: 10px; margin-bottom: 16px; }
+.map-page-head h1 { font-family: "Kiwi Maru", serif; font-size: 24px; }
+.map-page-head .button { justify-self: start; }
+
+.map-layout { display: grid; gap: 14px; }
+.map-canvas { position: relative; }
+.route-map { height: 46vh; min-height: 280px; background: #e8eef2; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+.map-attribution { margin-top: 5px; color: var(--muted); font-size: 10px; }
+
+.route-pin { display: block; width: 12px; height: 12px; background: var(--pin); border: 2px solid #ffffff; border-radius: 50%; box-shadow: 0 1px 3px rgba(0, 0, 0, .3); }
+.route-pin.is-end { width: 17px; height: 17px; border-width: 3px; }
+
+.map-side { display: grid; gap: 12px; }
+.map-side-head { display: grid; gap: 6px; }
+.map-side-head .button { justify-self: start; }
+.map-side-head p { color: var(--muted); font-size: 12px; line-height: 1.6; }
+
+.map-ticket-list { display: flex; gap: 10px; margin: 0; padding: 4px 2px; overflow-x: auto; list-style: none; }
+.map-ticket {
+  --ticket: #e8735f;
+  display: flex; align-items: center; gap: 9px; min-width: 172px; padding: 10px 12px; text-align: left;
+  background: var(--paper); border: 2px solid var(--line); border-radius: 12px; cursor: pointer;
+}
+.map-ticket.is-selected { border-color: var(--ticket); background: color-mix(in srgb, var(--ticket) 8%, #ffffff); }
+.map-ticket:focus-visible { outline: 3px solid var(--ticket); outline-offset: 2px; }
+.map-ticket-color { flex-shrink: 0; width: 12px; height: 30px; background: var(--ticket); border-radius: 4px; }
+.map-ticket strong { display: block; font-size: 13px; }
+.map-ticket small { color: var(--muted); font-size: 11px; }
+
+.map-detail { display: grid; gap: 9px; padding: 16px; background: var(--paper); border: 1px solid var(--line); border-radius: 12px; }
+.map-detail h2 { font-family: "Kiwi Maru", serif; font-size: 18px; }
+.map-detail-dates { color: var(--muted); font-size: 12px; }
+.map-detail-members { display: flex; align-items: center; gap: 6px; font-size: 12px; }
+.map-detail-points { display: grid; gap: 5px; margin: 0; padding: 0; list-style: none; }
+.map-detail-points li { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+.map-detail-points span { display: grid; place-items: center; flex-shrink: 0; width: 20px; height: 20px; color: #ffffff; font-size: 10px; font-weight: 900; background: var(--ink); border-radius: 50%; }
+.map-detail-skipped { padding: 8px 10px; color: #8a5a20; font-size: 12px; line-height: 1.6; background: #fdf3e2; border-radius: 8px; }
+.map-detail-links { display: flex; flex-wrap: wrap; gap: 8px; }
+
+@media (min-width: 760px) {
+  .ticket-list { grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); }
+  .tickets-hero { grid-template-columns: auto 1fr auto; align-items: center; }
+  .tickets-account { grid-column: auto; justify-self: end; }
+  .map-layout { grid-template-columns: 1fr 320px; align-items: start; }
+  .route-map { height: 62vh; }
+  .map-ticket-list { flex-direction: column; max-height: 34vh; overflow-x: visible; overflow-y: auto; }
+  .map-ticket { min-width: 0; }
+}
+
+/* --------------------------------------------------------------------------
+   たまに空を横切るもの
+   1周期のうち約12%だけ画面を渡り、残りは画面外で待つ。周期をずらしてあるので
+   「ときどき何かが飛ぶ」に見える。動きが本体なので、動きを減らす設定では出さない。
+   -------------------------------------------------------------------------- */
+
+/* 遠くの機影として、空に沈む白ではなく淡いスレートのシルエットで描く。 */
+.flyer { position: absolute; left: 0; opacity: 0; color: rgba(30, 58, 76, .5); }
+
+@keyframes fly-east {
+  0%   { translate: -16vw 0; opacity: 0; }
+  1.5% { opacity: .95; }
+  10%  { opacity: .95; }
+  12%  { translate: 116vw 0; opacity: 0; }
+  100% { translate: 116vw 0; opacity: 0; }
+}
+@keyframes fly-west {
+  0%   { translate: 116vw 0; opacity: 0; }
+  1.5% { opacity: .95; }
+  10%  { opacity: .95; }
+  12%  { translate: -16vw 0; opacity: 0; }
+  100% { translate: -16vw 0; opacity: 0; }
+}
+
+.flyer-plane { top: 15%; rotate: 38deg; animation: fly-east 78s linear infinite -6s; }
+.flyer-heli  { top: 58%; scale: -1 1; animation: fly-west 104s linear infinite -46s; }
+.flyer-hero  { top: 34%; rotate: -6deg; animation: fly-east 137s linear infinite -88s; }
+
+@media (prefers-reduced-motion: reduce) {
+  .flyer { display: none; }
+}
+
+/* --------------------------------------------------------------------------
+   作者紹介（チケット一覧の末尾）
+   券が主役なので、ここは空の上に置いた白い名刺のように静かに収める。
+   -------------------------------------------------------------------------- */
+
+/* 折りたたみの中身。枠と影は ticket-fold 側が持つので、ここは余白だけ。 */
+
+.about-dev { padding: 4px 18px 18px; }
+.about-dev-head { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+.about-dev-head img { border-radius: 10px; background: #eaf3f8; object-fit: cover; }
+.about-dev-name { font-family: var(--data-font); font-size: 15px; font-weight: 700; letter-spacing: .01em; }
+.about-dev-role { color: var(--muted); font-family: var(--data-font); font-size: 11px; font-weight: 700; letter-spacing: .1em; }
+
+.about-dev-bio { display: grid; gap: 4px; margin: 0 0 16px; padding: 0; list-style: none; }
+.about-dev-bio li { position: relative; padding-left: 15px; color: var(--sky-ink, #1e3a4c); font-size: 13px; line-height: 1.7; }
+.about-dev-bio li::before { content: ""; position: absolute; top: .72em; left: 3px; width: 5px; height: 5px; background: #9fbdd0; border-radius: 50%; }
+
+.about-dev-label { margin-bottom: 8px; color: #7c8a93; font-family: var(--data-font); font-size: 10px; font-weight: 700; letter-spacing: .18em; }
+.about-dev-skills { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 16px; padding: 0; list-style: none; }
+.about-dev-skills li {
+  padding: 3px 9px; color: #2c5468; font-family: var(--data-font); font-size: 11px; font-weight: 700;
+  background: #eaf3f8; border-radius: 999px;
+}
+
+.about-dev-links { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.about-dev-links a {
+  display: inline-flex; align-items: center; gap: 5px; padding: 7px 13px;
+  color: var(--sky-ink, #1e3a4c); font-size: 13px; font-weight: 700; text-decoration: none;
+  border: 1px solid #cfe0ea; border-radius: 999px;
+}
+.about-dev-links a:hover { background: #eaf3f8; }
+.about-dev-links a:focus-visible { outline: 3px solid var(--sky-ink, #1e3a4c); outline-offset: 2px; }
+
+.route-source { color: var(--muted); font-size: 12px; line-height: 1.6; }
+
+/* 場所の入力（GoogleマップURL） */
+.place-field { display: grid; gap: 7px; margin-bottom: 14px; }
+.place-hint { display: flex; align-items: center; gap: 5px; font-size: 12px; line-height: 1.6; }
+.place-hint.is-ok { color: var(--green); font-weight: 700; }
+.place-hint.is-error { color: #8a5a20; }
+.place-label-field { margin-top: 2px; }
+
+.trip-places { display: grid; gap: 4px; padding: 18px; margin-bottom: 14px; }
+.trip-places h3 { font-size: 15px; }
+.place-note { margin-bottom: 10px; color: var(--muted); font-size: 12px; line-height: 1.65; }
+
+/* チケット発行ダイアログ */
+.dialog-layer { position: fixed; inset: 0; z-index: 110; display: grid; place-items: center; padding: 16px; }
+.dialog-scrim { position: absolute; inset: 0; background: rgba(15, 40, 56, .5); border: 0; animation: dialog-scrim-in 200ms ease-out both; }
+.dialog {
+  position: relative; width: min(100%, 520px); max-height: 88vh; overflow-y: auto;
+  padding: 20px; background: var(--paper); border-radius: 16px; box-shadow: 0 18px 46px rgba(15, 40, 56, .3);
+  /* プリンターから書類が出てくる動き。位置は中央のまま。
+     紙送りは等速（機械の動き）、持ち上がりだけ減速させる。1本のアニメーションだと
+     イージングを共有してしまい、送りが前寄りに潰れて紙に見えない。 */
+  animation:
+    dialog-feed 520ms linear both,
+    dialog-rise 520ms cubic-bezier(.16, .84, .3, 1) both,
+    dialog-fade 160ms ease-out both;
+}
+
+/* 上端から順に姿を現す。終端の inset が負なのは、静止時に影を切らないため。 */
+@keyframes dialog-feed {
+  from { clip-path: inset(0 0 100% 0); }
+  to   { clip-path: inset(0 -12% -14% -12%); }
+}
+@keyframes dialog-rise {
+  from { translate: 0 34px; }
+  to   { translate: 0 0; }
+}
+@keyframes dialog-fade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes dialog-scrim-in { from { opacity: 0; } to { opacity: 1; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .dialog, .dialog-scrim { animation: none; clip-path: none; }
+}
+.dialog header { display: flex; align-items: start; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+.dialog h2 { font-family: "Kiwi Maru", serif; font-size: 20px; }
+.dialog form { display: grid; gap: 14px; }
+.dialog-places { display: grid; gap: 4px; padding: 14px; background: var(--green-soft); border-radius: 10px; }
+.dialog-places-lead { font-size: 14px; font-weight: 700; }
+.dialog-places-note { margin-bottom: 10px; color: var(--muted); font-size: 12px; line-height: 1.65; }
+.dialog-actions { display: flex; justify-content: flex-end; gap: 8px; }
+
+/* チケットの削除（設定） */
+.button-danger { color: #ffffff; background: var(--danger); border-color: var(--danger); }
+.button-danger:hover { background: #8e1b25; }
+
+.trip-delete-confirm {
+  grid-column: 1 / -1; display: grid; gap: 9px; margin-top: 10px; padding: 13px;
+  background: #fdecec; border: 1px solid #f0c4c4; border-radius: 9px;
+}
+.trip-delete-confirm p { color: #7d2222; font-size: 12px; line-height: 1.65; }
+.trip-delete-confirm .trip-delete-note { color: #6d5a3a; }
+.trip-delete-confirm div { display: flex; justify-content: flex-end; gap: 8px; }
+.theme-fieldset .field-note { margin-top: 8px; color: var(--muted); font-size: 12px; line-height: 1.6; }
+
+/* --------------------------------------------------------------------------
+   チケット共通デザイン
+   一覧・地図・チケット内を、同じ紙・角丸・切り取り線でつなぐ。
+   -------------------------------------------------------------------------- */
+
+.app-shell.is-ticket-detail {
+  --ticket-theme: #2f9e8f;
+  --ticket-soft: color-mix(in srgb, var(--ticket-theme) 13%, #ffffff);
+  --ticket-pale: color-mix(in srgb, var(--ticket-theme) 7%, #f7fbfd);
+  --ticket-line: color-mix(in srgb, var(--ticket-theme) 35%, #d7e0e3);
+  --ticket-deep: color-mix(in srgb, var(--ticket-theme) 64%, #19333c);
+  min-height: 100dvh;
+  background-color: #f7fbfd;
+  background-image:
+    linear-gradient(180deg, color-mix(in srgb, var(--ticket-theme) 13%, #dff2fb) 0, #f7fbfd 260px),
+    radial-gradient(circle at 1px 1px, color-mix(in srgb, var(--ticket-theme) 16%, transparent) 1px, transparent 1.5px);
+  background-size: auto, 24px 24px;
+}
+
+.is-ticket-detail .app-header {
+  border-bottom: 1px dashed var(--ticket-line);
+  background: rgba(255, 255, 255, .92);
+  box-shadow: 0 5px 18px rgba(34, 70, 82, .07);
+}
+.is-ticket-detail .brand-back {
+  position: relative;
+  padding-left: 13px;
+}
+.is-ticket-detail .brand-back::before {
+  content: "";
+  position: absolute;
+  inset: 2px auto 2px 0;
+  width: 5px;
+  background: var(--ticket-theme);
+  border-radius: 999px;
+}
+.is-ticket-detail .brand-back small { color: var(--ticket-deep); }
+.is-ticket-detail .brand-back strong { color: var(--ink); }
+.is-ticket-detail .app-header .icon-button {
+  color: var(--ticket-deep);
+  border-color: var(--ticket-line);
+  background: var(--ticket-soft);
+  border-radius: 12px;
+}
+.is-ticket-detail .sync-pill {
+  color: var(--ink);
+  border-color: var(--ticket-line);
+  background: var(--ticket-soft);
+}
+
+.is-ticket-detail .main-content { padding-top: 26px; }
+.is-ticket-detail .panel,
+.is-ticket-detail .photo-card {
+  border-color: color-mix(in srgb, var(--ticket-theme) 20%, var(--line));
+  border-radius: 16px;
+  box-shadow: 0 9px 28px rgba(31, 69, 82, .08);
+}
+.is-ticket-detail .section-heading .eyebrow,
+.is-ticket-detail .eyebrow { color: var(--ticket-deep); }
+.is-ticket-detail .section-heading > div { min-width: 0; }
+.is-ticket-detail .section-heading > div::after {
+  content: "";
+  display: block;
+  width: min(112px, 34vw);
+  margin-top: 10px;
+  border-top: 2px dashed var(--ticket-line);
+}
+.is-ticket-detail .section-description { color: #4f6268; }
+.is-ticket-detail .text-link,
+.is-ticket-detail .inline-map-link { color: var(--ticket-deep); }
+.is-ticket-detail .button { border-radius: 12px; }
+.is-ticket-detail .button-primary {
+  color: #ffffff;
+  background: var(--ticket-deep);
+  border-color: var(--ticket-deep);
+}
+.is-ticket-detail .button-primary:hover { background: color-mix(in srgb, var(--ticket-deep) 82%, #101f25); }
+.is-ticket-detail .button-secondary {
+  color: var(--ticket-deep);
+  border-color: var(--ticket-line);
+  background: #ffffff;
+}
+.is-ticket-detail .button-secondary:hover { background: var(--ticket-soft); }
+.is-ticket-detail input:focus,
+.is-ticket-detail textarea:focus,
+.is-ticket-detail select:focus { border-color: var(--ticket-theme); }
+.is-ticket-detail .empty-state {
+  background: var(--ticket-pale);
+  border-color: var(--ticket-line);
+  border-radius: 12px;
+}
+
+.is-ticket-detail .hero-section {
+  margin-top: -26px;
+  background: var(--ticket-soft);
+  border-color: var(--ticket-line);
+  border-radius: 0 0 24px 24px;
+}
+.is-ticket-detail .hero-map-fallback { background-color: var(--ticket-soft); }
+.is-ticket-detail .hero-map::after { background-color: color-mix(in srgb, var(--ticket-theme) 15%, rgba(255, 255, 255, .56)); }
+.is-ticket-detail .fallback-route,
+.is-ticket-detail .hero-route { color: var(--ticket-deep); stroke: var(--ticket-deep); }
+.is-ticket-detail .fallback-point-start { fill: var(--ticket-deep); }
+.is-ticket-detail .hero-route i { border-color: var(--ticket-line); }
+.is-ticket-detail .hero-destination { color: color-mix(in srgb, var(--ticket-deep) 82%, #34484e); }
+.is-ticket-detail .trip-note-ticket {
+  overflow: hidden;
+  border: 2px solid var(--ticket-line);
+  border-radius: 18px;
+  transform: none;
+}
+.is-ticket-detail .trip-note-ticket::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 9px;
+  background: var(--ticket-theme);
+}
+.is-ticket-detail .trip-note-ticket::after { border-color: var(--ticket-theme); }
+.is-ticket-detail .trip-note-ticket span { color: var(--ticket-deep); }
+.is-ticket-detail .quick-card { border-top-color: var(--ticket-theme); border-radius: 16px; }
+.is-ticket-detail .home-overview a,
+.is-ticket-detail .status-strip a {
+  border-color: var(--ticket-line);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, .88);
+}
+.is-ticket-detail .home-overview svg,
+.is-ticket-detail .status-strip svg,
+.is-ticket-detail .timeline-row time,
+.is-ticket-detail .history-row svg,
+.is-ticket-detail .progress-panel > div:first-child svg { color: var(--ticket-deep); }
+
+.is-ticket-detail .bottom-nav {
+  border-top: 1px dashed var(--ticket-line);
+  background: rgba(255, 255, 255, .96);
+  box-shadow: 0 -8px 28px rgba(31, 69, 82, .1);
+}
+.is-ticket-detail .bottom-nav a { border-radius: 14px; }
+.is-ticket-detail .bottom-nav a.is-active {
+  color: var(--ticket-deep);
+  background: var(--ticket-soft);
+}
+.is-ticket-detail .day-tabs,
+.is-ticket-detail .detail-tabs { background: rgba(247, 251, 253, .94); }
+.is-ticket-detail .day-tabs button,
+.is-ticket-detail .settings-tabs button,
+.is-ticket-detail .detail-tabs button { border-radius: 12px; }
+.is-ticket-detail .day-tabs button.is-active,
+.is-ticket-detail .settings-tabs button.is-active,
+.is-ticket-detail .detail-tabs button.is-active {
+  color: #ffffff;
+  background: var(--ticket-deep);
+  border-color: var(--ticket-deep);
+}
+.is-ticket-detail .plan-time { color: var(--ticket-deep); }
+.is-ticket-detail .plan-time::after { border-color: var(--ticket-theme); }
+.is-ticket-detail .plan-time i { background: var(--ticket-line); }
+.is-ticket-detail .plan-event small { color: var(--ticket-deep); }
+.is-ticket-detail .step-number,
+.is-ticket-detail .album-entry-icon,
+.is-ticket-detail .settlement-metrics > div {
+  color: var(--ticket-deep);
+  background: var(--ticket-soft);
+}
+.is-ticket-detail .switch-row input:checked,
+.is-ticket-detail .progress-track i { background: var(--ticket-deep); }
+.is-ticket-detail .route-details > i { border-color: var(--ticket-line); }
+.is-ticket-detail .route-details div span { color: var(--ticket-deep); }
+.is-ticket-detail .route-field { border-color: var(--ticket-line); }
+
+/* 一覧と地図は同じ空の上に、白いチケットを置く。 */
+.app-shell.is-tickets .main-content { padding-top: 22px; }
+.app-shell.is-tickets .page { padding-top: 0; }
+.tickets-actions { display: flex; justify-content: flex-end; }
+.tickets-actions .button,
+.map-page-head .button {
+  color: #15384d;
+  border-color: rgba(21, 56, 77, .2);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .9);
+  box-shadow: 0 5px 16px rgba(21, 56, 77, .09);
+}
+.ticket-list-head,
+.ticket-page-head {
+  position: relative;
+  padding: 18px 20px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, .85);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, .9);
+  box-shadow: 0 8px 24px rgba(21, 56, 77, .1);
+}
+.ticket-list-head::after,
+.ticket-page-head::after {
+  content: "";
+  position: absolute;
+  inset: auto 20px 0;
+  border-bottom: 2px dashed rgba(21, 56, 77, .18);
+}
+.ticket-list-head h2,
+.ticket-page-head h1 { color: #15384d; text-shadow: none; }
+.ticket-list-head .eyebrow,
+.ticket-page-head .eyebrow { color: #285b76; text-shadow: none; }
+
+.ticket { border-radius: 20px; }
+.ticket-open {
+  grid-template-columns: 52px minmax(0, 1fr);
+  min-height: 154px;
+  border-radius: 20px;
+  box-shadow: 0 7px 20px rgba(21, 56, 77, .1), 0 3px 0 color-mix(in srgb, var(--ticket) 22%, #ffffff);
+  transition: transform 180ms ease, box-shadow 180ms ease;
+}
+.ticket-open:hover { transform: translateY(-2px); box-shadow: 0 11px 24px rgba(21, 56, 77, .13), 0 4px 0 color-mix(in srgb, var(--ticket) 28%, #ffffff); }
+.ticket-open:active { transform: translateY(0); }
+.ticket-body { gap: 8px; padding: 15px 16px 16px; }
+.ticket-top { flex-wrap: wrap; }
+.ticket-status { color: color-mix(in srgb, var(--ticket) 62%, #25333a); }
+.ticket.is-done .ticket-open,
+.ticket.is-archived .ticket-open { opacity: 1; }
+.ticket.is-done .ticket-stub {
+  background-image: repeating-linear-gradient(135deg, transparent 0 8px, color-mix(in srgb, var(--ticket) 14%, transparent) 8px 13px);
+}
+.ticket.is-archived .ticket-open { border-style: dashed; }
+.ticket.is-archived .ticket-stub {
+  background-image: repeating-linear-gradient(45deg, transparent 0 7px, color-mix(in srgb, var(--ticket) 17%, transparent) 7px 11px);
+}
+.ticket-fold { border-radius: 16px; }
+
+.travel-map-page { padding-bottom: 24px; }
+.map-page-head { margin-bottom: 18px; }
+.map-page-head .button { width: fit-content; }
+.map-layout { gap: 16px; }
+.map-canvas,
+.map-side {
+  padding: 12px;
+  border: 1px solid rgba(255, 255, 255, .82);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, .9);
+  box-shadow: 0 8px 24px rgba(21, 56, 77, .1);
+}
+.route-map { border-color: rgba(21, 56, 77, .2); border-radius: 13px; }
+.map-attribution { margin: 7px 2px 0; color: #405c6b; }
+.map-side { align-content: start; }
+.map-ticket-list { padding: 2px; }
+.map-ticket {
+  position: relative;
+  min-height: 62px;
+  padding-left: 16px;
+  overflow: hidden;
+  border-color: #d4e0e5;
+  border-radius: 14px;
+  background: #ffffff;
+}
+.map-ticket::before {
+  content: "";
+  position: absolute;
+  inset: 8px auto 8px 0;
+  border-left: 2px dashed color-mix(in srgb, var(--ticket) 50%, #ffffff);
+}
+.map-ticket.is-selected { box-shadow: inset 0 0 0 1px var(--ticket); }
+.map-ticket small { display: flex; align-items: center; gap: 4px; margin-top: 3px; color: #52666f; }
+.map-detail {
+  position: relative;
+  overflow: hidden;
+  border: 2px solid color-mix(in srgb, var(--ticket) 38%, #d7e0e3);
+  border-radius: 16px;
+  box-shadow: 0 5px 18px rgba(21, 56, 77, .08);
+}
+.map-detail::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 7px;
+  background: var(--ticket);
+}
+.map-detail-points span { background: color-mix(in srgb, var(--ticket) 65%, #233842); }
+
+@media (max-width: 480px) {
+  .is-ticket-detail .main-content { padding-top: 20px; }
+  .is-ticket-detail .hero-section { margin-top: -20px; }
+  .ticket-list-head { align-items: center; }
+  .ticket-list-head .button { width: 100%; }
+  .ticket-open { grid-template-columns: 44px minmax(0, 1fr); }
+  .ticket-body { padding-inline: 13px; }
+  .ticket-countdown { width: 100%; }
+  .ticket-route { align-items: flex-start; line-height: 1.5; }
+  .map-canvas, .map-side { padding: 9px; border-radius: 16px; }
+}
+
+@media (min-width: 760px) {
+  .ticket-page-head { grid-template-columns: auto 1fr; align-items: center; column-gap: 20px; }
+  .ticket-page-head .button { grid-row: 1; }
+  .ticket-page-head > div { grid-column: 2; grid-row: 1; }
+}
+
+@media (min-width: 960px) {
+  .is-ticket-detail .main-content { padding-top: 0; }
+  .is-ticket-detail .bottom-nav {
+    border: 1px solid var(--ticket-line);
+    border-radius: 999px;
+    box-shadow: 0 10px 26px rgba(31, 69, 82, .12);
+  }
+  .is-ticket-detail .page { padding-top: 96px; }
+  .is-ticket-detail .home-page { padding-top: 86px; }
+  .is-ticket-detail .hero-section { margin-top: 0; border-radius: 0 0 24px 24px; }
+  .app-shell.is-tickets .main-content { padding-top: 34px; }
 }

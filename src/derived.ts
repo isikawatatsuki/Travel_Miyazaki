@@ -1,4 +1,3 @@
-import { baseCost } from "./data";
 import type { AdjustState, Person, SettlementState } from "./types";
 
 const amount = (value: unknown) => Math.max(0, Number(value || 0));
@@ -17,7 +16,7 @@ export function getBudgetSummary(adjust: AdjustState, peopleCount: number): Budg
   const hotel = adjust.breakfast ? amount(adjust.hotelBreakfast) : amount(adjust.hotelNoBreakfast);
   const souvenirs = adjust.souvenirs.reduce((sum, item) => sum + amount(item.qty) * amount(item.price), 0);
   const custom = adjust.customItems.reduce((sum, item) => sum + amount(item.amount), 0);
-  const perPerson = baseCost.flight + baseCost.access + hotel + souvenirs + custom;
+  const perPerson = amount(adjust.transportCost) + amount(adjust.accessCost) + hotel + souvenirs + custom;
 
   return { hotel, souvenirs, custom, perPerson, tripTotal: perPerson * count, peopleCount: count };
 }
@@ -35,14 +34,23 @@ export type SettlementSummary = {
 export function getSettlementSummary(settlement: SettlementState): SettlementSummary {
   const peopleCount = Math.max(1, settlement.people.length);
   const paidTotal = settlement.payments.reduce((sum, payment) => sum + amount(payment.amount), 0);
+  const shares = new Map(settlement.people.map((person) => [person.id, 0]));
+  settlement.payments.forEach((payment) => {
+    const selected = payment.participantIds?.filter((id) => shares.has(id)) || [];
+    const participants = selected.length ? selected : settlement.people.map((person) => person.id);
+    if (!participants.length) return;
+    const perPerson = Math.floor(amount(payment.amount) / participants.length);
+    const remainder = amount(payment.amount) % participants.length;
+    participants.forEach((id, index) => shares.set(id, (shares.get(id) || 0) + perPerson + (index < remainder ? 1 : 0)));
+  });
   const baseShare = Math.floor(paidTotal / peopleCount);
   const remainder = paidTotal % peopleCount;
-  const balances = settlement.people.map((person, index) => ({
+  const balances = settlement.people.map((person) => ({
     ...person,
     paid: settlement.payments
       .filter((payment) => payment.payerId === person.id)
       .reduce((sum, payment) => sum + amount(payment.amount), 0),
-    share: baseShare + (index < remainder ? 1 : 0),
+    share: shares.get(person.id) || 0,
   })).map((person) => ({ ...person, balance: person.paid - person.share }));
 
   const debtors = balances.filter((person) => person.balance < 0).map((person) => ({ ...person, left: -person.balance }));

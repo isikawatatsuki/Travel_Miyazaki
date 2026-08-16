@@ -1,15 +1,21 @@
-import { Plus, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { TICKET_COLORS } from "../tickets";
+import { Plus, X } from "lucide-react";
+import { mapsSearch } from "../lib";
+import { isValidCoordinate, TICKET_COLORS } from "../tickets";
+import type { PlaceValue } from "./PlaceField";
+import { LocationPicker } from "./LocationPicker";
+import { MapLocationField } from "./MapLocationField";
 
-export type NewTicketInput = {
+export type NewTicket = {
   name: string;
   themeColor: string;
   startDate: string;
   endDate: string;
-  origin: string;
-  destination: string;
+  origin: PlaceValue;
+  destination: PlaceValue;
 };
+
+const empty: PlaceValue = { url: "", label: "" };
 
 function isoDate(offsetDays: number) {
   const date = new Date();
@@ -17,55 +23,98 @@ function isoDate(offsetDays: number) {
   return [date.getFullYear(), String(date.getMonth() + 1).padStart(2, "0"), String(date.getDate()).padStart(2, "0")].join("-");
 }
 
-export function NewTicketDialog({ open, busy, onClose, onCreate }: {
+/**
+ * チケットを発行するときに、名前・色・出発地・目的地をまとめて尋ねる。
+ * 出発地と目的地はホームの背景地図に要るので、あとから設定を探させずここで聞く。
+ * 場所は任意。空でも作れて、あとから予定ページで足せる。
+ */
+export function NewTicketDialog({ open, onClose, onCreate, busy }: {
   open: boolean;
-  busy: boolean;
   onClose: () => void;
-  onCreate: (ticket: NewTicketInput) => void;
+  onCreate: (ticket: NewTicket) => void;
+  busy: boolean;
 }) {
   const [name, setName] = useState("");
   const [themeColor, setThemeColor] = useState(TICKET_COLORS[0]);
   const [startDate, setStartDate] = useState(isoDate(0));
   const [endDate, setEndDate] = useState(isoDate(2));
-  const [origin, setOrigin] = useState("");
-  const [destination, setDestination] = useState("");
+  const [origin, setOrigin] = useState<PlaceValue>(empty);
+  const [destination, setDestination] = useState<PlaceValue>(empty);
+  const [locationTarget, setLocationTarget] = useState<"origin" | "destination" | null>(null);
+  const locationTargetRef = useRef(locationTarget);
+  locationTargetRef.current = locationTarget;
   const nameRef = useRef<HTMLInputElement>(null);
-  const busyRef = useRef(busy);
-  busyRef.current = busy;
 
   useEffect(() => {
     if (!open) return;
-    const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    const previousOverflow = document.body.style.overflow;
-    setName(""); setThemeColor(TICKET_COLORS[0]); setStartDate(isoDate(0)); setEndDate(isoDate(2)); setOrigin(""); setDestination("");
-    document.body.style.overflow = "hidden";
-    const focusTimer = window.setTimeout(() => nameRef.current?.focus(), 40);
-    const keydown = (event: KeyboardEvent) => { if (event.key === "Escape" && !busyRef.current) onClose(); };
-    window.addEventListener("keydown", keydown);
-    return () => {
-      window.clearTimeout(focusTimer);
-      window.removeEventListener("keydown", keydown);
-      document.body.style.overflow = previousOverflow;
-      previousFocus?.focus();
-    };
-  }, [onClose, open]);
+    setName(""); setThemeColor(TICKET_COLORS[0]); setOrigin(empty); setDestination(empty); setLocationTarget(null);
+    setStartDate(isoDate(0)); setEndDate(isoDate(2));
+    const focus = window.setTimeout(() => nameRef.current?.focus(), 60);
+    const onKeyDown = (event: KeyboardEvent) => { if (event.key === "Escape" && !busy && !locationTargetRef.current) onClose(); };
+    window.addEventListener("keydown", onKeyDown);
+    return () => { window.clearTimeout(focus); window.removeEventListener("keydown", onKeyDown); };
+  }, [busy, onClose, open]);
 
   if (!open) return null;
 
   return (
-    <div className="ticket-dialog-layer">
-      <button className="ticket-dialog-scrim" type="button" aria-label="チケット作成を閉じる" disabled={busy} onClick={onClose} />
-      <section className="ticket-dialog" role="dialog" aria-modal="true" aria-labelledby="new-ticket-title">
-        <header><div><p className="eyebrow">NEW TICKET</p><h2 id="new-ticket-title">チケットを発行する</h2></div><button className="icon-button" type="button" aria-label="閉じる" disabled={busy} onClick={onClose}><X size={20} /></button></header>
+    <div className="dialog-layer">
+      <button className="dialog-scrim" type="button" aria-label="閉じる" disabled={busy} onClick={onClose} />
+      <section className="dialog" role="dialog" aria-modal="true" aria-labelledby="new-ticket-title">
+        <header>
+          <div>
+            <p className="eyebrow">NEW TICKET</p>
+            <h2 id="new-ticket-title">チケットを発行する</h2>
+          </div>
+          <button className="icon-button" type="button" aria-label="閉じる" disabled={busy} onClick={onClose}><X size={20} /></button>
+        </header>
+
         <form onSubmit={(event) => { event.preventDefault(); onCreate({ name, themeColor, startDate, endDate, origin, destination }); }}>
-          <label><span>旅行名</span><input ref={nameRef} required value={name} maxLength={40} placeholder="例：宮崎旅行" onChange={(event) => setName(event.target.value)} /></label>
-          <div className="field-grid two"><label><span>出発日</span><input required type="date" value={startDate} onChange={(event) => { setStartDate(event.target.value); if (endDate < event.target.value) setEndDate(event.target.value); }} /></label><label><span>帰宅日</span><input required type="date" min={startDate} value={endDate} onChange={(event) => setEndDate(event.target.value)} /></label></div>
-          <fieldset className="ticket-color-picker"><legend>テーマカラー</legend><div>{TICKET_COLORS.map((color) => <label key={color} style={{ ["--swatch" as string]: color }}><input type="radio" name="ticket-color" value={color} checked={themeColor === color} onChange={() => setThemeColor(color)} /><span aria-hidden="true" /><em>カラー {color}</em></label>)}</div></fieldset>
-          <div className="field-grid two"><label><span>出発地</span><input value={origin} maxLength={50} placeholder="例：大阪" onChange={(event) => setOrigin(event.target.value)} /></label><label><span>目的地</span><input value={destination} maxLength={50} placeholder="例：宮崎" onChange={(event) => setDestination(event.target.value)} /></label></div>
-          <p className="ticket-dialog-note">詳しい場所と座標は、チケットを開いた後に「旅の設定」から編集できます。</p>
-          <div className="ticket-dialog-actions"><button className="button button-quiet" type="button" disabled={busy} onClick={onClose}>やめる</button><button className="button button-primary" type="submit" disabled={busy || !name.trim()}><Plus size={18} />{busy ? "発行中..." : "チケットを発行"}</button></div>
+          <label>
+            <span>旅行名</span>
+            <input ref={nameRef} value={name} maxLength={40} placeholder="例：宮崎旅行" onChange={(event) => setName(event.target.value)} />
+          </label>
+
+          <div className="field-grid two">
+            <label><span>出発日</span><input type="date" value={startDate} onChange={(event) => setStartDate(event.target.value)} /></label>
+            <label><span>帰宅日</span><input type="date" min={startDate} value={endDate} onChange={(event) => setEndDate(event.target.value)} /></label>
+          </div>
+
+          <fieldset className="color-picker">
+            <legend>テーマカラー</legend>
+            {TICKET_COLORS.map((value) => (
+              <label key={value} className="color-swatch" style={{ ["--swatch" as string]: value }}>
+                <input type="radio" name="new-ticket-color" value={value} checked={themeColor === value} onChange={() => setThemeColor(value)} />
+                <span aria-hidden="true" />
+                <span className="visually-hidden">カラー {value}</span>
+              </label>
+            ))}
+          </fieldset>
+
+          <div className="dialog-places">
+            <p className="dialog-places-lead">どこからどこへ行きますか</p>
+            <p className="dialog-places-note">
+              アプリ内の地図でピンを置き、場所の名前を付けてください。あとから予定ページで変更できます。
+            </p>
+            <MapLocationField title="出発地" name={origin.label} selected={isValidCoordinate(origin.lat, origin.lng)} mapUrl={origin.url} onOpen={() => setLocationTarget("origin")} />
+            <MapLocationField title="目的地" name={destination.label} selected={isValidCoordinate(destination.lat, destination.lng)} mapUrl={destination.url} onOpen={() => setLocationTarget("destination")} />
+          </div>
+
+          <div className="dialog-actions">
+            <button className="button button-quiet" type="button" disabled={busy} onClick={onClose}>やめる</button>
+            <button className="button button-primary" type="submit" disabled={busy}><Plus size={18} />チケットを発行</button>
+          </div>
         </form>
       </section>
+      {locationTarget && (() => {
+        const value = locationTarget === "origin" ? origin : destination;
+        const initial = isValidCoordinate(value.lat, value.lng) ? { lat: value.lat as number, lng: value.lng as number } : undefined;
+        return <LocationPicker initial={initial} initialName={value.label} onClose={() => setLocationTarget(null)} onConfirm={(location) => {
+          const next = { url: mapsSearch(`${location.lat},${location.lng}`), label: location.name, lat: location.lat, lng: location.lng };
+          if (locationTarget === "origin") setOrigin(next); else setDestination(next);
+          setLocationTarget(null);
+        }} />;
+      })()}
     </div>
   );
 }
