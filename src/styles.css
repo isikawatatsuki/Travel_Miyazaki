@@ -1783,7 +1783,8 @@ body {
 .sync-pill::before { content: ""; width: 8px; height: 8px; flex: 0 0 auto; border-radius: 50%; background: #3b9b75; }
 .sync-pill svg { display: none; }
 .is-ticket-detail .sync-pill { color: var(--app-muted); border: 0; background: transparent; }
-.header-avatar { width: 34px; height: 34px; display: grid; place-items: center; color: #fff; background: var(--app-sidebar); border-radius: 50%; font-size: 13px; font-weight: 800; }
+.header-avatar { width: 34px; height: 34px; display: grid; place-items: center; padding: 0; color: #fff; background: var(--app-sidebar); border: 0; border-radius: 50%; font-size: 13px; font-weight: 800; text-decoration: none; cursor: pointer; }
+.header-avatar:hover { color: #fff; background: #236b58; }
 
 .webapp-home { display: block; }
 .webapp-page-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; margin-bottom: 22px; }
@@ -1834,7 +1835,6 @@ body {
 .webapp-home > .page-help { margin-top: 24px; }
 
 @media (max-width: 959px) {
-  .header-avatar { display: none; }
   .webapp-page-head { padding-top: 20px; }
 }
 
