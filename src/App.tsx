@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { AlertCircle, ArrowLeft, CalendarDays, CircleDollarSign, Cloud, HardDrive, Home, LogIn, LogOut, Luggage, RefreshCw, Settings, Share2, WifiOff, X } from "lucide-react";
+import { AlertCircle, ArrowLeft, CalendarDays, CircleDollarSign, Cloud, HardDrive, Home, LogIn, LogOut, Luggage, Map, RefreshCw, Settings, Share2, Ticket, WifiOff, X } from "lucide-react";
 import { TripProvider, useTrip } from "./TripContext";
 import { useOnlineStatus } from "./lib";
 import type { PageKey } from "./types";
@@ -25,6 +25,10 @@ const pages: Array<{ id: PageKey; label: string; icon: typeof Home }> = [
 const validPages: PageKey[] = [...pages.map((page) => page.id), "details", "album", "tickets", "map"];
 /** チケットを開いていない画面。ここでは下部ナビと旅の設定を隠す。 */
 const shellFreePages: PageKey[] = ["tickets", "map"];
+const pageLabels: Partial<Record<PageKey, string>> = {
+  home: "旅の概要", plan: "予定", money: "お金", packing: "持ち物", share: "共有",
+  details: "旅の詳細", album: "アルバム", tickets: "チケット", map: "旅の地図",
+};
 
 function pageFromHash(): PageKey {
   const value = window.location.hash.replace("#", "") as PageKey;
@@ -85,6 +89,10 @@ function AppShell() {
     if (inTicket && !activeTicket) window.location.hash = "#tickets";
   }, [activeTicket, inTicket]);
 
+  const sidebarPages = inTicket
+    ? pages
+    : [{ id: "tickets" as PageKey, label: "チケット", icon: Ticket }, { id: "map" as PageKey, label: "旅の地図", icon: Map }];
+
   return (
     <div
       className={`app-shell ${inTicket ? "is-ticket-detail" : "is-tickets"}`}
@@ -93,9 +101,35 @@ function AppShell() {
       {/* .page の page-in アニメーションは transform を残すため fixed の含みブロックになる。
           空を画面全体へ広げるには、その外側に置く必要がある。 */}
       {!inTicket && <Sky />}
+      <aside className="app-sidebar" aria-label="アプリメニュー">
+        <a className="sidebar-brand" href="#tickets" aria-label="Tabilog チケット一覧">
+          <img src="/icons/icon-192.png" alt="" width={34} height={34} />
+          <span><strong>Tabilog</strong><small>TRAVEL WORKSPACE</small></span>
+        </a>
+        {inTicket && (
+          <a className="sidebar-trip" href="#tickets">
+            <span className="sidebar-trip-mark"><Ticket size={18} aria-hidden="true" /></span>
+            <span><small>現在の旅</small><strong>{activeTicket?.name || "旅のしおり"}</strong></span>
+          </a>
+        )}
+        <nav className="sidebar-nav" aria-label="メインメニュー">
+          {sidebarPages.map(({ id, label, icon: Icon }) => (
+            <a key={id} href={`#${id}`} className={page === id ? "is-active" : ""} aria-current={page === id ? "page" : undefined}>
+              <Icon size={19} aria-hidden="true" /><span>{label}</span>
+            </a>
+          ))}
+          {inTicket && <><span className="sidebar-divider" /><a href="#map"><Map size={19} aria-hidden="true" /><span>旅の地図</span></a><a href="#tickets"><Ticket size={19} aria-hidden="true" /><span>チケットを切り替える</span></a></>}
+        </nav>
+        <div className="sidebar-foot">
+          {inTicket && <button type="button" onClick={() => setSettingsOpen(true)}><Settings size={18} aria-hidden="true" />旅の設定</button>}
+          <span>Tabilog v2.0</span>
+        </div>
+      </aside>
+
+      <div className="app-workspace">
       <header className="app-header">
         {inTicket ? (
-          <a className="brand brand-back" href="#tickets" aria-label="チケット一覧へ戻る">
+          <a className="brand brand-back mobile-brand" href="#tickets" aria-label="チケット一覧へ戻る">
             <ArrowLeft size={18} aria-hidden="true" />
             <span>
               <small>チケット一覧</small>
@@ -103,11 +137,15 @@ function AppShell() {
             </span>
           </a>
         ) : (
-          <a className="brand brand-logo" href="#tickets" aria-label="Tabilog ホーム">
+          <a className="brand brand-logo mobile-brand" href="#tickets" aria-label="Tabilog ホーム">
             <img src="/icons/icon-192.png" alt="" width={32} height={32} />
             <strong>Tabilog</strong>
           </a>
         )}
+        <div className="topbar-context">
+          <span>{inTicket ? activeTicket?.name || "旅のしおり" : "Tabilog"}</span>
+          <strong>{pageLabels[page] || "旅のしおり"}</strong>
+        </div>
         <div className="header-actions">
           {!inTicket && (accountUser
             ? <button className="button button-quiet small" type="button" onClick={() => void logout()}><LogOut size={16} aria-hidden="true" />{accountUser.displayName || "ログアウト"}</button>
@@ -145,6 +183,7 @@ function AppShell() {
           ))}
         </nav>
       )}
+      </div>
       <SettingsDrawer open={settingsOpen} onClose={() => setSettingsOpen(false)} />
     </div>
   );
