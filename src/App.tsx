@@ -162,7 +162,15 @@ function AppShell() {
               {savePhase === "error" && <button className="button button-secondary small" type="button" onClick={retrySave}><RefreshCw size={16} />再試行</button>}
             </div>}
           </div>
-          <span className="header-avatar" aria-label={accountUser?.displayName || "ユーザー"}>{(accountUser?.displayName || "I").slice(0, 1).toUpperCase()}</span>
+          {inTicket && (accountUser ? (
+            <a className="header-avatar" href="#share" aria-label={`${accountUser.displayName || accountUser.email || "ユーザー"}のアカウント設定`} title="アカウント設定">
+              {(accountUser.displayName || accountUser.email || "I").slice(0, 1).toUpperCase()}
+            </a>
+          ) : (
+            <button className="header-avatar" type="button" onClick={loginWithGoogle} aria-label="Googleでログイン" title="Googleでログイン">
+              <LogIn size={17} aria-hidden="true" />
+            </button>
+          ))}
           {inTicket && (
             <button className="icon-button" type="button" onClick={() => setSettingsOpen(true)} aria-label="旅の設定を開く">
               <Settings size={22} aria-hidden="true" />
