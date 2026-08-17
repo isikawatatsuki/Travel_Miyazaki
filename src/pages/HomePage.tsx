@@ -1,15 +1,13 @@
 import { BedDouble, BookOpen, CalendarDays, Camera, CheckCircle2, CircleDollarSign, Clock3, MapPin, Plane, StickyNote, UsersRound } from "lucide-react";
-import { useMemo } from "react";
 import { useTrip } from "../TripContext";
 import { getScheduleDays } from "../data";
 import { getBudgetSummary } from "../derived";
 import { mapsSearch, yen } from "../lib";
-import { buildTicketRoute } from "../tickets";
 import { PageHelp, PageLink, Panel, SectionHeading } from "../components/ui";
-import { HeroRouteMap } from "../components/HeroRouteMap";
+import { TicketArtwork } from "../components/TicketCard";
 
 export function HomePage() {
-  const { tripSettings, schedule, checklist, notes, settlement, adjust, reservations, album, helpOpen, setHelpOpen } = useTrip();
+  const { tripSettings, schedule, checklist, notes, settlement, adjust, reservations, album, helpOpen, setHelpOpen, activeTicket } = useTrip();
   const budget = getBudgetSummary(adjust, settlement.people.length);
   const days = getScheduleDays(tripSettings);
   const start = new Date(`${tripSettings.startDate}T00:00:00`);
@@ -31,10 +29,6 @@ export function HomePage() {
   const now = new Date();
   const nowTime = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
   const nextItem = displayItems.find((item) => !item.isTimeUnset && item.time >= nowTime) || displayItems[0];
-  // 背景地図は予定から作った経路をそのまま描く。予定に座標が無ければ
-  // buildTicketRoute が旅行設定の出発地・目的地へ落ちる。
-  const heroRoute = useMemo(() => buildTicketRoute({ tripSettings, schedule } as Parameters<typeof buildTicketRoute>[0]), [schedule, tripSettings]);
-
   return (
     <div className="page home-page">
       <PageHelp open={helpOpen} onChange={setHelpOpen}>
@@ -52,35 +46,29 @@ export function HomePage() {
         </p>
         <p>場所が読み取れなかった予定は経路から外れ、旅の地図でそのチケットを選ぶと名前が一覧で表示されます。</p>
       </PageHelp>
-      <section className="hero-section" aria-labelledby="hero-title">
-        <HeroRouteMap points={heroRoute.points} />
-        {(tripSettings.originCode || tripSettings.destinationCode) && (
-          <div className="hero-route" aria-hidden="true">
-            <span>{tripSettings.originCode}</span><i /><Plane size={26} /><i /><span>{tripSettings.destinationCode}</span>
-          </div>
-        )}
-        <p className="eyebrow">{tripSettings.dateLabel}</p>
-        <h1 id="hero-title">{tripSettings.tripName}</h1>
-        <p className="hero-destination">{tripSettings.routeLabel}</p>
-        <div className="trip-note-ticket">
-          <span>{tripStatusLabel}</span>
-          <strong>{tripStatusTitle}</strong>
-          <small>{tripPeopleLabel}</small>
-        </div>
+      <header className="dashboard-heading">
+        <div><p className="eyebrow">TRIP OVERVIEW</p><h1 id="hero-title">旅の概要</h1><p>{tripSettings.tripName} · {tripSettings.dateLabel}</p></div>
+        <span className="dashboard-phase"><i />{tripStatusTitle}</span>
+      </header>
+
+      <section className="dashboard-grid" aria-labelledby="hero-title">
+        <Panel className="dashboard-ticket-card">
+          <div className="dashboard-card-head"><div><span>TRAVEL TICKET</span><strong>旅のチケット</strong></div><a href="#tickets">切り替える</a></div>
+          {activeTicket && <TicketArtwork ticket={activeTicket} />}
+        </Panel>
+        <Panel className="next-card">
+          <span>{phase === "during" ? "NEXT SCHEDULE" : phase === "after" ? "TRIP ARCHIVE" : "DEPARTURE"}</span>
+          <div className="next-time">{phase === "during" ? nextItem?.time || "--:--" : phase === "after" ? `${album.items.length}枚` : tripSettings.departureTime}</div>
+          <strong>{phase === "during" ? nextItem?.title || "予定はありません" : phase === "after" ? "旅の写真を見返す" : "出発時刻"}</strong>
+          <p>{nextItem?.memo || tripPeopleLabel}</p>
+          <a href={phase === "after" ? "#album" : "#plan"}>詳細を確認</a>
+        </Panel>
       </section>
 
       <section className="quick-grid" aria-label="旅の重要情報">
-        <Panel className="quick-card accent-yellow">
-          {phase === "after" ? <Camera size={22} aria-hidden="true" /> : <Clock3 size={22} aria-hidden="true" />}
-          <span>{phase === "during" ? nextItem ? `次の予定 ${nextItem.time}` : "今日の予定" : phase === "after" ? "アルバム" : "家を出る"}</span>
-          <strong>{phase === "during" ? nextItem?.title || "予定なし" : phase === "after" ? `${album.items.length}枚の思い出` : tripSettings.departureTime}</strong>
-        </Panel>
-        <Panel className="quick-card accent-blue">
-          <Plane size={22} aria-hidden="true" /><span>行きの便</span><strong>{tripSettings.outboundLabel}</strong>
-        </Panel>
-        <Panel className="quick-card accent-pink">
-          <BedDouble size={22} aria-hidden="true" /><span>泊まるところ</span><strong>{tripSettings.hotelName}</strong>
-        </Panel>
+        <Panel className="quick-card accent-blue"><Plane size={22} aria-hidden="true" /><span>行きの便</span><strong>{tripSettings.outboundLabel}</strong></Panel>
+        <Panel className="quick-card accent-pink"><BedDouble size={22} aria-hidden="true" /><span>泊まるところ</span><strong>{tripSettings.hotelName}</strong></Panel>
+        <Panel className="quick-card accent-yellow">{phase === "after" ? <Camera size={22} aria-hidden="true" /> : <Clock3 size={22} aria-hidden="true" />}<span>ステータス</span><strong>{tripStatusLabel}</strong></Panel>
       </section>
 
       <section className="home-overview" aria-label="旅の全体サマリー">
