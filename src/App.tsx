@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { AlertCircle, ArrowLeft, CalendarDays, CircleDollarSign, Cloud, HardDrive, Home, LogIn, LogOut, Luggage, Map, RefreshCw, Settings, Share2, Ticket, WifiOff, X } from "lucide-react";
+import { AlertCircle, ArrowLeft, BookOpen, CalendarDays, CircleDollarSign, Cloud, HardDrive, Home, LogIn, LogOut, Luggage, Map, RefreshCw, Settings, Share2, Ticket, WifiOff, X } from "lucide-react";
 import { TripProvider, useTrip } from "./TripContext";
 import { useOnlineStatus } from "./lib";
 import type { PageKey } from "./types";
@@ -50,7 +50,7 @@ function AppShell() {
         ? "保存中…"
         : savePhase === "syncing"
           ? "同期中…"
-          : activeGroup ? "共有済み" : "端末保存";
+          : activeGroup ? "共有済み" : "端末に保存済み";
   const StorageIcon = !online ? WifiOff : savePhase === "error" ? AlertCircle : activeGroup ? Cloud : HardDrive;
   const savedTime = lastSavedAt ? new Intl.DateTimeFormat("ja-JP", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" }).format(new Date(lastSavedAt)) : "まだ保存されていません";
 
@@ -90,7 +90,7 @@ function AppShell() {
   }, [activeTicket, inTicket]);
 
   const sidebarPages = inTicket
-    ? pages
+    ? [...pages, { id: "details" as PageKey, label: "旅の詳細", icon: BookOpen }]
     : [{ id: "tickets" as PageKey, label: "チケット", icon: Ticket }, { id: "map" as PageKey, label: "旅の地図", icon: Map }];
 
   return (
@@ -103,13 +103,14 @@ function AppShell() {
       {!inTicket && <Sky />}
       <aside className="app-sidebar" aria-label="アプリメニュー">
         <a className="sidebar-brand" href="#tickets" aria-label="Tabilog チケット一覧">
-          <img src="/icons/icon-192.png" alt="" width={34} height={34} />
-          <span><strong>Tabilog</strong><small>TRAVEL WORKSPACE</small></span>
+          <span className="sidebar-brand-mark" aria-hidden="true" />
+          <span><strong>旅のしおり</strong></span>
         </a>
         {inTicket && (
           <a className="sidebar-trip" href="#tickets">
             <span className="sidebar-trip-mark"><Ticket size={18} aria-hidden="true" /></span>
-            <span><small>現在の旅</small><strong>{activeTicket?.name || "旅のしおり"}</strong></span>
+            <span><small>開いている旅</small><strong>{activeTicket?.name || "旅のしおり"}</strong></span>
+            <span className="sidebar-trip-chevron" aria-hidden="true">⌄</span>
           </a>
         )}
         <nav className="sidebar-nav" aria-label="メインメニュー">
@@ -118,10 +119,10 @@ function AppShell() {
               <Icon size={19} aria-hidden="true" /><span>{label}</span>
             </a>
           ))}
-          {inTicket && <><span className="sidebar-divider" /><a href="#map"><Map size={19} aria-hidden="true" /><span>旅の地図</span></a><a href="#tickets"><Ticket size={19} aria-hidden="true" /><span>チケットを切り替える</span></a></>}
         </nav>
         <div className="sidebar-foot">
-          {inTicket && <button type="button" onClick={() => setSettingsOpen(true)}><Settings size={18} aria-hidden="true" />旅の設定</button>}
+          <a href="#tickets">旅のチケット一覧</a>
+          {inTicket && <button type="button" onClick={() => setSettingsOpen(true)}>設定・データ管理</button>}
           <span>Tabilog v2.0</span>
         </div>
       </aside>
@@ -143,8 +144,8 @@ function AppShell() {
           </a>
         )}
         <div className="topbar-context">
-          <span>{inTicket ? activeTicket?.name || "旅のしおり" : "Tabilog"}</span>
-          <strong>{pageLabels[page] || "旅のしおり"}</strong>
+          <span>{inTicket ? "旅のチケット" : "Tabilog"}</span>
+          <strong>{inTicket ? activeTicket?.name || "旅のしおり" : pageLabels[page] || "旅のしおり"}</strong>
         </div>
         <div className="header-actions">
           {!inTicket && (accountUser
@@ -161,6 +162,7 @@ function AppShell() {
               {savePhase === "error" && <button className="button button-secondary small" type="button" onClick={retrySave}><RefreshCw size={16} />再試行</button>}
             </div>}
           </div>
+          <span className="header-avatar" aria-label={accountUser?.displayName || "ユーザー"}>{(accountUser?.displayName || "I").slice(0, 1).toUpperCase()}</span>
           {inTicket && (
             <button className="icon-button" type="button" onClick={() => setSettingsOpen(true)} aria-label="旅の設定を開く">
               <Settings size={22} aria-hidden="true" />

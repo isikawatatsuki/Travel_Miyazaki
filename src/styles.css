@@ -1747,3 +1747,113 @@ body {
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }
+
+/* H reference alignment — application dashboard */
+:root {
+  --app-bg: #eef1ef;
+  --app-sidebar: #123e34;
+  --app-sidebar-strong: #0d332b;
+  --app-blue: #244d63;
+  --app-blue-dark: #1c4053;
+  --app-line: #d5dbd7;
+}
+
+@media (min-width: 960px) {
+  .app-sidebar { padding: 24px 14px; background: var(--app-sidebar); }
+  .sidebar-brand { min-height: 30px; gap: 12px; padding: 0 10px 24px; }
+  .sidebar-brand-mark { position: relative; width: 24px; height: 30px; flex: 0 0 auto; border: 1.5px solid currentColor; }
+  .sidebar-brand-mark::after { content: ""; position: absolute; left: 6px; top: 4px; bottom: 4px; border-left: 1px solid currentColor; }
+  .sidebar-brand strong { font-size: 17px; }
+  .sidebar-trip { grid-template-columns: minmax(0, 1fr) auto; gap: 8px; margin: 0 0 22px; padding: 12px; border-radius: 0; background: rgba(255,255,255,.05); }
+  .sidebar-trip-mark { display: none; }
+  .sidebar-trip-chevron { color: #d8e5e0; font-size: 14px; }
+  .sidebar-nav { gap: 5px; }
+  .sidebar-nav a { min-height: 45px; padding: 0 12px; border-left: 3px solid transparent; border-radius: 0; }
+  .sidebar-nav a.is-active { color: var(--app-sidebar); background: #fff; border-left-color: #edcc64; box-shadow: none; }
+  .sidebar-divider { margin-block: 9px; }
+  .sidebar-foot { padding-top: 16px; border-top: 1px solid rgba(255,255,255,.18); }
+  .sidebar-foot a, .sidebar-foot button { min-height: 30px; display: flex; align-items: center; padding: 0 10px; color: #cbd8d3; border: 0; border-radius: 0; background: transparent; font-size: 12px; text-decoration: none; }
+  .is-ticket-detail .app-header { border-bottom: 1px solid var(--app-line); background: #fff; box-shadow: none; }
+  .main-content { width: min(100%, 1240px); padding-inline: 30px; }
+  .is-ticket-detail .webapp-home { padding-top: 40px; }
+}
+
+.topbar-context span::after { content: "/"; }
+.sync-pill { color: var(--app-muted); border: 0; background: transparent; font-weight: 500; }
+.sync-pill::before { content: ""; width: 8px; height: 8px; flex: 0 0 auto; border-radius: 50%; background: #3b9b75; }
+.sync-pill svg { display: none; }
+.is-ticket-detail .sync-pill { color: var(--app-muted); border: 0; background: transparent; }
+.header-avatar { width: 34px; height: 34px; display: grid; place-items: center; color: #fff; background: var(--app-sidebar); border-radius: 50%; font-size: 13px; font-weight: 800; }
+
+.webapp-home { display: block; }
+.webapp-page-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; margin-bottom: 22px; }
+.webapp-page-head p { margin: 0 0 6px; color: var(--app-muted); font-size: 13px; }
+.webapp-page-head h1 { margin: 0; font-size: clamp(26px, 3vw, 30px); line-height: 1.25; letter-spacing: -.03em; }
+.webapp-page-actions { display: flex; gap: 10px; }
+.webapp-page-actions .button { border-radius: 0; }
+.is-ticket-detail .webapp-page-actions .button-primary { color: #fff; background: var(--app-sidebar); border-color: var(--app-sidebar); }
+.is-ticket-detail .webapp-page-actions .button-secondary { color: var(--ink); background: #fff; border-color: var(--app-line); }
+
+.home-dashboard { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(290px, .65fr); gap: 16px; }
+.is-ticket-detail .home-dashboard .panel { padding: 20px; border: 1px solid var(--app-line); border-radius: 0; background: #fff; box-shadow: none; }
+.is-ticket-detail .home-dashboard .webapp-ticket-panel { min-width: 0; padding: 16px; }
+.webapp-panel-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 14px; }
+.webapp-panel-head h2 { margin: 0; font-family: inherit; font-size: 17px; letter-spacing: 0; }
+.webapp-panel-head a { min-height: 44px; display: inline-flex; align-items: center; color: var(--app-sidebar); font-size: 13px; font-weight: 700; }
+.webapp-ticket-panel .ticket-art { width: 100%; max-width: 820px; }
+.webapp-ticket-toolbar { min-height: 50px; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 4px 14px 0; color: var(--app-muted); font-size: 12px; }
+.webapp-ticket-toolbar span::before { content: ""; display: inline-block; width: 7px; height: 7px; margin-right: 6px; border-radius: 50%; background: #3b9b75; }
+.webapp-ticket-toolbar a { min-height: 44px; display: inline-flex; align-items: center; color: var(--app-sidebar); font-weight: 700; text-decoration: none; }
+
+.is-ticket-detail .home-dashboard .webapp-next-panel { display: flex; min-height: 360px; flex-direction: column; color: #fff; border-color: var(--app-blue); background: var(--app-blue); }
+.webapp-next-panel .webapp-panel-head a { color: #dceaf0; }
+.webapp-next-label { color: #bdd0d8; font-size: 12px; }
+.webapp-next-panel time { margin: 8px 0 4px; font-size: clamp(46px, 5vw, 54px); font-weight: 300; letter-spacing: -.05em; font-variant-numeric: tabular-nums; }
+.webapp-next-panel h3 { margin: 0 0 8px; font-size: 21px; }
+.webapp-next-panel p { margin: 0 0 20px; color: #d4e0e5; line-height: 1.7; }
+.is-ticket-detail .webapp-next-panel > .button { width: 100%; margin-top: auto; color: #26332d; border-color: #edcc64; border-radius: 0; background: #edcc64; }
+
+.webapp-schedule-panel { grid-column: 1; }
+.webapp-schedule-list { display: grid; }
+.webapp-schedule-row { display: grid; grid-template-columns: 64px 14px minmax(0, 1fr) auto; gap: 12px; align-items: center; min-height: 57px; border-top: 1px solid var(--app-line); }
+.webapp-schedule-row time { font-weight: 700; font-variant-numeric: tabular-nums; }
+.webapp-schedule-row i { width: 8px; height: 8px; border-radius: 50%; background: #d46a7b; }
+.webapp-schedule-row b { font-size: 14px; }
+.webapp-schedule-row small { display: block; margin-top: 3px; color: var(--app-muted); }
+.webapp-schedule-row > a { min-height: 44px; display: inline-flex; align-items: center; padding: 0 10px; color: var(--app-muted); }
+.webapp-schedule-empty { min-height: 170px; display: grid; place-items: center; align-content: center; gap: 12px; color: var(--app-muted); border-top: 1px solid var(--app-line); }
+.webapp-schedule-empty a { color: var(--app-sidebar); font-weight: 700; }
+
+.webapp-utilities { grid-column: 2; display: grid; align-content: start; gap: 10px; }
+.webapp-utility { min-height: 78px; display: grid; grid-template-columns: 42px minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 12px 14px; color: inherit; background: #fff; border: 1px solid var(--app-line); text-decoration: none; transition: border-color 180ms ease, transform 180ms ease; }
+.webapp-utility:hover { border-color: #236b58; transform: translateY(-1px); }
+.webapp-utility-icon { width: 40px; height: 40px; display: grid; place-items: center; color: var(--app-sidebar); background: #e9f0ed; }
+.webapp-utility b { display: block; font-size: 14px; }
+.webapp-utility small { display: block; margin-top: 3px; overflow: hidden; color: var(--app-muted); font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+.webapp-utility strong { display: inline-flex; align-items: center; font-size: 16px; white-space: nowrap; }
+.webapp-home > .page-help { margin-top: 24px; }
+
+@media (max-width: 959px) {
+  .header-avatar { display: none; }
+  .webapp-page-head { padding-top: 20px; }
+}
+
+@media (max-width: 840px) {
+  :root { --header-height: 58px; --nav-height: 58px; }
+  .app-header { height: 58px; }
+  .storage-status-wrap { display: none; }
+  .bottom-nav { height: calc(58px + env(safe-area-inset-bottom)); }
+  .bottom-nav a { min-height: 58px; }
+  .webapp-page-head { align-items: flex-start; }
+  .webapp-page-head h1 { font-size: 25px; }
+  .webapp-page-actions .button-secondary { display: none; }
+  .webapp-page-actions .button-primary { padding-inline: 12px; white-space: nowrap; }
+  .home-dashboard { display: block; }
+  .is-ticket-detail .home-dashboard .panel { margin-bottom: 12px; padding: 16px; }
+  .is-ticket-detail .home-dashboard .webapp-ticket-panel { padding: 8px; }
+  .webapp-ticket-toolbar { padding-inline: 8px; }
+  .is-ticket-detail .home-dashboard .webapp-next-panel { min-height: 255px; }
+  .webapp-schedule-row { grid-template-columns: 55px 12px minmax(0, 1fr); }
+  .webapp-schedule-row > a { display: none; }
+  .webapp-utilities { margin-bottom: 12px; }
+}
